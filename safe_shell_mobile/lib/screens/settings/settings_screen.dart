@@ -177,8 +177,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleBiometric(bool value) async {
     if (value) {
-      // Prompt for biometric before enabling
+      // 1. Check hardware capability first
       try {
+        final bool isSupported = await _localAuth.isDeviceSupported();
+        final bool canCheck = await _localAuth.canCheckBiometrics;
+        
+        if (!isSupported || !canCheck) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Biometric hardware not available or not setup on this device.')),
+            );
+          }
+          return;
+        }
+
+        // 2. Prompt for biometric before enabling
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Confirm identity to enable Biometric Lock',
           options: const AuthenticationOptions(
@@ -620,7 +633,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const SizedBox(width: 8),
                           Expanded(child: _miniStat(Icons.battery_saver, 'Saver', _batterySaver ? 'On' : 'Off')),
                           const SizedBox(width: 8),
-                          Expanded(child: _miniStat(Icons.fingerprint, 'Biometric', _biometrics ? 'On' : 'Off')),
+                          Expanded(child: _miniStat(Icons.security, 'Biometric', _biometrics ? 'On' : 'Off')),
                         ],
                       ),
                     ],
@@ -652,7 +665,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 _actionTile(Icons.person, 'My Profile', 'Manage account & data', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))),
                 const SizedBox(height: 8),
-                _toggleTile(Icons.fingerprint, 'Biometric Lock', _canUseBiometrics ? 'Use fingerprint to unlock' : 'Not supported on this device', _biometrics, _canUseBiometrics ? _toggleBiometric : null),
+                _toggleTile(Icons.security, 'Biometric Lock', _canUseBiometrics ? 'Use Face ID or Fingerprint' : 'Not supported on this device', _biometrics, _canUseBiometrics ? _toggleBiometric : null),
                 const SizedBox(height: 8),
                 // NEW: Change Password Option
                 _actionTile(Icons.pin, 'Set Calculator PIN', 'Change the math hidden PIN', () => _changePinFlow()),

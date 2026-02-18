@@ -60,6 +60,20 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
   Future<void> _authenticate() async {
     if (_isAuthenticating) return; 
 
+    // 1. Check if device supports biometrics at all
+    final bool isSupported = await _auth.isDeviceSupported();
+    final bool canCheck = await _auth.canCheckBiometrics;
+    
+    if (!isSupported || !canCheck) {
+      if (mounted) {
+        setState(() => _isLocked = true); 
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biometric hardware not available or not setup.')),
+        );
+      }
+      return;
+    }
+
     if (mounted) {
       setState(() {
         _isLocked = true; // Show lock screen
@@ -69,7 +83,7 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
 
     try {
       bool authenticated = await _auth.authenticate(
-        localizedReason: 'Unlock SafeShell Vault',
+        localizedReason: 'Unlock SafeShell Vault (Face ID or Fingerprint)',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: false,
@@ -89,8 +103,21 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
          setState(() {
            _isAuthenticating = false;
          });
+
+         String errorMsg = 'Verification fail. Try again.';
+         if (e.code == 'NotEnrolled') {
+           errorMsg = 'No Face/Fingerprint/PIN enrolled on this device.';
+         } else if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
+           errorMsg = 'Too many attempts. Locked out.';
+         } else if (e.code == 'NotAvailable') {
+           errorMsg = 'Biometric sensor (Face/Fingerprint) not available.';
+         }
+
          ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('Verification fail: Use Emergency Unlock')),
+           SnackBar(
+             content: Text(errorMsg),
+             action: SnackBarAction(label: 'Enter Password', onPressed: _showEmergencyUnlock),
+           ),
          );
        }
     }
@@ -168,27 +195,35 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.lock, size: 64, color: AppColors.primary),
+                    child: const Icon(Icons.lock_person, size: 64, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
                   Text('Vault Locked', style: AppTextStyles.display),
-                  const SizedBox(height: 8),
-                  Text('Biometric authentication required', style: AppTextStyles.body.copyWith(color: Colors.white54)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Use Face ID or Fingerprint to unlock',
+                    style: AppTextStyles.body.copyWith(color: Colors.white54),
+                  ),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
-                    onPressed: _authenticate,
-                    icon: const Icon(Icons.fingerprint),
-                    label: const Text('Unlock Vault'),
+                    onPressed: _isAuthenticating ? null : _authenticate,
+                    icon: const Icon(Icons.security, color: Colors.white),
+                    label: Text(_isAuthenticating ? 'Verifying...' : 'Unlock Now'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _showEmergencyUnlock,
-                    child: Text('Emergency Unlock', style: TextStyle(color: Colors.white.withOpacity(0.3), decoration: TextDecoration.underline)),
+                    icon: const Icon(Icons.password, size: 18, color: Colors.white38),
+                    label: Text(
+                      'Unlock with Account Password',
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                    ),
                   ),
                 ],
               ),

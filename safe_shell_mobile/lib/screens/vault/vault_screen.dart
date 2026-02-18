@@ -102,14 +102,28 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
     }
   }
 
-  /// Prompt fingerprint / PIN authentication
+  /// Prompt fingerprint / Face ID / PIN authentication
   Future<void> _authenticate() async {
     if (_isAuthenticating) return;
+    
+    // 1. Check if device supports biometrics at all
+    final bool isSupported = await _localAuth.isDeviceSupported();
+    final bool canCheck = await _localAuth.canCheckBiometrics;
+    
+    if (!isSupported || !canCheck) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biometric hardware not available or not setup.')),
+        );
+      }
+      return;
+    }
+
     _isAuthenticating = true;
 
     try {
       final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to unlock your Vault',
+        localizedReason: 'Authenticate to unlock your Vault (Face ID or Fingerprint)',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: false, // Allow PIN/Pattern fallback
@@ -127,8 +141,21 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
       debugPrint('Biometric Error: $e');
       if (mounted) {
         setState(() => _isAuthenticating = false);
+        
+        String errorMsg = 'Authentication error. Try again.';
+        if (e.code == 'NotEnrolled') {
+          errorMsg = 'No Face/Fingerprint/PIN enrolled on this device.';
+        } else if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
+          errorMsg = 'Too many attempts. Locked out.';
+        } else if (e.code == 'NotAvailable') {
+          errorMsg = 'Biometric sensor (Face/Fingerprint) not available.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Focus error: Try again or use Emergency Unlock')),
+          SnackBar(
+            content: Text(errorMsg),
+            action: SnackBarAction(label: 'Enter Password', onPressed: _showEmergencyUnlock),
+          ),
         );
       }
     }
@@ -236,13 +263,13 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 2),
                 ),
-                child: const Icon(Icons.fingerprint, size: 72, color: AppColors.primary),
+                child: const Icon(Icons.lock_person, size: 72, color: AppColors.primary),
               ),
               const SizedBox(height: 28),
               Text('Vault Locked', style: AppTextStyles.display.copyWith(fontSize: 28)),
               const SizedBox(height: 8),
               Text(
-                'Authenticate to access your files',
+                'Use Face ID or Fingerprint to unlock',
                 style: AppTextStyles.body.copyWith(color: Colors.white54),
               ),
               const SizedBox(height: 36),
@@ -254,7 +281,7 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
                 ),
                 child: ElevatedButton.icon(
                   onPressed: _isAuthenticating ? null : _authenticate,
-                  icon: const Icon(Icons.fingerprint, color: Colors.white),
+                  icon: const Icon(Icons.security, color: Colors.white),
                   label: Text(
                     _isAuthenticating ? 'Verifying...' : 'Unlock Vault',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
@@ -268,11 +295,12 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
                 ),
               ),
               const SizedBox(height: 16),
-              TextButton(
+              TextButton.icon(
                 onPressed: _showEmergencyUnlock,
-                child: Text(
-                  'Use Account Password',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13, decoration: TextDecoration.underline),
+                icon: const Icon(Icons.password, size: 18, color: Colors.white38),
+                label: Text(
+                  'Unlock with Account Password',
+                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
                 ),
               ),
             ],
