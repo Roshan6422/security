@@ -198,7 +198,7 @@ export default function UsersPage() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0 }}
-                                            transition={{ delay: index * 0.05 }}
+                                            transition={{ duration: 0.2 }}
                                             className="group hover:bg-white/5 transition-colors"
                                         >
                                             <td className="p-4">

@@ -328,7 +328,7 @@ export default function PaymentsPage() {
                                     key={payment._id}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
+                                    transition={{ duration: 0.2 }}
                                     className="hover:bg-white/5 transition-colors group"
                                 >
                                     <td className="p-5">

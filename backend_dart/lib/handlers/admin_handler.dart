@@ -27,6 +27,55 @@ Map<String, dynamic> _bankSettings = {
 Router adminRouter() {
   final router = Router();
 
+  // GET /stats
+  router.get('/stats', (Request request) async {
+    try {
+      final users = await userRepo.find();
+      final payments = await paymentRepo.find();
+      final tickets = await supportTicketRepo.find();
+
+      final totalUsers = users.length;
+      final totalRevenue = payments.fold<double>(0, (acc, p) => acc + (p.amount as num).toDouble());
+      final activeTickets = tickets.where((t) => t.status == 'open').length;
+
+      // Combine for recent activity
+      final recentUsers = users.length > 5 
+          ? users.sublist(users.length - 5) 
+          : users;
+      final recentPayments = payments.length > 5 
+          ? payments.sublist(payments.length - 5) 
+          : payments;
+
+      final activity = [
+        ...recentUsers.map((u) => {
+          'type': 'user',
+          'title': 'New user: ${u.name}',
+          'date': u.createdAt?.toIso8601String()
+        }),
+        ...recentPayments.map((p) => {
+          'type': 'payment',
+          'title': 'New payment: \$${p.amount}',
+          'date': p.date.toIso8601String()
+        }),
+      ]..sort((a, b) => b['date'].toString().compareTo(a['date'].toString()));
+
+      return Response.ok(
+          jsonEncode({
+            'totalUsers': totalUsers,
+            'totalRevenue': totalRevenue,
+            'activeTickets': activeTickets,
+            'recentActivity': activity.take(10).toList(),
+            'payments': payments.map((p) => p.toJson()).toList(), // Still return payments for chart calculation for now
+          }),
+          headers: {'content-type': 'application/json'});
+    } catch (e) {
+      print('Stats error: \$e');
+      return Response(500,
+          body: jsonEncode({'message': 'Server error'}),
+          headers: {'content-type': 'application/json'});
+    }
+  });
+
   // GET /users
   router.get('/users', (Request request) async {
     try {
@@ -77,6 +126,7 @@ Router adminRouter() {
   router.get('/tickets', (Request request) async {
     try {
       final tickets = await supportTicketRepo.find();
+      // Fetch users efficiently - only once
       final users = await userRepo.find();
       final userMap = {for (var u in users) u.id: u};
 

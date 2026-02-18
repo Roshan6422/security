@@ -20,22 +20,11 @@ export default function OverviewPage() {
                 const token = localStorage.getItem('adminToken');
                 const headers = { Authorization: `Bearer ${token}` };
 
-                const [usersRes, paymentsRes, ticketsRes] = await Promise.all([
-                    axios.get(`${getBaseUrl()}/api/admin/users`, { headers }),
-                    axios.get(`${getBaseUrl()}/api/admin/payments`, { headers }),
-                    axios.get(`${getBaseUrl()}/api/admin/tickets`, { headers })
-                ]);
+                // Use the new optimized stats endpoint
+                const res = await axios.get(`${getBaseUrl()}/api/admin/stats`, { headers });
+                const { totalUsers, totalRevenue, activeTickets, recentActivity, payments } = res.data;
 
-                const totalUsers = usersRes.data.length;
-                const totalRevenue = paymentsRes.data.reduce((acc: number, curr: any) => acc + curr.amount, 0);
-                const activeTickets = ticketsRes.data.filter((t: any) => t.status === 'open').length;
-
-                // Combine for recent activity
-                const recentUsers = usersRes.data.slice(-3).map((u: any) => ({ type: 'user', title: `New user: ${u.name}`, date: u.createdAt }));
-                const recentPayments = paymentsRes.data.slice(-3).map((p: any) => ({ type: 'payment', title: `New payment: $${p.amount}`, date: p.date }));
-                const activity = [...recentUsers, ...recentPayments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-                // Calculate chart data from real payments
+                // Calculate chart data from return payments
                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 const last7Days = [...Array(7)].map((_, i) => {
                     const d = new Date();
@@ -48,7 +37,7 @@ export default function OverviewPage() {
                     };
                 });
 
-                paymentsRes.data.forEach((p: any) => {
+                payments.forEach((p: any) => {
                     const pDate = new Date(p.date);
                     const dayMatch = last7Days.find(d =>
                         d.rawDate.getDate() === pDate.getDate() &&
@@ -66,7 +55,7 @@ export default function OverviewPage() {
                     totalUsers,
                     totalRevenue,
                     activeTickets,
-                    recentActivity: activity
+                    recentActivity
                 });
             } catch (err) {
                 console.error(err);

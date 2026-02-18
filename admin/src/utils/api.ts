@@ -10,5 +10,5 @@ export const getBaseUrl = () => {
     if (isLocal) return "http://localhost:8000";
 
     // Fallback or explicit IP
-    return "http://localhost:8000";
+    return "https://loud-marcelle-safeshell-ddaba28e.koyeb.app";
 };
