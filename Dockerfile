@@ -24,6 +24,7 @@ WORKDIR /app
 
 # Copy compiled binary
 COPY --from=build /app/bin/server /app/bin/server
+RUN chmod +x /app/bin/server
 
 # Create data directories
 RUN mkdir -p /app/data/uploads

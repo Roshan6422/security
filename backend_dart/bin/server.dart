@@ -18,10 +18,16 @@ import 'package:backend_dart/handlers/support_handler.dart';
 import 'package:backend_dart/handlers/device_handler.dart';
 
 Future<void> main() async {
+  print('🚀 Backend starting up...');
   // Load environment variables from .env file
-  env.load();
+  try {
+    env.load();
+  } catch (e) {
+    print('ℹ️  Note: .env file not found, using system environment variables.');
+  }
 
   // ── Initialize Firebase ────────────────────────────────────────────
+  print('ℹ️  Available Environment Variables: ${Platform.environment.keys.join(", ")}');
   await FirebaseConfig.initialize();
 
   // ── Ensure uploads directory exists ────────────────────────────────
@@ -32,6 +38,22 @@ Future<void> main() async {
 
   // ── Build the router ──────────────────────────────────────────────
   final app = Router();
+
+  // Root welcome message
+  app.get('/', (Request request) {
+    return Response.ok(
+        jsonEncode({
+          'message': '🚀 SafeShell Dart Backend is live!',
+          'documentation': 'https://github.com/Roshan6422/security',
+          'endpoints': {
+            'health': '/api/health',
+            'auth': '/api/auth',
+            'vault': '/api/vault',
+            'admin': '/api/admin',
+          }
+        }),
+        headers: {'content-type': 'application/json'});
+  });
 
   // Health check
   app.get('/api/health', (Request request) {

@@ -10,40 +10,52 @@ final env = DotEnv();
 class Env {
   Env._();
 
+  static String? _get(String key) {
+    // 1. Try system environment (Koyeb/Runtime)
+    if (Platform.environment.containsKey(key)) {
+      return Platform.environment[key];
+    }
+    // 2. Try .env file (Local development)
+    if (env.isDefined(key)) {
+      return env[key];
+    }
+    return null;
+  }
+
   /// The port the server listens on.
   static int get port =>
-      int.tryParse(env['PORT'] ?? '') ?? 8000;
+      int.tryParse(_get('PORT') ?? '') ?? 8000;
 
   /// Secret used to sign and verify JWT tokens.
   static String get jwtSecret =>
-      env['JWT_SECRET'] ?? 'secret123';
+      _get('JWT_SECRET') ?? 'secret123';
 
   /// Secret used to promote users to admin role.
   static String get adminSecret =>
-      env['ADMIN_SECRET'] ?? 'admin-secret-123';
+      _get('ADMIN_SECRET') ?? 'admin-secret-123';
 
   /// Base64-encoded Firebase service account JSON.
   static String? get firebaseServiceAccountBase64 =>
-      env['FIREBASE_SERVICE_ACCOUNT_BASE64'];
+      _get('FIREBASE_SERVICE_ACCOUNT_BASE64');
 
   /// PayHere merchant ID.
   static String get payhereMerchantId =>
-      env['PAYHERE_MERCHANT_ID'] ?? '1228956';
+      _get('PAYHERE_MERCHANT_ID') ?? '1228956';
 
   /// PayHere merchant secret.
   static String get payhereMerchantSecret =>
-      env['PAYHERE_MERCHANT_SECRET'] ?? 'your_merchant_secret';
+      _get('PAYHERE_MERCHANT_SECRET') ?? 'your_merchant_secret';
 
   /// PayHere notification URL.
   static String get payhereNotifyUrl =>
-      env['PAYHERE_NOTIFY_URL'] ??
+      _get('PAYHERE_NOTIFY_URL') ??
       'http://localhost:8000/api/payment/notify';
 
   /// Frontend URL for payment redirects.
   static String get frontendUrl =>
-      env['FRONTEND_URL'] ?? 'http://localhost:5173';
+      _get('FRONTEND_URL') ?? 'http://localhost:5173';
 
   /// Uploads directory path.
   static String get uploadsPath =>
-      env['UPLOADS_PATH'] ?? 'data/uploads';
+      _get('UPLOADS_PATH') ?? 'data/uploads';
 }

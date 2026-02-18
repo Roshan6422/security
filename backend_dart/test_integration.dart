@@ -70,7 +70,7 @@ Future<void> main() async {
   try {
     print('🔹 Creating Vault Key');
     final vaultRes = await client.post(
-      Uri.parse('$baseUrl/vault/create'),
+      Uri.parse('$baseUrl/vault/'),
       headers: {
         'content-type': 'application/json',
         'Authorization': 'Bearer $token'
@@ -95,7 +95,7 @@ Future<void> main() async {
   try {
      print('🔹 Listing Vault Items');
      final listRes = await client.get(
-        Uri.parse('$baseUrl/vault/items'),
+        Uri.parse('$baseUrl/vault/'),
         headers: {'Authorization': 'Bearer $token'},
      );
      

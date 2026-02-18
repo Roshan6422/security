@@ -5,7 +5,7 @@ import 'package:backend_dart/config/env.dart';
 Future<void> main() async {
   print('Step 1: Loading .env...');
   try {
-    dotenv.load();
+    env.load();
     print('✅ .env loaded');
   } catch (e) {
     print('❌ .env load failed: $e');
