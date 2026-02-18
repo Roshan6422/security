@@ -1,0 +1,16 @@
+type: web
+name: safeshell-backend
+env:
+  PORT: 8000
+  FIREBASE_SERVICE_ACCOUNT_BASE64: "" # You must set this in the Dashboard secrets
+routes:
+  - path: /
+    port: 8000
+regions:
+  - fra
+instance_types:
+  - free
+build:
+  docker:
+    dockerfile: Dockerfile
+    context: .
