@@ -1,0 +1,200 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:safe_shell_mobile/core/theme.dart';
+
+class BiometricGuardian extends StatefulWidget {
+  final Widget child;
+
+  const BiometricGuardian({super.key, required this.child});
+
+  @override
+  State<BiometricGuardian> createState() => _BiometricGuardianState();
+}
+
+class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindingObserver {
+  final LocalAuthentication _auth = LocalAuthentication();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  bool _isLocked = false;
+  
+  // We don't cache _isEnabled permanently because it might change in Settings
+  // We check it on resume.
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAndAuthenticate();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+        // Optional: We could set _isLocked=true here immediately to hide content in multitasking 
+        // but that might be annoying if accidental. 
+        // For high security: 
+        // _showBlur();
+    }
+  }
+
+  bool _isAuthenticating = false;
+
+  Future<void> _checkAndAuthenticate() async {
+    // Read fresh value every time we resume
+    String? value = await _storage.read(key: 'biometric_enabled');
+    bool isEnabled = value == 'true';
+
+    if (isEnabled && !_isLocked) {
+      _authenticate();
+    }
+  }
+
+  Future<void> _authenticate() async {
+    if (_isAuthenticating) return; 
+
+    if (mounted) {
+      setState(() {
+        _isLocked = true; // Show lock screen
+        _isAuthenticating = true;
+      });
+    }
+
+    try {
+      bool authenticated = await _auth.authenticate(
+        localizedReason: 'Unlock SafeShell Vault',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+          useErrorDialogs: true,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLocked = !authenticated;
+          _isAuthenticating = false;
+        });
+      }
+    } on PlatformException catch (e) {
+       debugPrint('Biometric Error: $e');
+       if (mounted) {
+         setState(() {
+           _isAuthenticating = false;
+         });
+         ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text('Verification fail: Use Emergency Unlock')),
+         );
+       }
+    }
+  }
+
+  Future<void> _showEmergencyUnlock() async {
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Emergency Unlock', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Enter your Account Password to bypass biometric lock.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'Password...',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              final input = controller.text.trim();
+              final saved = await _storage.read(key: 'saved_password');
+              if (input == (saved ?? "").trim()) {
+                if (ctx.mounted) Navigator.pop(ctx, true);
+              } else {
+                if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Invalid password')));
+              }
+            },
+            child: const Text('Unlock', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() {
+        _isLocked = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (_isLocked)
+          Scaffold(
+            backgroundColor: AppColors.background,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock, size: 64, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 24),
+                  Text('Vault Locked', style: AppTextStyles.display),
+                  const SizedBox(height: 8),
+                  Text('Biometric authentication required', style: AppTextStyles.body.copyWith(color: Colors.white54)),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: _authenticate,
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text('Unlock Vault'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: _showEmergencyUnlock,
+                    child: Text('Emergency Unlock', style: TextStyle(color: Colors.white.withOpacity(0.3), decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}

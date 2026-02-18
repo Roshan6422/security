@@ -1,0 +1,3662 @@
+﻿.\gradlew : Picked 
+up _JAVA_OPTIONS: -
+Dsun.net.client.def
+aultConnectTimeout=
+600000 -Dsun.net.cl
+ient.defaultReadTim
+eout=600000
+At line:1 char:52
++ ... dle_cache"; 
+.\gradlew 
+assembleRelease 
+--stacktrace > 
+gradle_error_2.t 
+...
++                 ~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+    + CategoryInfo 
+             : No  
+  tSpecified: (P   
+ icked up _JAVA    
+...dTimeout=60    
+0000:String) [    
+], RemoteExcep    
+tion
+    + FullyQualifi 
+   edErrorId : Na  
+  tiveCommandErr   
+ or
+ 
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources
+> Task :gradle:compileKotlin
+w: file:///D:/flutter_windows_3.38.9-stable/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:11:37 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///D:/flutter_windows_3.38.9-stable/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:609:69 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///D:/flutter_windows_3.38.9-stable/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:186:64 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+w: file:///D:/flutter_windows_3.38.9-stable/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:187:69 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:classes
+> Task :gradle:jar
+
+> Configure project :app
+w: file:///D:/SafeShell/safe_shell_mobile/android/app/build.gradle.kts:21:9: 'jvmTarget: String' is deprecated. Please migrate to the compilerOptions DSL. More details are here: https://kotl.in/u1r8ln
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+WARNING: [CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+[CXX5106] NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [27.0.12077973] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir
+
+> Task :app:ReleaseMinSdkCheck
+> Task :app:compileFlutterBuildRelease
+> Task :app:packJniLibsflutterBuildRelease
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:configureCMakeRelease[arm64-v8a]
+> Task :app:buildCMakeRelease[arm64-v8a]
+> Task :app:configureCMakeRelease[armeabi-v7a]
+> Task :app:buildCMakeRelease[armeabi-v7a]
+> Task :app:configureCMakeRelease[x86_64]
+> Task :app:buildCMakeRelease[x86_64]
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :cloud_firestore:preBuild UP-TO-DATE
+> Task :cloud_firestore:preReleaseBuild UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseNativeLibs NO-SOURCE
+> Task :cloud_firestore:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :file_picker:preBuild UP-TO-DATE
+> Task :file_picker:preReleaseBuild UP-TO-DATE
+> Task :file_picker:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :file_picker:mergeReleaseNativeLibs NO-SOURCE
+> Task :file_picker:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :firebase_auth:preBuild UP-TO-DATE
+> Task :firebase_auth:preReleaseBuild UP-TO-DATE
+> Task :firebase_auth:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :firebase_auth:mergeReleaseNativeLibs NO-SOURCE
+> Task :firebase_auth:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :firebase_core:preBuild UP-TO-DATE
+> Task :firebase_core:preReleaseBuild UP-TO-DATE
+> Task :firebase_core:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :firebase_core:mergeReleaseNativeLibs NO-SOURCE
+> Task :firebase_core:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :firebase_messaging:preBuild UP-TO-DATE
+> Task :firebase_messaging:preReleaseBuild UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseNativeLibs NO-SOURCE
+> Task :firebase_messaging:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :flutter_local_notifications:preBuild UP-TO-DATE
+> Task :flutter_local_notifications:preReleaseBuild UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseNativeLibs NO-SOURCE
+> Task :flutter_local_notifications:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:preReleaseBuild UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseNativeLibs NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :flutter_secure_storage:preBuild UP-TO-DATE
+> Task :flutter_secure_storage:preReleaseBuild UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseNativeLibs NO-SOURCE
+> Task :flutter_secure_storage:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :image_picker_android:preBuild UP-TO-DATE
+> Task :image_picker_android:preReleaseBuild UP-TO-DATE
+> Task :image_picker_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :image_picker_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :image_picker_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :local_auth_android:preBuild UP-TO-DATE
+> Task :local_auth_android:preReleaseBuild UP-TO-DATE
+> Task :local_auth_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :local_auth_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :local_auth_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :open_filex:preBuild UP-TO-DATE
+> Task :open_filex:preReleaseBuild UP-TO-DATE
+> Task :open_filex:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :open_filex:mergeReleaseNativeLibs NO-SOURCE
+> Task :open_filex:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :path_provider_android:preBuild UP-TO-DATE
+> Task :path_provider_android:preReleaseBuild UP-TO-DATE
+> Task :path_provider_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :path_provider_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :path_provider_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :permission_handler_android:preBuild UP-TO-DATE
+> Task :permission_handler_android:preReleaseBuild UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :permission_handler_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :shared_preferences_android:preBuild UP-TO-DATE
+> Task :shared_preferences_android:preReleaseBuild UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :shared_preferences_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :webview_flutter_android:preBuild UP-TO-DATE
+> Task :webview_flutter_android:preReleaseBuild UP-TO-DATE
+> Task :webview_flutter_android:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :webview_flutter_android:mergeReleaseNativeLibs NO-SOURCE
+> Task :webview_flutter_android:copyReleaseJniLibsProjectOnly UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata UP-TO-DATE
+> Task :cloud_firestore:prepareReleaseArtProfile UP-TO-DATE
+> Task :file_picker:prepareReleaseArtProfile UP-TO-DATE
+> Task :firebase_auth:prepareReleaseArtProfile UP-TO-DATE
+> Task :firebase_core:prepareReleaseArtProfile UP-TO-DATE
+> Task :firebase_messaging:prepareReleaseArtProfile UP-TO-DATE
+> Task :flutter_local_notifications:prepareReleaseArtProfile UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:prepareReleaseArtProfile UP-TO-DATE
+> Task :flutter_secure_storage:prepareReleaseArtProfile UP-TO-DATE
+> Task :image_picker_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :local_auth_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :open_filex:prepareReleaseArtProfile UP-TO-DATE
+> Task :path_provider_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :permission_handler_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :shared_preferences_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :webview_flutter_android:prepareReleaseArtProfile UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:expandReleaseL8ArtProfileWildcards UP-TO-DATE
+> Task :cloud_firestore:generateReleaseBuildConfig UP-TO-DATE
+> Task :cloud_firestore:generateReleaseResValues UP-TO-DATE
+> Task :cloud_firestore:generateReleaseResources UP-TO-DATE
+> Task :cloud_firestore:packageReleaseResources UP-TO-DATE
+> Task :cloud_firestore:parseReleaseLocalResources UP-TO-DATE
+> Task :cloud_firestore:generateReleaseRFile UP-TO-DATE
+> Task :cloud_firestore:javaPreCompileRelease UP-TO-DATE
+> Task :firebase_core:generateReleaseBuildConfig UP-TO-DATE
+> Task :firebase_core:generateReleaseResValues UP-TO-DATE
+> Task :firebase_core:generateReleaseResources UP-TO-DATE
+> Task :firebase_core:packageReleaseResources UP-TO-DATE
+> Task :firebase_core:parseReleaseLocalResources UP-TO-DATE
+> Task :firebase_core:generateReleaseRFile UP-TO-DATE
+> Task :firebase_core:javaPreCompileRelease UP-TO-DATE
+
+> Task :firebase_core:compileReleaseJavaWithJavac
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+
+> Task :file_picker:generateReleaseResValues UP-TO-DATE
+> Task :file_picker:generateReleaseResources UP-TO-DATE
+> Task :file_picker:packageReleaseResources UP-TO-DATE
+> Task :file_picker:parseReleaseLocalResources UP-TO-DATE
+> Task :file_picker:generateReleaseRFile UP-TO-DATE
+> Task :file_picker:javaPreCompileRelease UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateReleaseResValues UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateReleaseResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:packageReleaseResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:parseReleaseLocalResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateReleaseRFile UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:javaPreCompileRelease UP-TO-DATE
+> Task :firebase_core:bundleLibCompileToJarRelease
+
+> Task :flutter_plugin_android_lifecycle:compileReleaseJavaWithJavac
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+
+> Task :cloud_firestore:compileReleaseJavaWithJavac
+> Task :cloud_firestore:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :cloud_firestore:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :file_picker:compileReleaseJavaWithJavac
+> Task :file_picker:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :file_picker:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_auth:generateReleaseBuildConfig UP-TO-DATE
+> Task :firebase_auth:generateReleaseResValues UP-TO-DATE
+> Task :firebase_auth:generateReleaseResources UP-TO-DATE
+> Task :firebase_auth:packageReleaseResources UP-TO-DATE
+> Task :firebase_auth:parseReleaseLocalResources UP-TO-DATE
+> Task :firebase_auth:generateReleaseRFile UP-TO-DATE
+> Task :firebase_auth:javaPreCompileRelease UP-TO-DATE
+
+> Task :firebase_auth:compileReleaseJavaWithJavac
+Note: Some input 
+files use or 
+override a 
+deprecated API.
+Note: Recompile 
+with 
+-Xlint:deprecation 
+for details.
+
+> Task :firebase_auth:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :firebase_auth:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_messaging:generateReleaseBuildConfig UP-TO-DATE
+> Task :firebase_messaging:generateReleaseResValues UP-TO-DATE
+> Task :firebase_messaging:generateReleaseResources UP-TO-DATE
+> Task :firebase_messaging:packageReleaseResources UP-TO-DATE
+> Task :firebase_messaging:parseReleaseLocalResources UP-TO-DATE
+> Task :firebase_messaging:generateReleaseRFile UP-TO-DATE
+> Task :firebase_messaging:javaPreCompileRelease UP-TO-DATE
+> Task :firebase_messaging:compileReleaseJavaWithJavac
+> Task :firebase_messaging:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :firebase_messaging:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_core:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :firebase_core:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_local_notifications:generateReleaseResValues UP-TO-DATE
+> Task :flutter_local_notifications:generateReleaseResources UP-TO-DATE
+> Task :flutter_local_notifications:packageReleaseResources UP-TO-DATE
+> Task :flutter_local_notifications:parseReleaseLocalResources UP-TO-DATE
+> Task :flutter_local_notifications:generateReleaseRFile UP-TO-DATE
+> Task :flutter_local_notifications:javaPreCompileRelease UP-TO-DATE
+
+> Task :flutter_local_notifications:compileReleaseJavaWithJavac
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+Picked up 
+_JAVA_OPTIONS: -Dsu
+n.net.client.defaul
+tConnectTimeout=600
+000 -Dsun.net.clien
+t.defaultReadTimeou
+t=600000
+
+
+> Task :flutter_local_notifications:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :flutter_local_notifications:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :image_picker_android:generateReleaseResValues UP-TO-DATE
+> Task :image_picker_android:generateReleaseResources UP-TO-DATE
+> Task :image_picker_android:packageReleaseResources UP-TO-DATE
+> Task :image_picker_android:parseReleaseLocalResources UP-TO-DATE
+> Task :image_picker_android:generateReleaseRFile UP-TO-DATE
+> Task :image_picker_android:javaPreCompileRelease UP-TO-DATE
+> Task :image_picker_android:compileReleaseJavaWithJavac
+> Task :image_picker_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :image_picker_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :local_auth_android:generateReleaseResValues UP-TO-DATE
+> Task :local_auth_android:generateReleaseResources UP-TO-DATE
+> Task :local_auth_android:packageReleaseResources UP-TO-DATE
+> Task :local_auth_android:parseReleaseLocalResources UP-TO-DATE
+> Task :local_auth_android:generateReleaseRFile UP-TO-DATE
+> Task :local_auth_android:javaPreCompileRelease UP-TO-DATE
+> Task :local_auth_android:compileReleaseJavaWithJavac
+> Task :local_auth_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :local_auth_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseBuildConfig UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseResValues UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseResources UP-TO-DATE
+> Task :flutter_secure_storage:packageReleaseResources UP-TO-DATE
+> Task :flutter_secure_storage:parseReleaseLocalResources UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseRFile UP-TO-DATE
+> Task :flutter_secure_storage:javaPreCompileRelease UP-TO-DATE
+> Task :flutter_secure_storage:compileReleaseJavaWithJavac
+> Task :flutter_secure_storage:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :flutter_secure_storage:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :open_filex:generateReleaseResValues UP-TO-DATE
+> Task :open_filex:generateReleaseResources UP-TO-DATE
+> Task :open_filex:packageReleaseResources UP-TO-DATE
+> Task :open_filex:parseReleaseLocalResources UP-TO-DATE
+> Task :open_filex:generateReleaseRFile UP-TO-DATE
+> Task :open_filex:javaPreCompileRelease UP-TO-DATE
+> Task :open_filex:compileReleaseJavaWithJavac
+> Task :open_filex:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :open_filex:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :path_provider_android:generateReleaseResValues UP-TO-DATE
+> Task :path_provider_android:generateReleaseResources UP-TO-DATE
+> Task :path_provider_android:packageReleaseResources UP-TO-DATE
+> Task :path_provider_android:parseReleaseLocalResources UP-TO-DATE
+> Task :path_provider_android:generateReleaseRFile UP-TO-DATE
+> Task :path_provider_android:javaPreCompileRelease UP-TO-DATE
+> Task :path_provider_android:compileReleaseJavaWithJavac
+> Task :path_provider_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :path_provider_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :permission_handler_android:generateReleaseResValues UP-TO-DATE
+> Task :permission_handler_android:generateReleaseResources UP-TO-DATE
+> Task :permission_handler_android:packageReleaseResources UP-TO-DATE
+> Task :permission_handler_android:parseReleaseLocalResources UP-TO-DATE
+> Task :permission_handler_android:generateReleaseRFile UP-TO-DATE
+> Task :permission_handler_android:javaPreCompileRelease UP-TO-DATE
+> Task :permission_handler_android:compileReleaseJavaWithJavac
+> Task :permission_handler_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :permission_handler_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :shared_preferences_android:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared_preferences_android:generateReleaseResValues UP-TO-DATE
+> Task :shared_preferences_android:generateReleaseResources UP-TO-DATE
+> Task :shared_preferences_android:packageReleaseResources UP-TO-DATE
+> Task :shared_preferences_android:parseReleaseLocalResources UP-TO-DATE
+> Task :shared_preferences_android:generateReleaseRFile UP-TO-DATE
+> Task :shared_preferences_android:javaPreCompileRelease UP-TO-DATE
+> Task :webview_flutter_android:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :webview_flutter_android:generateReleaseResValues UP-TO-DATE
+> Task :webview_flutter_android:generateReleaseResources UP-TO-DATE
+> Task :webview_flutter_android:packageReleaseResources UP-TO-DATE
+> Task :webview_flutter_android:parseReleaseLocalResources UP-TO-DATE
+> Task :webview_flutter_android:generateReleaseRFile UP-TO-DATE
+> Task :webview_flutter_android:javaPreCompileRelease UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :cloud_firestore:writeReleaseAarMetadata UP-TO-DATE
+> Task :file_picker:writeReleaseAarMetadata UP-TO-DATE
+> Task :firebase_auth:writeReleaseAarMetadata UP-TO-DATE
+> Task :firebase_core:writeReleaseAarMetadata UP-TO-DATE
+> Task :firebase_messaging:writeReleaseAarMetadata UP-TO-DATE
+> Task :flutter_local_notifications:writeReleaseAarMetadata UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:writeReleaseAarMetadata UP-TO-DATE
+> Task :flutter_secure_storage:writeReleaseAarMetadata UP-TO-DATE
+> Task :image_picker_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :local_auth_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :open_filex:writeReleaseAarMetadata UP-TO-DATE
+> Task :path_provider_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :permission_handler_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :shared_preferences_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :webview_flutter_android:writeReleaseAarMetadata UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:cleanMergeReleaseAssets
+> Task :app:mergeReleaseShaders UP-TO-DATE
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseShaders UP-TO-DATE
+> Task :cloud_firestore:compileReleaseShaders NO-SOURCE
+> Task :cloud_firestore:generateReleaseAssets UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseAssets UP-TO-DATE
+> Task :file_picker:mergeReleaseShaders UP-TO-DATE
+> Task :file_picker:compileReleaseShaders NO-SOURCE
+> Task :file_picker:generateReleaseAssets UP-TO-DATE
+> Task :file_picker:mergeReleaseAssets UP-TO-DATE
+> Task :firebase_auth:mergeReleaseShaders UP-TO-DATE
+> Task :firebase_auth:compileReleaseShaders NO-SOURCE
+> Task :firebase_auth:generateReleaseAssets UP-TO-DATE
+> Task :firebase_auth:mergeReleaseAssets UP-TO-DATE
+> Task :firebase_core:mergeReleaseShaders UP-TO-DATE
+> Task :firebase_core:compileReleaseShaders NO-SOURCE
+> Task :firebase_core:generateReleaseAssets UP-TO-DATE
+> Task :firebase_core:mergeReleaseAssets UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseShaders UP-TO-DATE
+> Task :firebase_messaging:compileReleaseShaders NO-SOURCE
+> Task :firebase_messaging:generateReleaseAssets UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseAssets UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseShaders UP-TO-DATE
+> Task :flutter_local_notifications:compileReleaseShaders NO-SOURCE
+> Task :flutter_local_notifications:generateReleaseAssets UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseAssets UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseShaders UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:compileReleaseShaders NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:generateReleaseAssets UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseAssets UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseShaders UP-TO-DATE
+> Task :flutter_secure_storage:compileReleaseShaders NO-SOURCE
+> Task :flutter_secure_storage:generateReleaseAssets UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseAssets UP-TO-DATE
+> Task :image_picker_android:mergeReleaseShaders UP-TO-DATE
+> Task :image_picker_android:compileReleaseShaders NO-SOURCE
+> Task :image_picker_android:generateReleaseAssets UP-TO-DATE
+> Task :image_picker_android:mergeReleaseAssets UP-TO-DATE
+> Task :local_auth_android:mergeReleaseShaders UP-TO-DATE
+> Task :local_auth_android:compileReleaseShaders NO-SOURCE
+> Task :local_auth_android:generateReleaseAssets UP-TO-DATE
+> Task :local_auth_android:mergeReleaseAssets UP-TO-DATE
+> Task :open_filex:mergeReleaseShaders UP-TO-DATE
+> Task :open_filex:compileReleaseShaders NO-SOURCE
+> Task :open_filex:generateReleaseAssets UP-TO-DATE
+> Task :open_filex:mergeReleaseAssets UP-TO-DATE
+> Task :path_provider_android:mergeReleaseShaders UP-TO-DATE
+> Task :path_provider_android:compileReleaseShaders NO-SOURCE
+> Task :path_provider_android:generateReleaseAssets UP-TO-DATE
+> Task :path_provider_android:mergeReleaseAssets UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseShaders UP-TO-DATE
+> Task :permission_handler_android:compileReleaseShaders NO-SOURCE
+> Task :permission_handler_android:generateReleaseAssets UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseAssets UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseShaders UP-TO-DATE
+> Task :shared_preferences_android:compileReleaseShaders NO-SOURCE
+> Task :shared_preferences_android:generateReleaseAssets UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseAssets UP-TO-DATE
+> Task :webview_flutter_android:mergeReleaseShaders UP-TO-DATE
+> Task :webview_flutter_android:compileReleaseShaders NO-SOURCE
+> Task :webview_flutter_android:generateReleaseAssets UP-TO-DATE
+> Task :webview_flutter_android:mergeReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:copyFlutterAssetsRelease
+> Task :app:generateReleaseResValues UP-TO-DATE
+> Task :app:processReleaseGoogleServices UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :cloud_firestore:extractDeepLinksRelease UP-TO-DATE
+> Task :cloud_firestore:processReleaseManifest UP-TO-DATE
+> Task :file_picker:extractDeepLinksRelease UP-TO-DATE
+> Task :file_picker:processReleaseManifest UP-TO-DATE
+> Task :firebase_auth:extractDeepLinksRelease UP-TO-DATE
+> Task :firebase_auth:processReleaseManifest UP-TO-DATE
+> Task :firebase_core:extractDeepLinksRelease UP-TO-DATE
+> Task :firebase_core:processReleaseManifest UP-TO-DATE
+> Task :firebase_messaging:extractDeepLinksRelease UP-TO-DATE
+> Task :firebase_messaging:processReleaseManifest UP-TO-DATE
+> Task :flutter_local_notifications:extractDeepLinksRelease UP-TO-DATE
+> Task :flutter_local_notifications:processReleaseManifest UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:extractDeepLinksRelease UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:processReleaseManifest UP-TO-DATE
+> Task :flutter_secure_storage:extractDeepLinksRelease UP-TO-DATE
+> Task :flutter_secure_storage:processReleaseManifest UP-TO-DATE
+> Task :image_picker_android:extractDeepLinksRelease UP-TO-DATE
+> Task :image_picker_android:processReleaseManifest UP-TO-DATE
+> Task :local_auth_android:extractDeepLinksRelease UP-TO-DATE
+> Task :local_auth_android:processReleaseManifest UP-TO-DATE
+> Task :open_filex:extractDeepLinksRelease UP-TO-DATE
+> Task :open_filex:processReleaseManifest UP-TO-DATE
+> Task :path_provider_android:extractDeepLinksRelease UP-TO-DATE
+> Task :path_provider_android:processReleaseManifest UP-TO-DATE
+> Task :permission_handler_android:extractDeepLinksRelease UP-TO-DATE
+> Task :permission_handler_android:processReleaseManifest UP-TO-DATE
+> Task :shared_preferences_android:extractDeepLinksRelease UP-TO-DATE
+> Task :shared_preferences_android:processReleaseManifest UP-TO-DATE
+> Task :webview_flutter_android:extractDeepLinksRelease UP-TO-DATE
+> Task :webview_flutter_android:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:outputReleaseAppLinkSettings UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :firebase_messaging:bundleLibCompileToJarRelease
+> Task :file_picker:bundleLibCompileToJarRelease
+> Task :flutter_secure_storage:bundleLibCompileToJarRelease
+> Task :open_filex:bundleLibCompileToJarRelease UP-TO-DATE
+> Task :cloud_firestore:bundleLibCompileToJarRelease
+> Task :flutter_local_notifications:bundleLibCompileToJarRelease
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :path_provider_android:bundleLibCompileToJarRelease
+> Task :local_auth_android:bundleLibCompileToJarRelease
+> Task :image_picker_android:bundleLibCompileToJarRelease
+> Task :permission_handler_android:bundleLibCompileToJarRelease
+> Task :file_picker:bundleLibRuntimeToJarRelease
+> Task :firebase_auth:bundleLibCompileToJarRelease
+> Task :cloud_firestore:bundleLibRuntimeToJarRelease
+> Task :flutter_plugin_android_lifecycle:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :firebase_core:bundleLibRuntimeToJarRelease
+> Task :firebase_messaging:bundleLibRuntimeToJarRelease
+> Task :flutter_local_notifications:bundleLibRuntimeToJarRelease
+> Task :open_filex:bundleLibRuntimeToJarRelease UP-TO-DATE
+> Task :flutter_secure_storage:bundleLibRuntimeToJarRelease
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :cloud_firestore:processReleaseJavaRes NO-SOURCE
+> Task :file_picker:processReleaseJavaRes NO-SOURCE
+> Task :firebase_auth:processReleaseJavaRes NO-SOURCE
+> Task :image_picker_android:bundleLibRuntimeToJarRelease
+> Task :firebase_core:processReleaseJavaRes NO-SOURCE
+> Task :firebase_messaging:processReleaseJavaRes NO-SOURCE
+> Task :flutter_local_notifications:processReleaseJavaRes NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:processReleaseJavaRes NO-SOURCE
+> Task :flutter_secure_storage:processReleaseJavaRes NO-SOURCE
+> Task :image_picker_android:processReleaseJavaRes NO-SOURCE
+> Task :local_auth_android:processReleaseJavaRes NO-SOURCE
+> Task :path_provider_android:bundleLibRuntimeToJarRelease
+> Task :permission_handler_android:bundleLibRuntimeToJarRelease
+> Task :local_auth_android:bundleLibRuntimeToJarRelease
+> Task :open_filex:processReleaseJavaRes NO-SOURCE
+> Task :path_provider_android:processReleaseJavaRes NO-SOURCE
+> Task :permission_handler_android:processReleaseJavaRes NO-SOURCE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:extractReleaseVersionControlInfo UP-TO-DATE
+> Task :firebase_auth:bundleLibRuntimeToJarRelease
+> Task :cloud_firestore:createFullJarRelease
+> Task :cloud_firestore:extractProguardFiles UP-TO-DATE
+> Task :firebase_core:createFullJarRelease
+> Task :firebase_core:extractProguardFiles UP-TO-DATE
+> Task :app:compressReleaseAssets
+> Task :firebase_core:generateReleaseLintModel
+> Task :firebase_core:prepareLintJarForPublish UP-TO-DATE
+> Task :cloud_firestore:generateReleaseLintModel
+> Task :cloud_firestore:prepareLintJarForPublish UP-TO-DATE
+> Task :file_picker:createFullJarRelease
+> Task :file_picker:extractProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:createFullJarRelease UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:extractProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:generateReleaseLintModel UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:prepareLintJarForPublish UP-TO-DATE
+> Task :file_picker:generateReleaseLintModel
+> Task :file_picker:prepareLintJarForPublish UP-TO-DATE
+> Task :firebase_auth:createFullJarRelease
+> Task :firebase_auth:extractProguardFiles UP-TO-DATE
+> Task :firebase_auth:generateReleaseLintModel
+> Task :firebase_auth:prepareLintJarForPublish UP-TO-DATE
+> Task :firebase_messaging:createFullJarRelease
+> Task :firebase_messaging:extractProguardFiles UP-TO-DATE
+> Task :firebase_messaging:generateReleaseLintModel
+> Task :firebase_messaging:prepareLintJarForPublish UP-TO-DATE
+> Task :flutter_local_notifications:createFullJarRelease
+> Task :flutter_local_notifications:extractProguardFiles UP-TO-DATE
+> Task :flutter_local_notifications:generateReleaseLintModel
+> Task :flutter_local_notifications:prepareLintJarForPublish UP-TO-DATE
+> Task :flutter_secure_storage:createFullJarRelease
+> Task :flutter_secure_storage:extractProguardFiles UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseLintModel
+> Task :flutter_secure_storage:prepareLintJarForPublish UP-TO-DATE
+> Task :image_picker_android:createFullJarRelease
+> Task :image_picker_android:extractProguardFiles UP-TO-DATE
+> Task :image_picker_android:generateReleaseLintModel
+> Task :image_picker_android:prepareLintJarForPublish UP-TO-DATE
+> Task :local_auth_android:createFullJarRelease
+> Task :local_auth_android:extractProguardFiles UP-TO-DATE
+> Task :local_auth_android:generateReleaseLintModel
+> Task :local_auth_android:prepareLintJarForPublish UP-TO-DATE
+> Task :open_filex:createFullJarRelease UP-TO-DATE
+> Task :open_filex:extractProguardFiles UP-TO-DATE
+> Task :open_filex:generateReleaseLintModel UP-TO-DATE
+> Task :open_filex:prepareLintJarForPublish UP-TO-DATE
+> Task :path_provider_android:createFullJarRelease
+> Task :path_provider_android:extractProguardFiles UP-TO-DATE
+> Task :path_provider_android:generateReleaseLintModel
+> Task :path_provider_android:prepareLintJarForPublish UP-TO-DATE
+> Task :permission_handler_android:createFullJarRelease
+> Task :permission_handler_android:extractProguardFiles UP-TO-DATE
+> Task :permission_handler_android:generateReleaseLintModel
+> Task :permission_handler_android:prepareLintJarForPublish UP-TO-DATE
+> Task :shared_preferences_android:extractProguardFiles UP-TO-DATE
+> Task :shared_preferences_android:prepareLintJarForPublish UP-TO-DATE
+> Task :webview_flutter_android:extractProguardFiles UP-TO-DATE
+> Task :webview_flutter_android:prepareLintJarForPublish UP-TO-DATE
+> Task :cloud_firestore:stripReleaseDebugSymbols NO-SOURCE
+> Task :cloud_firestore:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :cloud_firestore:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :cloud_firestore:extractReleaseAnnotations UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseJavaResource UP-TO-DATE
+> Task :cloud_firestore:syncReleaseLibJars
+> Task :cloud_firestore:bundleReleaseLocalLintAar
+> Task :file_picker:stripReleaseDebugSymbols NO-SOURCE
+> Task :file_picker:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :file_picker:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :file_picker:extractReleaseAnnotations UP-TO-DATE
+> Task :file_picker:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :file_picker:mergeReleaseJavaResource UP-TO-DATE
+> Task :file_picker:syncReleaseLibJars
+> Task :file_picker:bundleReleaseLocalLintAar
+> Task :firebase_auth:stripReleaseDebugSymbols NO-SOURCE
+> Task :firebase_auth:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :firebase_auth:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :firebase_auth:extractReleaseAnnotations UP-TO-DATE
+> Task :firebase_auth:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_auth:mergeReleaseJavaResource UP-TO-DATE
+> Task :firebase_auth:syncReleaseLibJars
+> Task :firebase_auth:bundleReleaseLocalLintAar
+> Task :firebase_messaging:stripReleaseDebugSymbols NO-SOURCE
+> Task :firebase_messaging:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :firebase_messaging:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :firebase_messaging:extractReleaseAnnotations UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseJavaResource UP-TO-DATE
+> Task :firebase_messaging:syncReleaseLibJars
+> Task :firebase_messaging:bundleReleaseLocalLintAar
+> Task :firebase_core:stripReleaseDebugSymbols NO-SOURCE
+> Task :firebase_core:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :firebase_core:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :firebase_core:extractReleaseAnnotations UP-TO-DATE
+> Task :firebase_core:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :firebase_core:mergeReleaseJavaResource UP-TO-DATE
+> Task :firebase_core:syncReleaseLibJars
+> Task :firebase_core:bundleReleaseLocalLintAar
+> Task :flutter_local_notifications:stripReleaseDebugSymbols NO-SOURCE
+> Task :flutter_local_notifications:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :flutter_local_notifications:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :flutter_local_notifications:extractReleaseAnnotations UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseJavaResource UP-TO-DATE
+> Task :flutter_local_notifications:syncReleaseLibJars
+> Task :flutter_local_notifications:bundleReleaseLocalLintAar
+> Task :image_picker_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :image_picker_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :image_picker_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :image_picker_android:extractReleaseAnnotations UP-TO-DATE
+> Task :image_picker_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :image_picker_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :image_picker_android:syncReleaseLibJars
+> Task :image_picker_android:bundleReleaseLocalLintAar
+> Task :local_auth_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :local_auth_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :local_auth_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :local_auth_android:extractReleaseAnnotations UP-TO-DATE
+> Task :local_auth_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :local_auth_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :local_auth_android:syncReleaseLibJars
+> Task :local_auth_android:bundleReleaseLocalLintAar
+> Task :flutter_plugin_android_lifecycle:stripReleaseDebugSymbols NO-SOURCE
+> Task :flutter_plugin_android_lifecycle:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:extractReleaseAnnotations UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseJavaResource UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:syncReleaseLibJars UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:bundleReleaseLocalLintAar
+> Task :flutter_secure_storage:stripReleaseDebugSymbols NO-SOURCE
+> Task :flutter_secure_storage:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :flutter_secure_storage:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :flutter_secure_storage:extractReleaseAnnotations UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseJavaResource UP-TO-DATE
+> Task :flutter_secure_storage:syncReleaseLibJars
+> Task :flutter_secure_storage:bundleReleaseLocalLintAar
+> Task :open_filex:stripReleaseDebugSymbols NO-SOURCE
+> Task :open_filex:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :open_filex:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :open_filex:extractReleaseAnnotations UP-TO-DATE
+> Task :open_filex:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :open_filex:mergeReleaseJavaResource UP-TO-DATE
+> Task :open_filex:syncReleaseLibJars UP-TO-DATE
+> Task :open_filex:bundleReleaseLocalLintAar
+> Task :path_provider_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :path_provider_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :path_provider_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :path_provider_android:extractReleaseAnnotations UP-TO-DATE
+> Task :path_provider_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :path_provider_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :path_provider_android:syncReleaseLibJars
+> Task :path_provider_android:bundleReleaseLocalLintAar
+> Task :permission_handler_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :permission_handler_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :permission_handler_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :permission_handler_android:extractReleaseAnnotations UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :permission_handler_android:syncReleaseLibJars
+> Task :permission_handler_android:bundleReleaseLocalLintAar
+> Task :shared_preferences_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :shared_preferences_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :shared_preferences_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :webview_flutter_android:stripReleaseDebugSymbols NO-SOURCE
+> Task :webview_flutter_android:copyReleaseJniLibsProjectAndLocalJars UP-TO-DATE
+> Task :webview_flutter_android:extractDeepLinksForAarRelease UP-TO-DATE
+> Task :firebase_core:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :cloud_firestore:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :file_picker:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :firebase_auth:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :firebase_messaging:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :shared_preferences_android:compileReleaseKotlin
+> Task :webview_flutter_android:compileReleaseKotlin
+> Task :cloud_firestore:lintVitalAnalyzeRelease
+> Task :file_picker:lintVitalAnalyzeRelease
+> Task :firebase_auth:lintVitalAnalyzeRelease
+> Task :firebase_core:lintVitalAnalyzeRelease
+> Task :firebase_messaging:lintVitalAnalyzeRelease
+> Task :flutter_local_notifications:lintVitalAnalyzeRelease
+
+> Task :shared_preferences_android:compileReleaseKotlin
+e: Daemon 
+compilation 
+failed: null
+java.lang.Exception
+	at org.jetbrains.k
+otlin.daemon.common
+.CompileService$Cal
+lResult$Error.get(C
+ompileService.kt:69
+)
+	at org.jetbrains.k
+otlin.daemon.common
+.CompileService$Cal
+lResult$Error.get(C
+ompileService.kt:65
+)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.compileWith
+Daemon(GradleKotlin
+CompilerWork.kt:240
+)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.compileWith
+DaemonOrFallbackImp
+l(GradleKotlinCompi
+lerWork.kt:159)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.run(GradleK
+otlinCompilerWork.k
+t:111)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleCompilerRun
+nerWithWorkers$Grad
+leKotlinCompilerWor
+kAction.execute(Gra
+dleCompilerRunnerWi
+thWorkers.kt:74)
+	at org.gradle.work
+ers.internal.Defaul
+tWorkerServer.execu
+te(DefaultWorkerSer
+ver.java:63)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1$1.create(NoIsolat
+ionWorkerFactory.ja
+va:66)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1$1.create(NoIsolat
+ionWorkerFactory.ja
+va:62)
+	at org.gradle.inte
+rnal.classloader.Cl
+assLoaderUtils.exec
+uteInClassloader(Cl
+assLoaderUtils.java
+:100)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1.lambda$execute$0(
+NoIsolationWorkerFa
+ctory.java:62)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker$1.call(Abs
+tractWorker.java:44
+)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker$1.call(Abs
+tractWorker.java:41
+)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$CallableBuild
+OperationWorker.exe
+cute(DefaultBuildOp
+erationRunner.java:
+210)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$CallableBuild
+OperationWorker.exe
+cute(DefaultBuildOp
+erationRunner.java:
+205)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$2.execute(Def
+aultBuildOperationR
+unner.java:67)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$2.execute(Def
+aultBuildOperationR
+unner.java:60)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.execute(Defau
+ltBuildOperationRun
+ner.java:167)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.execute(Defau
+ltBuildOperationRun
+ner.java:60)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.call(DefaultB
+uildOperationRunner
+.java:54)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker.executeWra
+ppedInBuildOperatio
+n(AbstractWorker.ja
+va:41)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1.execute(NoIsolati
+onWorkerFactory.jav
+a:59)
+	at org.gradle.work
+ers.internal.Defaul
+tWorkerExecutor.lam
+bda$submitWork$0(De
+faultWorkerExecutor
+.java:174)
+	at java.base/java.
+util.concurrent.Fut
+ureTask.run(FutureT
+ask.java:264)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.runExecution(Defa
+ultConditionalExecu
+tionQueue.java:194)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.access$700(Defaul
+tConditionalExecuti
+onQueue.java:127)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r$1.run(DefaultCond
+itionalExecutionQue
+ue.java:169)
+	at org.gradle.inte
+rnal.Factories$1.cr
+eate(Factories.java
+:31)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.wi
+thLocks(DefaultWork
+erLeaseService.java
+:263)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.ru
+nAsWorkerThread(Def
+aultWorkerLeaseServ
+ice.java:127)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.ru
+nAsWorkerThread(Def
+aultWorkerLeaseServ
+ice.java:132)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.runBatch(DefaultC
+onditionalExecution
+Queue.java:164)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.run(DefaultCondit
+ionalExecutionQueue
+.java:133)
+	at java.base/java.
+util.concurrent.Exe
+cutors$RunnableAdap
+ter.call(Executors.
+java:539)
+	at java.base/java.
+util.concurrent.Fut
+ureTask.run(FutureT
+ask.java:264)
+	at org.gradle.inte
+rnal.concurrent.Exe
+cutorPolicy$CatchAn
+dRecordFailures.onE
+xecute(ExecutorPoli
+cy.java:64)
+	at org.gradle.inte
+rnal.concurrent.Abs
+tractManagedExecuto
+r$1.run(AbstractMan
+agedExecutor.java:4
+8)
+	at java.base/java.
+util.concurrent.Thr
+eadPoolExecutor.run
+Worker(ThreadPoolEx
+ecutor.java:1136)
+	at java.base/java.
+util.concurrent.Thr
+eadPoolExecutor$Wor
+ker.run(ThreadPoolE
+xecutor.java:635)
+	at java.base/java.
+lang.Thread.run(Thr
+ead.java:842)
+Caused by: java.lan
+g.AssertionError: j
+ava.lang.Exception:
+ Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\shared_preference
+s_android\kotlin\co
+mpileReleaseKotlin\
+cacheable\caches-jv
+m\jvm\kotlin: class
+-fq-name-to-source.
+tab, source-to-clas
+ses.tab, internal-n
+ame-to-source.tab
+	at org.jetbrains.k
+otlin.com.google.co
+mmon.io.Closer.clos
+e(Closer.java:218)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCachesMan
+ager.close(Incremen
+talCachesManager.kt
+:55)
+	at kotlin.io.Close
+ableKt.closeFinally
+(Closeable.kt:46)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCompilerR
+unner.compileNonInc
+rementally(Incremen
+talCompilerRunner.k
+t:293)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCompilerR
+unner.compile(Incre
+mentalCompilerRunne
+r.kt:128)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImplBase.ex
+ecIncrementalCompil
+er(CompileServiceIm
+pl.kt:684)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImplBase.ac
+cess$execIncrementa
+lCompiler(CompileSe
+rviceImpl.kt:94)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImpl.compil
+e(CompileServiceImp
+l.kt:1810)
+	at java.base/jdk.i
+nternal.reflect.Nat
+iveMethodAccessorIm
+pl.invoke0(Native 
+Method)
+	at java.base/jdk.i
+nternal.reflect.Nat
+iveMethodAccessorIm
+pl.invoke(NativeMet
+hodAccessorImpl.jav
+a:77)
+	at java.base/jdk.i
+nternal.reflect.Del
+egatingMethodAccess
+orImpl.invoke(Deleg
+atingMethodAccessor
+Impl.java:43)
+	at java.base/java.
+lang.reflect.Method
+.invoke(Method.java
+:568)
+	at java.rmi/sun.rm
+i.server.UnicastSer
+verRef.dispatch(Uni
+castServerRef.java:
+360)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt$1.run(Transport.
+java:200)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt$1.run(Transport.
+java:197)
+	at java.base/java.
+security.AccessCont
+roller.doPrivileged
+(AccessController.j
+ava:712)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt.serviceCall(Tran
+sport.java:196)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport.handleMes
+sages(TCPTransport.
+java:587)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.run0(TCPTr
+ansport.java:828)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.lambda$run
+$0(TCPTransport.jav
+a:705)
+	at java.base/java.
+security.AccessCont
+roller.doPrivileged
+(AccessController.j
+ava:399)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.run(TCPTra
+nsport.java:704)
+	... 3 more
+Caused by: java.lan
+g.Exception: Could 
+not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\shared_preference
+s_android\kotlin\co
+mpileReleaseKotlin\
+cacheable\caches-jv
+m\jvm\kotlin: class
+-fq-name-to-source.
+tab, source-to-clas
+ses.tab, internal-n
+ame-to-source.tab
+	at org.jetbrains.k
+otlin.incremental.s
+torage.BasicMapsOwn
+er.forEachMapSafe(B
+asicMapsOwner.kt:95
+)
+	at org.jetbrains.k
+otlin.incremental.s
+torage.BasicMapsOwn
+er.close(BasicMapsO
+wner.kt:53)
+	at org.jetbrains.k
+otlin.com.google.co
+mmon.io.Closer.clos
+e(Closer.java:205)
+	... 24 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:33)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:30)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+47)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.PersistentS
+torageWrapper.close
+(PersistentStorage.
+kt:124)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.getHashCode(Fil
+eToPathConverter.kt
+:50)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.getHashCode(Fil
+eToPathConverter.kt
+:30)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.Li
+nkedCustomHashMap.h
+ashKey(LinkedCustom
+HashMap.java:109)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.Li
+nkedCustomHashMap.r
+emove(LinkedCustomH
+ashMap.java:153)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.SL
+RUMap.remove(SLRUMa
+p.java:89)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.flushAppend
+Cache(PersistentMap
+Impl.java:1007)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+55)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableI
+nMemoryStorage.appl
+yChanges(InMemorySt
+orage.kt:179)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableS
+etBasicMap.close(Ba
+sicMap.kt:157)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:33)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:30)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableC
+ollectionExternaliz
+er.save(LazyStorage
+.kt:151)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableC
+ollectionExternaliz
+er.save(LazyStorage
+.kt:142)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+47)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableI
+nMemoryStorage.appl
+yChanges(InMemorySt
+orage.kt:179)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.PersistentS
+torageWrapper.close
+(PersistentStorage.
+kt:124)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.Exception: 
+Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\shared_preference
+s_android\kotlin\co
+mpileReleaseKotlin\
+cacheable\caches-jv
+m\lookups: 
+id-to-file.tab, 
+file-to-id.tab
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:9
+5)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.close(BasicMaps
+Owner.kt:53)
+		at org.jetbrains.
+kotlin.incremental.
+LookupStorage.close
+(LookupStorage.kt:1
+55)
+		... 25 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LegacyFile
+Externalizer.save(I
+dToFileMap.kt:51)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LegacyFile
+Externalizer.save(I
+dToFileMap.kt:48)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+447)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Persistent
+StorageWrapper.clos
+e(PersistentStorage
+.kt:124)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 27 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:50)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:30)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+hashKey(LinkedCusto
+mHashMap.java:109)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+remove(LinkedCustom
+HashMap.java:153)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.S
+LRUMap.remove(SLRUM
+ap.java:89)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.flushAppen
+dCache(PersistentMa
+pImpl.java:1007)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+455)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Persistent
+StorageWrapper.clos
+e(PersistentStorage
+.kt:124)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 27 more
+Failed to compile with Kotlin daemon: java.lang.Exception
+	at org.jetbrains.kotlin.daemon.common.CompileService$CallResult$Error.get(CompileService.kt:69)
+	at org.jetbrains.kotlin.daemon.common.CompileService$CallResult$Error.get(CompileService.kt:65)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:240)
+	Suppressed: java.l
+ang.Exception: 
+Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\shared_preference
+s_android\kotlin\co
+mpileReleaseKotlin\
+cacheable\caches-jv
+m\inputs: source-to
+-output.tab
+		... 27 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\shared_prefere
+nces_android-2.4.20
+\android\src\main\k
+otlin\io\flutter\pl
+ugins\sharedprefere
+nces\MessagesAsync.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:50)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:30)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+hashKey(LinkedCusto
+mHashMap.java:109)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+remove(LinkedCustom
+HashMap.java:153)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.S
+LRUMap.remove(SLRUM
+ap.java:89)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.flushAppen
+dCache(PersistentMa
+pImpl.java:1007)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+455)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Appendable
+InMemoryStorage.app
+lyChanges(InMemoryS
+torage.kt:179)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Appendable
+SetBasicMap.close(B
+asicMap.kt:157)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 26 more
+
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:74)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.lang.AssertionError: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\shared_preferences_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\jvm\kotlin: class-fq-name-to-source.tab, source-to-classes.tab, internal-name-to-source.tab
+	at org.jetbrains.kotlin.com.google.common.io.Closer.close(Closer.java:218)
+	at org.jetbrains.kotlin.incremental.IncrementalCachesManager.close(IncrementalCachesManager.kt:55)
+	at kotlin.io.CloseableKt.closeFinally(Closeable.kt:46)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileNonIncrementally(IncrementalCompilerRunner.kt:293)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compile(IncrementalCompilerRunner.kt:128)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.execIncrementalCompiler(CompileServiceImpl.kt:684)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.access$execIncrementalCompiler(CompileServiceImpl.kt:94)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1810)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:360)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	... 3 more
+Caused by: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\shared_preferences_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\jvm\kotlin: class-fq-name-to-source.tab, source-to-classes.tab, internal-name-to-source.tab
+	at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:95)
+	at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.close(BasicMapsOwner.kt:53)
+	at org.jetbrains.kotlin.com.google.common.io.Closer.close(Closer.java:205)
+	... 24 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:33)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+		at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+		at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.AppendableSetBasicMap.close(BasicMap.kt:157)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:33)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.incremental.storage.AppendableCollectionExternalizer.save(LazyStorage.kt:151)
+		at org.jetbrains.kotlin.incremental.storage.AppendableCollectionExternalizer.save(LazyStorage.kt:142)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\shared_preferences_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\lookups: id-to-file.tab, file-to-id.tab
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:95)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.close(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.LookupStorage.close(LookupStorage.kt:155)
+		... 25 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.LegacyFileExternalizer.save(IdToFileMap.kt:51)
+			at org.jetbrains.kotlin.incremental.storage.LegacyFileExternalizer.save(IdToFileMap.kt:48)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 27 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+			at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 27 more
+	Suppressed: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\shared_preferences_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\inputs: source-to-output.tab
+		... 27 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\kotlin\io\flutter\plugins\sharedpreferences\MessagesAsync.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+			at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.AppendableSetBasicMap.close(BasicMap.kt:157)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 26 more
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+exception: picked 
+up _JAVA_OPTIONS: -
+Dsun.net.client.def
+aultConnectTimeout=
+600000 -Dsun.net.cl
+ient.defaultReadTim
+eout=600000
+
+> Task :flutter_local_notifications:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :flutter_secure_storage:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :image_picker_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :local_auth_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :open_filex:writeReleaseLintModelMetadata UP-TO-DATE
+e: Daemon 
+compilation 
+failed: null
+java.lang.Exception
+	at org.jetbrains.k
+otlin.daemon.common
+.CompileService$Cal
+lResult$Error.get(C
+ompileService.kt:69
+)
+	at org.jetbrains.k
+otlin.daemon.common
+.CompileService$Cal
+lResult$Error.get(C
+ompileService.kt:65
+)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.compileWith
+Daemon(GradleKotlin
+CompilerWork.kt:240
+)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.compileWith
+DaemonOrFallbackImp
+l(GradleKotlinCompi
+lerWork.kt:159)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleKotlinCompi
+lerWork.run(GradleK
+otlinCompilerWork.k
+t:111)
+	at org.jetbrains.k
+otlin.compilerRunne
+r.GradleCompilerRun
+nerWithWorkers$Grad
+leKotlinCompilerWor
+kAction.execute(Gra
+dleCompilerRunnerWi
+thWorkers.kt:74)
+	at org.gradle.work
+ers.internal.Defaul
+tWorkerServer.execu
+te(DefaultWorkerSer
+ver.java:63)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1$1.create(NoIsolat
+ionWorkerFactory.ja
+va:66)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1$1.create(NoIsolat
+ionWorkerFactory.ja
+va:62)
+	at org.gradle.inte
+rnal.classloader.Cl
+assLoaderUtils.exec
+uteInClassloader(Cl
+assLoaderUtils.java
+:100)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1.lambda$execute$0(
+NoIsolationWorkerFa
+ctory.java:62)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker$1.call(Abs
+tractWorker.java:44
+)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker$1.call(Abs
+tractWorker.java:41
+)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$CallableBuild
+OperationWorker.exe
+cute(DefaultBuildOp
+erationRunner.java:
+210)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$CallableBuild
+OperationWorker.exe
+cute(DefaultBuildOp
+erationRunner.java:
+205)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$2.execute(Def
+aultBuildOperationR
+unner.java:67)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner$2.execute(Def
+aultBuildOperationR
+unner.java:60)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.execute(Defau
+ltBuildOperationRun
+ner.java:167)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.execute(Defau
+ltBuildOperationRun
+ner.java:60)
+	at org.gradle.inte
+rnal.operations.Def
+aultBuildOperationR
+unner.call(DefaultB
+uildOperationRunner
+.java:54)
+	at org.gradle.work
+ers.internal.Abstra
+ctWorker.executeWra
+ppedInBuildOperatio
+n(AbstractWorker.ja
+va:41)
+	at org.gradle.work
+ers.internal.NoIsol
+ationWorkerFactory$
+1.execute(NoIsolati
+onWorkerFactory.jav
+a:59)
+	at org.gradle.work
+ers.internal.Defaul
+tWorkerExecutor.lam
+bda$submitWork$0(De
+faultWorkerExecutor
+.java:174)
+	at java.base/java.
+util.concurrent.Fut
+ureTask.run(FutureT
+ask.java:264)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.runExecution(Defa
+ultConditionalExecu
+tionQueue.java:194)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.access$700(Defaul
+tConditionalExecuti
+onQueue.java:127)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r$1.run(DefaultCond
+itionalExecutionQue
+ue.java:169)
+	at org.gradle.inte
+rnal.Factories$1.cr
+eate(Factories.java
+:31)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.wi
+thLocks(DefaultWork
+erLeaseService.java
+:263)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.ru
+nAsWorkerThread(Def
+aultWorkerLeaseServ
+ice.java:127)
+	at org.gradle.inte
+rnal.work.DefaultWo
+rkerLeaseService.ru
+nAsWorkerThread(Def
+aultWorkerLeaseServ
+ice.java:132)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.runBatch(DefaultC
+onditionalExecution
+Queue.java:164)
+	at org.gradle.inte
+rnal.work.DefaultCo
+nditionalExecutionQ
+ueue$ExecutionRunne
+r.run(DefaultCondit
+ionalExecutionQueue
+.java:133)
+	at java.base/java.
+util.concurrent.Exe
+cutors$RunnableAdap
+ter.call(Executors.
+java:539)
+	at java.base/java.
+util.concurrent.Fut
+ureTask.run(FutureT
+ask.java:264)
+	at org.gradle.inte
+rnal.concurrent.Exe
+cutorPolicy$CatchAn
+dRecordFailures.onE
+xecute(ExecutorPoli
+cy.java:64)
+	at org.gradle.inte
+rnal.concurrent.Abs
+tractManagedExecuto
+r$1.run(AbstractMan
+agedExecutor.java:4
+8)
+	at java.base/java.
+util.concurrent.Thr
+eadPoolExecutor.run
+Worker(ThreadPoolEx
+ecutor.java:1136)
+	at java.base/java.
+util.concurrent.Thr
+eadPoolExecutor$Wor
+ker.run(ThreadPoolE
+xecutor.java:635)
+	at java.base/java.
+lang.Thread.run(Thr
+ead.java:842)
+Caused by: java.lan
+g.AssertionError: j
+ava.lang.Exception:
+ Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\webview_flutter_a
+ndroid\kotlin\compi
+leReleaseKotlin\cac
+heable\caches-jvm\j
+vm\kotlin: class-fq
+-name-to-source.tab
+, source-to-classes
+.tab, internal-name
+-to-source.tab
+	at org.jetbrains.k
+otlin.com.google.co
+mmon.io.Closer.clos
+e(Closer.java:218)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCachesMan
+ager.close(Incremen
+talCachesManager.kt
+:55)
+	at kotlin.io.Close
+ableKt.closeFinally
+(Closeable.kt:46)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCompilerR
+unner.compileNonInc
+rementally(Incremen
+talCompilerRunner.k
+t:293)
+	at org.jetbrains.k
+otlin.incremental.I
+ncrementalCompilerR
+unner.compile(Incre
+mentalCompilerRunne
+r.kt:128)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImplBase.ex
+ecIncrementalCompil
+er(CompileServiceIm
+pl.kt:684)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImplBase.ac
+cess$execIncrementa
+lCompiler(CompileSe
+rviceImpl.kt:94)
+	at org.jetbrains.k
+otlin.daemon.Compil
+eServiceImpl.compil
+e(CompileServiceImp
+l.kt:1810)
+	at java.base/jdk.i
+nternal.reflect.Nat
+iveMethodAccessorIm
+pl.invoke0(Native 
+Method)
+	at java.base/jdk.i
+nternal.reflect.Nat
+iveMethodAccessorIm
+pl.invoke(NativeMet
+hodAccessorImpl.jav
+a:77)
+	at java.base/jdk.i
+nternal.reflect.Del
+egatingMethodAccess
+orImpl.invoke(Deleg
+atingMethodAccessor
+Impl.java:43)
+	at java.base/java.
+lang.reflect.Method
+.invoke(Method.java
+:568)
+	at java.rmi/sun.rm
+i.server.UnicastSer
+verRef.dispatch(Uni
+castServerRef.java:
+360)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt$1.run(Transport.
+java:200)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt$1.run(Transport.
+java:197)
+	at java.base/java.
+security.AccessCont
+roller.doPrivileged
+(AccessController.j
+ava:712)
+	at java.rmi/sun.rm
+i.transport.Transpo
+rt.serviceCall(Tran
+sport.java:196)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport.handleMes
+sages(TCPTransport.
+java:587)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.run0(TCPTr
+ansport.java:828)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.lambda$run
+$0(TCPTransport.jav
+a:705)
+	at java.base/java.
+security.AccessCont
+roller.doPrivileged
+(AccessController.j
+ava:399)
+	at java.rmi/sun.rm
+i.transport.tcp.TCP
+Transport$Connectio
+nHandler.run(TCPTra
+nsport.java:704)
+	... 3 more
+Caused by: java.lan
+g.Exception: Could 
+not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\webview_flutter_a
+ndroid\kotlin\compi
+leReleaseKotlin\cac
+heable\caches-jvm\j
+vm\kotlin: class-fq
+-name-to-source.tab
+, source-to-classes
+.tab, internal-name
+-to-source.tab
+	at org.jetbrains.k
+otlin.incremental.s
+torage.BasicMapsOwn
+er.forEachMapSafe(B
+asicMapsOwner.kt:95
+)
+	at org.jetbrains.k
+otlin.incremental.s
+torage.BasicMapsOwn
+er.close(BasicMapsO
+wner.kt:53)
+	at org.jetbrains.k
+otlin.com.google.co
+mmon.io.Closer.clos
+e(Closer.java:205)
+	... 24 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:33)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:30)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+47)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.PersistentS
+torageWrapper.close
+(PersistentStorage.
+kt:124)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.getHashCode(Fil
+eToPathConverter.kt
+:50)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.getHashCode(Fil
+eToPathConverter.kt
+:30)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.Li
+nkedCustomHashMap.h
+ashKey(LinkedCustom
+HashMap.java:109)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.Li
+nkedCustomHashMap.r
+emove(LinkedCustomH
+ashMap.java:153)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.containers.SL
+RUMap.remove(SLRUMa
+p.java:89)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.flushAppend
+Cache(PersistentMap
+Impl.java:1007)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+55)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableI
+nMemoryStorage.appl
+yChanges(InMemorySt
+orage.kt:179)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableS
+etBasicMap.close(Ba
+sicMap.kt:157)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.IllegalArgument
+Exception: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+		at kotlin.io.File
+sKt__UtilsKt.toRela
+tiveString(Utils.kt
+:117)
+		at kotlin.io.File
+sKt__UtilsKt.relati
+veTo(Utils.kt:128)
+		at org.jetbrains.
+kotlin.incremental.
+storage.Relocatable
+FileToPathConverter
+.toPath(Relocatable
+FileToPathConverter
+.kt:24)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:33)
+		at org.jetbrains.
+kotlin.incremental.
+storage.FileDescrip
+tor.save(FileToPath
+Converter.kt:30)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableC
+ollectionExternaliz
+er.save(LazyStorage
+.kt:151)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableC
+ollectionExternaliz
+er.save(LazyStorage
+.kt:142)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.doPut(Persi
+stentMapImpl.java:4
+47)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+MapImpl.put(Persist
+entMapImpl.java:426
+)
+		at org.jetbrains.
+kotlin.com.intellij
+.util.io.Persistent
+HashMap.put(Persist
+entHashMap.java:106
+)
+		at org.jetbrains.
+kotlin.incremental.
+storage.LazyStorage
+.set(LazyStorage.kt
+:80)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.applyChanges(I
+nMemoryStorage.kt:1
+08)
+		at org.jetbrains.
+kotlin.incremental.
+storage.AppendableI
+nMemoryStorage.appl
+yChanges(InMemorySt
+orage.kt:179)
+		at org.jetbrains.
+kotlin.incremental.
+storage.InMemorySto
+rage.close(InMemory
+Storage.kt:136)
+		at org.jetbrains.
+kotlin.incremental.
+storage.PersistentS
+torageWrapper.close
+(PersistentStorage.
+kt:124)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner$close$1.invoke(
+BasicMapsOwner.kt:5
+3)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:8
+7)
+		... 26 more
+	Suppressed: java.l
+ang.Exception: 
+Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\webview_flutter_a
+ndroid\kotlin\compi
+leReleaseKotlin\cac
+heable\caches-jvm\l
+ookups: 
+id-to-file.tab, 
+file-to-id.tab
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.forEachMapSafe(
+BasicMapsOwner.kt:9
+5)
+		at org.jetbrains.
+kotlin.incremental.
+storage.BasicMapsOw
+ner.close(BasicMaps
+Owner.kt:53)
+		at org.jetbrains.
+kotlin.incremental.
+LookupStorage.close
+(LookupStorage.kt:1
+55)
+		... 25 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LegacyFile
+Externalizer.save(I
+dToFileMap.kt:51)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LegacyFile
+Externalizer.save(I
+dToFileMap.kt:48)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+447)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Persistent
+StorageWrapper.clos
+e(PersistentStorage
+.kt:124)
+
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 27 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:50)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:30)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+hashKey(LinkedCusto
+mHashMap.java:109)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+remove(LinkedCustom
+HashMap.java:153)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.S
+LRUMap.remove(SLRUM
+ap.java:89)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.flushAppen
+dCache(PersistentMa
+pImpl.java:1007)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+455)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Persistent
+StorageWrapper.clos
+e(PersistentStorage
+.kt:124)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 27 more
+	Suppressed: java.l
+ang.Exception: 
+Could not close 
+incremental caches 
+in D:\SafeShell\saf
+e_shell_mobile\buil
+d\webview_flutter_a
+ndroid\kotlin\compi
+leReleaseKotlin\cac
+heable\caches-jvm\i
+nputs: source-to-ou
+tput.tab
+		... 27 more
+		Suppressed: java.
+lang.IllegalArgumen
+tException: this 
+and base files 
+have different 
+roots: C:\Users\Ros
+han\AppData\Local\P
+ub\Cache\hosted\pub
+.dev\webview_flutte
+r_android-4.10.11\a
+ndroid\src\main\jav
+a\io\flutter\plugin
+s\webviewflutter\An
+droidWebkitLibrary.
+g.kt and D:\SafeShe
+ll\safe_shell_mobil
+e\android.
+			at kotlin.io.Fil
+esKt__UtilsKt.toRel
+ativeString(Utils.k
+t:117)
+			at kotlin.io.Fil
+esKt__UtilsKt.relat
+iveTo(Utils.kt:128)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Relocatabl
+eFileToPathConverte
+r.toPath(Relocatabl
+eFileToPathConverte
+r.kt:24)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:50)
+			at org.jetbrains
+.kotlin.incremental
+.storage.FileDescri
+ptor.getHashCode(Fi
+leToPathConverter.k
+t:30)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+hashKey(LinkedCusto
+mHashMap.java:109)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.L
+inkedCustomHashMap.
+remove(LinkedCustom
+HashMap.java:153)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.containers.S
+LRUMap.remove(SLRUM
+ap.java:89)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.flushAppen
+dCache(PersistentMa
+pImpl.java:1007)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.doPut(Pers
+istentMapImpl.java:
+455)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tMapImpl.put(Persis
+tentMapImpl.java:42
+6)
+			at org.jetbrains
+.kotlin.com.intelli
+j.util.io.Persisten
+tHashMap.put(Persis
+tentHashMap.java:10
+6)
+			at org.jetbrains
+.kotlin.incremental
+.storage.LazyStorag
+e.set(LazyStorage.k
+t:80)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.applyChanges(
+InMemoryStorage.kt:
+108)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Appendable
+InMemoryStorage.app
+lyChanges(InMemoryS
+torage.kt:179)
+			at org.jetbrains
+.kotlin.incremental
+.storage.InMemorySt
+orage.close(InMemor
+yStorage.kt:136)
+			at org.jetbrains
+.kotlin.incremental
+.storage.Appendable
+SetBasicMap.close(B
+asicMap.kt:157)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner$close$1.invoke
+(BasicMapsOwner.kt:
+53)
+			at org.jetbrains
+.kotlin.incremental
+.storage.BasicMapsO
+wner.forEachMapSafe
+(BasicMapsOwner.kt:
+87)
+			... 26 more
+
+> Task :webview_flutter_android:compileReleaseKotlin
+Failed to compile with Kotlin daemon: java.lang.Exception
+	at org.jetbrains.kotlin.daemon.common.CompileService$CallResult$Error.get(CompileService.kt:69)
+	at org.jetbrains.kotlin.daemon.common.CompileService$CallResult$Error.get(CompileService.kt:65)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemon(GradleKotlinCompilerWork.kt:240)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.compileWithDaemonOrFallbackImpl(GradleKotlinCompilerWork.kt:159)
+	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:111)
+	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:74)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.lang.AssertionError: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\webview_flutter_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\jvm\kotlin: class-fq-name-to-source.tab, source-to-classes.tab, internal-name-to-source.tab
+	at org.jetbrains.kotlin.com.google.common.io.Closer.close(Closer.java:218)
+	at org.jetbrains.kotlin.incremental.IncrementalCachesManager.close(IncrementalCachesManager.kt:55)
+	at kotlin.io.CloseableKt.closeFinally(Closeable.kt:46)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileNonIncrementally(IncrementalCompilerRunner.kt:293)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compile(IncrementalCompilerRunner.kt:128)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.execIncrementalCompiler(CompileServiceImpl.kt:684)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.access$execIncrementalCompiler(CompileServiceImpl.kt:94)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1810)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:360)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	... 3 more
+Caused by: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\webview_flutter_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\jvm\kotlin: class-fq-name-to-source.tab, source-to-classes.tab, internal-name-to-source.tab
+	at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:95)
+	at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.close(BasicMapsOwner.kt:53)
+	at org.jetbrains.kotlin.com.google.common.io.Closer.close(Closer.java:205)
+	... 24 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:33)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+		at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+		at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.AppendableSetBasicMap.close(BasicMap.kt:157)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+		at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+		at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+		at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:33)
+		at org.jetbrains.kotlin.incremental.storage.FileDescriptor.save(FileToPathConverter.kt:30)
+		at org.jetbrains.kotlin.incremental.storage.AppendableCollectionExternalizer.save(LazyStorage.kt:151)
+		at org.jetbrains.kotlin.incremental.storage.AppendableCollectionExternalizer.save(LazyStorage.kt:142)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+		at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+		at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+		at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+		at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+		at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+		... 26 more
+	Suppressed: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\webview_flutter_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\lookups: id-to-file.tab, file-to-id.tab
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:95)
+		at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.close(BasicMapsOwner.kt:53)
+		at org.jetbrains.kotlin.incremental.LookupStorage.close(LookupStorage.kt:155)
+		... 25 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.LegacyFileExternalizer.save(IdToFileMap.kt:51)
+			at org.jetbrains.kotlin.incremental.storage.LegacyFileExternalizer.save(IdToFileMap.kt:48)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:447)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 27 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+			at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.PersistentStorageWrapper.close(PersistentStorage.kt:124)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 27 more
+	Suppressed: java.lang.Exception: Could not close incremental caches in D:\SafeShell\safe_shell_mobile\build\webview_flutter_android\kotlin\compileReleaseKotlin\cacheable\caches-jvm\inputs: source-to-output.tab
+		... 27 more
+		Suppressed: java.lang.IllegalArgumentException: this and base files have different roots: C:\Users\Roshan\AppData\Local\Pub\Cache\hosted\pub.dev\webview_flutter_android-4.10.11\android\src\main\java\io\flutter\plugins\webviewflutter\AndroidWebkitLibrary.g.kt and D:\SafeShell\safe_shell_mobile\android.
+			at kotlin.io.FilesKt__UtilsKt.toRelativeString(Utils.kt:117)
+			at kotlin.io.FilesKt__UtilsKt.relativeTo(Utils.kt:128)
+			at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:24)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:50)
+			at org.jetbrains.kotlin.incremental.storage.FileDescriptor.getHashCode(FileToPathConverter.kt:30)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.hashKey(LinkedCustomHashMap.java:109)
+			at org.jetbrains.kotlin.com.intellij.util.containers.LinkedCustomHashMap.remove(LinkedCustomHashMap.java:153)
+			at org.jetbrains.kotlin.com.intellij.util.containers.SLRUMap.remove(SLRUMap.java:89)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.flushAppendCache(PersistentMapImpl.java:1007)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.doPut(PersistentMapImpl.java:455)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentMapImpl.put(PersistentMapImpl.java:426)
+			at org.jetbrains.kotlin.com.intellij.util.io.PersistentHashMap.put(PersistentHashMap.java:106)
+			at org.jetbrains.kotlin.incremental.storage.LazyStorage.set(LazyStorage.kt:80)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.applyChanges(InMemoryStorage.kt:108)
+			at org.jetbrains.kotlin.incremental.storage.AppendableInMemoryStorage.applyChanges(InMemoryStorage.kt:179)
+			at org.jetbrains.kotlin.incremental.storage.InMemoryStorage.close(InMemoryStorage.kt:136)
+			at org.jetbrains.kotlin.incremental.storage.AppendableSetBasicMap.close(BasicMap.kt:157)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner$close$1.invoke(BasicMapsOwner.kt:53)
+			at org.jetbrains.kotlin.incremental.storage.BasicMapsOwner.forEachMapSafe(BasicMapsOwner.kt:87)
+			... 26 more
+Using fallback strategy: Compile without Kotlin daemon
+Try ./gradlew --stop if this issue persists
+If it does not look related to your configuration, please file an issue with logs to https://kotl.in/issue
+exception: picked 
+up _JAVA_OPTIONS: -
+Dsun.net.client.def
+aultConnectTimeout=
+600000 -Dsun.net.cl
+ient.defaultReadTim
+eout=600000
+
+> Task :flutter_secure_storage:lintVitalAnalyzeRelease
+> Task :path_provider_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :path_provider_android:lintVitalAnalyzeRelease
+> Task :permission_handler_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :shared_preferences_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :webview_flutter_android:writeReleaseLintModelMetadata UP-TO-DATE
+> Task :cloud_firestore:generateReleaseLintVitalModel
+> Task :file_picker:generateReleaseLintVitalModel
+> Task :firebase_auth:generateReleaseLintVitalModel
+> Task :firebase_core:generateReleaseLintVitalModel
+> Task :local_auth_android:lintVitalAnalyzeRelease
+> Task :firebase_messaging:generateReleaseLintVitalModel
+> Task :flutter_local_notifications:generateReleaseLintVitalModel
+> Task :flutter_plugin_android_lifecycle:generateReleaseLintVitalModel UP-TO-DATE
+> Task :flutter_secure_storage:generateReleaseLintVitalModel
+> Task :flutter_plugin_android_lifecycle:lintVitalAnalyzeRelease
+> Task :image_picker_android:generateReleaseLintVitalModel
+> Task :local_auth_android:generateReleaseLintVitalModel
+> Task :open_filex:generateReleaseLintVitalModel UP-TO-DATE
+> Task :path_provider_android:generateReleaseLintVitalModel
+> Task :permission_handler_android:generateReleaseLintVitalModel
+> Task :permission_handler_android:lintVitalAnalyzeRelease
+> Task :open_filex:lintVitalAnalyzeRelease
+> Task :image_picker_android:lintVitalAnalyzeRelease
+> Task :app:collectReleaseDependencies
+> Task :shared_preferences_android:compileReleaseJavaWithJavac
+> Task :shared_preferences_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :shared_preferences_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :shared_preferences_android:processReleaseJavaRes
+> Task :shared_preferences_android:bundleLibCompileToJarRelease
+> Task :shared_preferences_android:bundleLibRuntimeToJarRelease
+> Task :shared_preferences_android:generateReleaseLintModel
+> Task :shared_preferences_android:createFullJarRelease
+> Task :shared_preferences_android:extractReleaseAnnotations UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :shared_preferences_android:syncReleaseLibJars
+> Task :shared_preferences_android:bundleReleaseLocalLintAar
+> Task :shared_preferences_android:generateReleaseLintVitalModel
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+> Task :cloud_firestore:bundleReleaseAar
+> Task :cloud_firestore:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :cloud_firestore:mergeReleaseResources UP-TO-DATE
+> Task :firebase_core:compileReleaseLibraryResources UP-TO-DATE
+> Task :cloud_firestore:verifyReleaseResources UP-TO-DATE
+> Task :cloud_firestore:assembleRelease
+> Task :file_picker:bundleReleaseAar
+> Task :file_picker:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :file_picker:mergeReleaseResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:compileReleaseLibraryResources UP-TO-DATE
+> Task :file_picker:verifyReleaseResources UP-TO-DATE
+> Task :file_picker:assembleRelease
+> Task :firebase_auth:bundleReleaseAar
+> Task :firebase_auth:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :firebase_auth:mergeReleaseResources UP-TO-DATE
+> Task :firebase_auth:verifyReleaseResources UP-TO-DATE
+> Task :firebase_auth:assembleRelease
+> Task :firebase_core:bundleReleaseAar
+> Task :firebase_core:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :firebase_core:mergeReleaseResources UP-TO-DATE
+> Task :firebase_core:verifyReleaseResources UP-TO-DATE
+> Task :firebase_core:assembleRelease
+> Task :firebase_messaging:bundleReleaseAar
+> Task :firebase_messaging:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :firebase_messaging:mergeReleaseResources UP-TO-DATE
+> Task :firebase_messaging:verifyReleaseResources UP-TO-DATE
+> Task :firebase_messaging:assembleRelease
+> Task :flutter_local_notifications:bundleReleaseAar
+> Task :flutter_local_notifications:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :flutter_local_notifications:mergeReleaseResources UP-TO-DATE
+> Task :flutter_local_notifications:verifyReleaseResources UP-TO-DATE
+> Task :flutter_local_notifications:assembleRelease
+> Task :flutter_plugin_android_lifecycle:bundleReleaseAar
+> Task :flutter_plugin_android_lifecycle:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:mergeReleaseResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:verifyReleaseResources UP-TO-DATE
+> Task :flutter_plugin_android_lifecycle:assembleRelease
+> Task :flutter_secure_storage:bundleReleaseAar
+> Task :flutter_secure_storage:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :flutter_secure_storage:mergeReleaseResources UP-TO-DATE
+> Task :flutter_secure_storage:verifyReleaseResources UP-TO-DATE
+> Task :flutter_secure_storage:assembleRelease
+> Task :image_picker_android:bundleReleaseAar
+> Task :image_picker_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :image_picker_android:mergeReleaseResources UP-TO-DATE
+> Task :image_picker_android:verifyReleaseResources UP-TO-DATE
+> Task :image_picker_android:assembleRelease
+> Task :local_auth_android:bundleReleaseAar
+> Task :local_auth_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :local_auth_android:mergeReleaseResources UP-TO-DATE
+> Task :local_auth_android:verifyReleaseResources UP-TO-DATE
+> Task :local_auth_android:assembleRelease
+> Task :open_filex:bundleReleaseAar
+> Task :open_filex:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :open_filex:mergeReleaseResources UP-TO-DATE
+> Task :shared_preferences_android:lintVitalAnalyzeRelease
+> Task :open_filex:verifyReleaseResources UP-TO-DATE
+> Task :open_filex:assembleRelease
+> Task :path_provider_android:bundleReleaseAar
+> Task :path_provider_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :path_provider_android:mergeReleaseResources UP-TO-DATE
+> Task :path_provider_android:verifyReleaseResources UP-TO-DATE
+> Task :path_provider_android:assembleRelease
+> Task :permission_handler_android:bundleReleaseAar
+> Task :permission_handler_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :permission_handler_android:mergeReleaseResources UP-TO-DATE
+> Task :permission_handler_android:verifyReleaseResources UP-TO-DATE
+> Task :permission_handler_android:assembleRelease
+> Task :shared_preferences_android:bundleReleaseAar
+> Task :shared_preferences_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :shared_preferences_android:mergeReleaseResources UP-TO-DATE
+> Task :shared_preferences_android:verifyReleaseResources UP-TO-DATE
+> Task :webview_flutter_android:compileReleaseJavaWithJavac
+> Task :webview_flutter_android:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :webview_flutter_android:exportReleaseConsumerProguardFiles UP-TO-DATE
+> Task :webview_flutter_android:processReleaseJavaRes
+> Task :webview_flutter_android:generateReleaseLintModel
+> Task :webview_flutter_android:extractReleaseAnnotations UP-TO-DATE
+> Task :webview_flutter_android:bundleLibCompileToJarRelease
+> Task :webview_flutter_android:bundleLibRuntimeToJarRelease
+> Task :webview_flutter_android:mergeReleaseConsumerProguardFiles UP-TO-DATE
+> Task :webview_flutter_android:createFullJarRelease
+> Task :webview_flutter_android:mergeReleaseJavaResource UP-TO-DATE
+> Task :webview_flutter_android:syncReleaseLibJars
+> Task :webview_flutter_android:bundleReleaseLocalLintAar
+> Task :webview_flutter_android:generateReleaseLintVitalModel
+> Task :shared_preferences_android:assembleRelease
+> Task :webview_flutter_android:bundleReleaseAar
+> Task :webview_flutter_android:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :webview_flutter_android:mergeReleaseResources UP-TO-DATE
+> Task :webview_flutter_android:verifyReleaseResources UP-TO-DATE
+> Task :webview_flutter_android:assembleRelease
+> Task :app:compileReleaseKotlin
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseJavaResource UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:expandReleaseArtProfileWildcards
+
+> Task :app:minifyReleaseWithR8
+Supplied proguard configuration does not exist: D:\SafeShell\safe_shell_mobile\android\app\proguard-rules.pro
+
+> Task :webview_flutter_android:lintVitalAnalyzeRelease
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:l8DexDesugarLibRelease UP-TO-DATE
+> Task :app:compileReleaseArtProfile UP-TO-DATE
+> Task :app:convertShrunkResourcesToBinaryRelease UP-TO-DATE
+> Task :app:optimizeReleaseResources UP-TO-DATE
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleRelease
+
+[Incubating] Problems report is available at: file:///D:/SafeShell/safe_shell_mobile/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 10m 54s
+635 actionable tasks: 171 executed, 464 up-to-date

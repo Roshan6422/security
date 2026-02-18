@@ -1,0 +1,235 @@
+﻿import 'package:flutter/material.dart';
+import 'package:safe_shell_mobile/core/theme.dart';
+import '../../services/api_service.dart';
+import '../../widgets/glass_card.dart';
+import 'note_editor_screen.dart';
+
+class NotesListScreen extends StatefulWidget {
+  const NotesListScreen({super.key});
+
+  @override
+  State<NotesListScreen> createState() => _NotesListScreenState();
+}
+
+class _NotesListScreenState extends State<NotesListScreen> {
+  List<dynamic> _items = [];
+  bool _isLoading = true;
+  final Set<String> _selectedIds = {};
+  bool _isSelectionMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchItems();
+  }
+
+  Future<void> _fetchItems() async {
+    try {
+      final response = await ApiService().get('/vault?type=note');
+      if (mounted) {
+        setState(() {
+          _items = (response as List).where((i) => i['isDeleted'] != true).toList();
+          _isLoading = false;
+          _selectedIds.clear();
+          _isSelectionMode = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedIds.add(id);
+        _isSelectionMode = true;
+      }
+    });
+  }
+
+  void _enterSelectionMode(String id) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIds.add(id);
+    });
+  }
+
+  void _selectAll() {
+    if (_selectedIds.length == _items.length) {
+      setState(() => _selectedIds.clear());
+    } else {
+      setState(() => _selectedIds.addAll(_items.map((i) => i['_id'].toString())));
+    }
+  }
+
+  Future<void> _createNote() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NoteEditorScreen()),
+    );
+    if (result == true) _fetchItems();
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIds.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('Delete ${_selectedIds.length} Notes?', style: AppTextStyles.heading),
+        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+       try {
+        for (final id in _selectedIds) {
+          await ApiService().delete('/vault/$id');
+        }
+        await _fetchItems();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  _isSelectionMode = false;
+                  _selectedIds.clear();
+                }),
+              )
+            : const BackButton(),
+        title: _isSelectionMode
+            ? Text('${_selectedIds.length} Selected', style: AppTextStyles.heading)
+            : Text('Notes', style: AppTextStyles.heading),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          if (_isSelectionMode) ...[
+            IconButton(
+              icon: Icon(_selectedIds.length == _items.length ? Icons.deselect : Icons.select_all),
+              onPressed: _selectAll,
+            ),
+             IconButton(
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
+              onPressed: _deleteSelected,
+            ),
+          ] else ...[
+             IconButton(
+              icon: const Icon(Icons.checklist),
+              tooltip: 'Select Items',
+              onPressed: () => setState(() => _isSelectionMode = true),
+            ),
+            IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchItems),
+          ],
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _items.isEmpty
+              ? Center(child: Text('No notes yet', style: AppTextStyles.body.copyWith(color: Colors.white54)))
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.0,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _items.length,
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    final isSelected = _selectedIds.contains(item['_id']);
+
+                    return GestureDetector(
+                        onLongPress: () => _enterSelectionMode(item['_id']),
+                        onTap: () async {
+                           if (_isSelectionMode) {
+                             _toggleSelect(item['_id']);
+                           } else {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => NoteEditorScreen(note: item)),
+                              );
+                              if (result == true) _fetchItems();
+                           }
+                        },
+                        child: Stack(
+                          children: [
+                            GlassCard(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item['name'] ?? 'Untitled', style: AppTextStyles.subheading, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 8),
+                                  Expanded(
+                                    child: Text(
+                                      item['content'] ?? '',
+                                      style: AppTextStyles.caption.copyWith(color: Colors.white70),
+                                      maxLines: 5,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    item['updatedAt'] != null ? 'Edited just now' : 'Just now', 
+                                    style: AppTextStyles.caption.copyWith(fontSize: 10, color: Colors.white30),
+                                  ),
+                                ],
+                              ),
+                            ),
+                             if (_isSelectionMode)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                                  child: Icon(
+                                    isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                                    color: isSelected ? AppColors.primary : Colors.white70,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                             if (isSelected)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(26), // Match GlassCard radius
+                                    border: Border.all(color: AppColors.primary, width: 2),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                    );
+                  },
+                ),
+      floatingActionButton: !_isSelectionMode ? FloatingActionButton(
+        onPressed: _createNote,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.edit),
+      ) : null,
+    );
+  }
+}
+
