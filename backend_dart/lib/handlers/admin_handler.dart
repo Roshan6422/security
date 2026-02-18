@@ -55,7 +55,7 @@ Router adminRouter() {
         ...recentPayments.map((p) => {
           'type': 'payment',
           'title': 'New payment: \$${p.amount}',
-          'date': p.date.toIso8601String()
+          'date': p.date?.toIso8601String()
         }),
       ]..sort((a, b) => b['date'].toString().compareTo(a['date'].toString()));
 

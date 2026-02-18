@@ -1,0 +1,44 @@
+﻿keytool : Picked 
+up _JAVA_OPTIONS: -
+Dsun.net.client.def
+aultConnectTimeout=
+600000 -Dsun.net.cl
+ient.defaultReadTim
+eout=600000
+At line:1 char:1
++ keytool -list -v 
+-keystore "$env:USE
+RPROFILE\.android\d
+ebug.keystore" ...
++ ~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo 
+             : No  
+  tSpecified: (P   
+ icked up _JAVA    
+...dTimeout=60    
+0000:String) [    
+], RemoteExcep    
+tion
+    + FullyQualifi 
+   edErrorId : Na  
+  tiveCommandErr   
+ or
+ 
+Alias name: androiddebugkey
+Creation date: 5 Feb 2026
+Entry type: PrivateKeyEntry
+Certificate chain length: 1
+Certificate[1]:
+Owner: C=US, O=Android, CN=Android Debug
+Issuer: C=US, O=Android, CN=Android Debug
+Serial number: 1
+Valid from: Thu Feb 05 01:03:51 IST 2026 until: Sat Jan 29 01:03:51 IST 2056
+Certificate fingerprints:
+	 SHA1: F9:3E:6C:B0:35:96:9F:5D:D8:30:15:9B:E9:3D:01:10:FD:84:EB:F4
+	 SHA256: 87:8A:37:F7:5B:4F:77:86:AC:08:57:C7:BE:6B:4D:50:F3:97:B7:FF:DE:18:2A:AD:54:9A:F1:F2:8E:9E:29:F2
+Signature algorithm name: SHA256withRSA
+Subject Public Key Algorithm: 2048-bit RSA key
+Version: 1
