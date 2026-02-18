@@ -1,0 +1,27 @@
+# Koyeb configuration for SafeShell Backend (Dart)
+name: safeshell-backend
+services:
+  - name: safeshell-backend
+    type: web
+    # Use Dockerfile build instead of buildpacks
+    docker:
+      dockerfile: backend_dart/Dockerfile
+    # instance_type: nano # Optional, defaults to nano
+    ports:
+      - port: 8000
+        protocol: http
+    env:
+      - key: PORT
+        value: "8000"
+      - key: FIREBASE_SERVICE_ACCOUNT_BASE64
+        type: secret
+      - key: JWT_SECRET
+        type: secret
+      - key: ADMIN_SECRET
+        type: secret
+      - key: PAYHERE_MERCHANT_ID
+        value: "1228956"
+      - key: PAYHERE_MERCHANT_SECRET
+        value: "your_merchant_secret" # User should update this
+      - key: PAYHERE_NOTIFY_URL
+        value: "https://loud-marcelle-safeshell-ddaba28e.koyeb.app/api/payment/notify"

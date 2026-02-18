@@ -1,0 +1,21 @@
+# Dart
+.dart_tool/
+build/
+pubspec.lock
+
+# Data
+data/
+temp_db.json
+
+# Firebase credentials
+serviceAccountKey.json*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+pub_log.txt
+pub_get_log.txt
