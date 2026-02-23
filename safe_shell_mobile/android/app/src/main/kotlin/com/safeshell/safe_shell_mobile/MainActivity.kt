@@ -117,6 +117,14 @@ class MainActivity: FlutterFragmentActivity() {
                     val packageName = call.argument<String>("packageName") ?: ""
                     result.success(isAppHidden(packageName))
                 }
+                "checkOverlayPermission" -> {
+                    result.success(Settings.canDrawOverlays(this))
+                }
+                "requestOverlayPermission" -> {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                    startActivity(intent)
+                    result.success(true)
+                }
 
                 else -> result.notImplemented()
             }
@@ -206,8 +214,8 @@ class MainActivity: FlutterFragmentActivity() {
         val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
         prefs.edit().putStringSet("locked_packages", packages.toSet()).apply()
         
-        // Start the monitoring service if we have packages and permission
-        if (packages.isNotEmpty() && hasUsageStatsPermission()) {
+        // Start the monitoring service if we have packages and required permissions
+        if (packages.isNotEmpty() && hasUsageStatsPermission() && Settings.canDrawOverlays(this)) {
             val serviceIntent = Intent(this, AppLockService::class.java)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
@@ -220,13 +228,31 @@ class MainActivity: FlutterFragmentActivity() {
     private fun hideApp(packageName: String): Boolean {
         return try {
             val pm = packageManager
-            val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
-            val componentName = launchIntent.component ?: return false
-            pm.setComponentEnabledSetting(
-                componentName,
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP
-            )
+            // Find all launcher activities for the package
+            val intent = Intent(Intent.ACTION_MAIN)
+            intent.addCategory(Intent.CATEGORY_LAUNCHER)
+            intent.`package` = packageName
+            val resolveInfos = pm.queryIntentActivities(intent, 0)
+            
+            if (resolveInfos.isEmpty()) {
+                // Try getting the launch intent as a fallback
+                val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
+                val componentName = launchIntent.component ?: return false
+                pm.setComponentEnabledSetting(
+                    componentName,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+            } else {
+                for (info in resolveInfos) {
+                    val componentName = ComponentName(packageName, info.activityInfo.name)
+                    pm.setComponentEnabledSetting(
+                        componentName,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP
+                    )
+                }
+            }
             true
         } catch (e: Exception) {
             false

@@ -17,6 +17,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
   List<SystemApp> _hiddenApps = [];
   bool _isLoading = true;
   bool _hasUsagePermission = false;
+  bool _hasOverlayPermission = false;
 
   @override
   void initState() {
@@ -27,12 +28,14 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
   Future<void> _loadInitData() async {
     await _loadHiddenApps();
     final hasUsage = await _service.checkUsagePermission();
+    final hasOverlay = await _service.checkOverlayPermission();
     setState(() {
       _hasUsagePermission = hasUsage;
+      _hasOverlayPermission = hasOverlay;
     });
     
-    // Sync initial locked list to native if permission is granted
-    if (hasUsage) {
+    // Sync initial locked list to native if permissions are granted
+    if (hasUsage && hasOverlay) {
       _syncLockedApps();
     }
   }
@@ -191,49 +194,103 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
   }
 
   Widget _buildUsagePermissionStatus() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _hasUsagePermission ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _hasUsagePermission ? Colors.blue.withOpacity(0.2) : Colors.orange.withOpacity(0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+      child: Column(
         children: [
-          Icon(
-            _hasUsagePermission ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-            color: _hasUsagePermission ? Colors.blueAccent : Colors.orangeAccent,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            _hasUsagePermission ? 'UNIVERSAL LOCK: ACTIVE' : 'UNIVERSAL LOCK: PERMISSION NEEDED',
-            style: TextStyle(
-              color: _hasUsagePermission ? Colors.blueAccent : Colors.orangeAccent,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+          // Usage Stats Permission
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _hasUsagePermission ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _hasUsagePermission ? Colors.blue.withOpacity(0.2) : Colors.orange.withOpacity(0.2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _hasUsagePermission ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                  color: _hasUsagePermission ? Colors.blueAccent : Colors.orangeAccent,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _hasUsagePermission ? 'UNIVERSAL LOCK: ACTIVE' : 'UNIVERSAL LOCK: PERMISSION NEEDED',
+                  style: TextStyle(
+                    color: _hasUsagePermission ? Colors.blueAccent : Colors.orangeAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (!_hasUsagePermission) ...[
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () async {
+                      await _service.requestUsagePermission();
+                      // Check again after returning
+                      Future.delayed(const Duration(seconds: 2), () async {
+                        final hasUsage = await _service.checkUsagePermission();
+                        if (mounted) setState(() => _hasUsagePermission = hasUsage);
+                      });
+                    },
+                    child: const Text(
+                      'GRANT',
+                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (!_hasUsagePermission) ...[
-            const Spacer(),
-            GestureDetector(
-              onTap: () async {
-                await _service.requestUsagePermission();
-                // Check again after returning
-                Future.delayed(const Duration(seconds: 2), () async {
-                  final hasUsage = await _service.checkUsagePermission();
-                  if (mounted) setState(() => _hasUsagePermission = hasUsage);
-                });
-              },
-              child: const Text(
-                'GRANT',
-                style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
-              ),
+          const SizedBox(height: 8),
+          // Overlay Permission
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _hasOverlayPermission ? Colors.purple.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _hasOverlayPermission ? Colors.purple.withOpacity(0.2) : Colors.orange.withOpacity(0.2)),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _hasOverlayPermission ? Icons.layers_rounded : Icons.layers_outlined,
+                  color: _hasOverlayPermission ? Colors.purpleAccent : Colors.orangeAccent,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _hasOverlayPermission ? 'OVERLAY: ACTIVE' : 'OVERLAY: PERMISSION NEEDED',
+                  style: TextStyle(
+                    color: _hasOverlayPermission ? Colors.purpleAccent : Colors.orangeAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (!_hasOverlayPermission) ...[
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () async {
+                      await _service.requestOverlayPermission();
+                      // Check again after returning
+                      Future.delayed(const Duration(seconds: 2), () async {
+                        final hasOverlay = await _service.checkOverlayPermission();
+                        if (mounted) setState(() => _hasOverlayPermission = hasOverlay);
+                      });
+                    },
+                    child: const Text(
+                      'GRANT',
+                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

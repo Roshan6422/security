@@ -125,4 +125,20 @@ class AppHiderService {
       return false;
     }
   }
+
+  Future<bool> checkOverlayPermission() async {
+    try {
+      return await _channel.invokeMethod('checkOverlayPermission');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> requestOverlayPermission() async {
+    try {
+      await _channel.invokeMethod('requestOverlayPermission', {'packageName': 'com.safeshell.safe_shell_mobile'});
+    } catch (e) {
+      print('Error requesting overlay permission: $e');
+    }
+  }
 }

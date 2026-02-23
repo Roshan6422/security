@@ -1,6 +1,7 @@
 package com.safeshell.safe_shell_mobile
 
 import android.app.*
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -58,20 +59,17 @@ class AppLockService : Service() {
     private fun getForegroundApp(): String? {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
-        // Query window reduced from 10s to 5s for precision
-        val stats = usageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 5, time)
+        val usageEvents = usageStatsManager.queryEvents(time - 1000 * 5, time)
+        val event = UsageEvents.Event()
+        var lastEventPackage: String? = null
 
-        
-        if (stats != null && stats.isNotEmpty()) {
-            var latestStat = stats[0]
-            for (stat in stats) {
-                if (stat.lastTimeUsed > latestStat.lastTimeUsed) {
-                    latestStat = stat
-                }
+        while (usageEvents.hasNextEvent()) {
+            usageEvents.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                lastEventPackage = event.packageName
             }
-            return latestStat.packageName
         }
-        return null
+        return lastEventPackage
     }
 
     private fun isAppLocked(packageName: String): Boolean {
