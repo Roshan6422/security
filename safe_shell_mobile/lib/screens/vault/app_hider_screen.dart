@@ -41,8 +41,10 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
       _isServiceRunning = isServiceRunning;
     });
     
-    // Sync initial locked list to native if permissions are granted
-    if (hasUsage && hasOverlay) {
+    // Sync initial locked list to native if usage permission is granted
+    // We don't wait for overlay here because MIUI reports it inconsistently,
+    // and the service can still monitor even if it can't show the overlay yet.
+    if (hasUsage) {
       _syncLockedApps();
     }
   }
@@ -279,7 +281,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                   GestureDetector(
                     onTap: () async {
                       // Attempt to restart by syncing apps
-                      final locked = _apps.where((a) => a.isLocked).map((a) => a.packageName).toList();
+                      final locked = _hiddenApps.where((a) => a.isLocked).map((a) => a.packageName).toList();
                       await _service.setLockedApps(locked);
                       Future.delayed(const Duration(seconds: 1), () async {
                         final status = await _service.checkServiceStatus();

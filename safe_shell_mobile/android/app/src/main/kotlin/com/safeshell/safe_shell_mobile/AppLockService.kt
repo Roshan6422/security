@@ -18,6 +18,7 @@ class AppLockService : Service() {
 
     companion object {
         private val tempUnlockedPackages = mutableSetOf<String>()
+        private var lockedPackages = mutableSetOf<String>()
         var isServiceRunning = false
             private set
 
@@ -34,10 +35,17 @@ class AppLockService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("AppLockService", "onStartCommand called")
+        
+        // Handle package list updates via Intent
+        intent?.getStringArrayExtra("LOCKED_PACKAGES")?.let {
+            lockedPackages = it.toMutableSet()
+            Log.d("AppLockService", "Received updated locked packages: $lockedPackages")
+        }
+
         if (!isRunning) {
             val notification = createNotification()
+            // ... (rest of the notification logic)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // For Android 14+, we must specify the type in startForeground
                 if (Build.VERSION.SDK_INT >= 34) {
                     startForeground(NOTIFICATION_ID, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
                 } else {
@@ -55,6 +63,7 @@ class AppLockService : Service() {
     }
 
     override fun onDestroy() {
+        Log.d("AppLockService", "Service onDestroy called")
         isRunning = false
         isServiceRunning = false
         super.onDestroy()
@@ -65,12 +74,9 @@ class AppLockService : Service() {
             while (isRunning) {
                 val foregroundApp = getForegroundApp()
                 if (foregroundApp != null) {
-                    // Log even non-locked apps for debugging
-                    Log.d("AppLockService", "Checking foreground app: $foregroundApp")
-                    
                     // Check if it's a locked app and NOT already temp unlocked
                     if (isAppLocked(foregroundApp)) {
-                        Log.w("AppLockService", "TARGET LOCKED APP DETECTED: $foregroundApp")
+                        Log.w("AppLockService", "INTERCEPT TRIGGERED for: $foregroundApp")
                         // Tiny delay to allow system to settle before interception
                         Thread.sleep(100) 
                         interceptApp(foregroundApp)
@@ -104,12 +110,22 @@ class AppLockService : Service() {
         if (packageName == this.packageName) return false
         
         // If it's already temp unlocked for this session
-        if (tempUnlockedPackages.contains(packageName)) return false
+        if (tempUnlockedPackages.contains(packageName)) {
+            Log.d("AppLockService", "$packageName is temp unlocked")
+            return false
+        }
 
-        val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
-        val lockedApps = prefs.getStringSet("locked_packages", setOf()) ?: setOf()
+        val isLocked = lockedPackages.contains(packageName)
+        if (isLocked) {
+            Log.w("AppLockService", "INTERCEPT TRIGGERED for: $packageName")
+        } else {
+            // Optional: periodically log the count to confirm it's not 0
+            if (System.currentTimeMillis() % 10000 < 400 && packageName != "com.miui.home" && packageName != "com.safeshell.safe_shell_mobile") {
+                Log.d("AppLockService", "Service is watching. Current locked count: ${lockedPackages.size}")
+            }
+        }
         
-        return lockedApps.contains(packageName)
+        return isLocked
     }
 
 
@@ -150,10 +166,5 @@ class AppLockService : Service() {
             .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
-    }
-
-    override fun onDestroy() {
-        isRunning = false
-        super.onDestroy()
     }
 }

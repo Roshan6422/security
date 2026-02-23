@@ -11,8 +11,10 @@ gradle_err.txt
 admin/node_modules/
 admin/dist/
 admin/.env*
+admin/serviceAccountKey.json
 
 # Flutter/Dart (Mobile & Backend)
+backend_dart/.env
 **/build/
 **/.dart_tool/
 **/.packages

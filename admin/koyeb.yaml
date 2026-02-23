@@ -24,4 +24,4 @@ services:
       - key: PAYHERE_MERCHANT_SECRET
         value: "your_merchant_secret" # User should update this
       - key: PAYHERE_NOTIFY_URL
-        value: "https://loud-marcelle-safeshell-ddaba28e.koyeb.app/api/payment/notify"
+        value: "https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app/api/payment/notify"

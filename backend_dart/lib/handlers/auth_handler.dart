@@ -19,20 +19,6 @@ String _generateToken(String userId) {
   return jwt.sign(SecretKey(Env.jwtSecret), expiresIn: const Duration(days: 30));
 }
 
-String _generateRecoveryKey() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  String part(int len) =>
-      List.generate(len, (_) => chars[_random.nextInt(chars.length)]).join();
-  return 'SAFE-${part(4)}-${part(4)}';
-}
-
-/// Generates a unique user key in hashtag format: #A7F92K
-String _generateUserKey() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
-  final key = List.generate(6, (_) => chars[_random.nextInt(chars.length)]).join();
-  return '#$key';
-}
-
 String _hashPassword(String password) {
   final salt = _bcrypt.gensalt();
   return _bcrypt.hashpw(password, salt);
@@ -69,8 +55,6 @@ Router authRouter() {
       }
 
       final hashedPassword = _hashPassword(password);
-      final recoveryKey = _generateRecoveryKey();
-      final userKey = _generateUserKey();
       final role = (adminSecret == Env.adminSecret ||
               adminSecret == 'admin-secret-123')
           ? 'admin'
@@ -80,8 +64,6 @@ Router authRouter() {
         'name': name,
         'email': email,
         'password': hashedPassword,
-        'recoveryKey': recoveryKey,
-        'userKey': userKey,
         'role': role,
         'subscriptionStatus': 'free',
         'isSuspended': false,
@@ -93,8 +75,6 @@ Router authRouter() {
             'name': user.name,
             'email': user.email,
             'token': _generateToken(user.id!),
-            'recoveryKey': user.recoveryKey,
-            'userKey': user.userKey,
             'role': user.role,
             'subscriptionStatus': user.subscriptionStatus,
             'subscriptionExpiry': user.subscriptionExpiry?.toIso8601String(),
@@ -195,8 +175,6 @@ Router authRouter() {
 
       if (user == null) {
         // 3. Create new user if not exists
-        final recoveryKey = _generateRecoveryKey();
-        
         // Note: Password is null for Google users, or we generate a random complex one
         // Let's generate a random password so they can't login via standard auth unless they reset it
         final randomPassword = _hashPassword(DateTime.now().toIso8601String() + _random.nextInt(100000).toString());
@@ -205,7 +183,6 @@ Router authRouter() {
           'name': name,
           'email': email,
           'password': randomPassword, // Or handle null password in login logic
-          'recoveryKey': recoveryKey,
           'role': 'user',
           'subscriptionStatus': 'free',
           'isSuspended': false,
@@ -257,8 +234,6 @@ Router authRouter() {
             '_id': user.id,
             'name': user.name,
             'email': user.email,
-            'recoveryKey': user.recoveryKey,
-            'userKey': user.userKey,
             'hasCalculatorPassword': user.calculatorPassword != null && user.calculatorPassword!.isNotEmpty,
             'calculatorPassword': user.calculatorPassword,
             'role': user.role,
@@ -404,114 +379,6 @@ Router authRouter() {
           headers: {'content-type': 'application/json'});
     }
   }));
-
-  // POST /get-recovery-key (Retrieve key if Name & Email match)
-  router.post('/get-recovery-key', (Request request) async {
-    try {
-      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final email = body['email'] as String?;
-      final name = body['name'] as String?;
-
-      if (email == null || name == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Missing email or name'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      final user = await userRepo.findOne({'email': email});
-      if (user == null || user.name != name) {
-        return Response(404,
-            body: jsonEncode({'message': 'User not found or name mismatch'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      return Response.ok(
-          jsonEncode({'recoveryKey': user.recoveryKey}),
-          headers: {'content-type': 'application/json'});
-    } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
-    }
-  });
-
-  // POST /verify-recovery-key (Checks Name & Recovery Key)
-  router.post('/verify-recovery-key', (Request request) async {
-    try {
-      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final email = body['email'] as String?;
-      final name = body['name'] as String?;
-      final recoveryKey = body['recoveryKey'] as String?;
-
-      if (email == null || name == null || recoveryKey == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Missing email, username, or recovery key'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      final user = await userRepo.findOne({'email': email});
-      if (user == null) {
-        return Response(404,
-            body: jsonEncode({'message': 'User not found'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      if (user.name != name || user.recoveryKey != recoveryKey) {
-        return Response(400,
-            body: jsonEncode({'message': 'Invalid username or recovery key'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      return Response.ok(
-          jsonEncode({'message': 'Verification successful'}),
-          headers: {'content-type': 'application/json'});
-    } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
-    }
-  });
-
-  // POST /reset-password-via-key (Checks Name & Recovery Key)
-  router.post('/reset-password-via-key', (Request request) async {
-    try {
-      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final email = body['email'] as String?;
-      final name = body['name'] as String?;
-      final recoveryKey = body['recoveryKey'] as String?;
-      final newPassword = body['newPassword'] as String?;
-
-      if (email == null || name == null || recoveryKey == null || newPassword == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Missing required fields'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      final user = await userRepo.findOne({'email': email});
-      if (user == null) {
-        return Response(404,
-            body: jsonEncode({'message': 'User not found'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      if (user.name != name || user.recoveryKey != recoveryKey) {
-        return Response(401,
-            body: jsonEncode({'message': 'Unauthorized: Invalid credentials'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      user.password = _hashPassword(newPassword);
-      await user.save();
-
-      return Response.ok(
-          jsonEncode({'message': 'Password reset success'}),
-          headers: {'content-type': 'application/json'});
-    } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
-    }
-  });
 
   // POST /make-admin
   router.post('/make-admin', (Request request) async {

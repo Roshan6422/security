@@ -16,6 +16,7 @@ import 'package:backend_dart/handlers/admin_handler.dart';
 import 'package:backend_dart/handlers/payment_handler.dart';
 import 'package:backend_dart/handlers/support_handler.dart';
 import 'package:backend_dart/handlers/device_handler.dart';
+import 'package:backend_dart/handlers/audit_handler.dart';
 
 Future<void> main() async {
   print('🚀 Backend starting up...');
@@ -75,6 +76,7 @@ Future<void> main() async {
   app.mount('/api/payment', paymentHandler());
   app.mount('/api/support', supportHandler());
   app.mount('/api/device', deviceHandler());
+  app.mount('/api/audit', auditHandler());
 
   // Static file serving for uploads
   final staticHandler = createStaticHandler(

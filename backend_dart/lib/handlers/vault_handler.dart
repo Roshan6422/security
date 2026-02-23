@@ -29,19 +29,70 @@ String _detectType(String filename) {
 
   if (imageExts.contains(ext)) return 'photo';
   if (videoExts.contains(ext)) return 'video';
-  if (audioExts.contains(ext)) return 'audio'; // New type for audio
+  if (audioExts.contains(ext)) return 'audio';
   if (docExts.contains(ext)) return 'document';
   if (zipExts.contains(ext)) return 'zip';
-  return 'document'; // Default to document for unknown types
+  return 'document';
 }
 
-/// Builds the `/api/vault` router.
-///
-/// Auth middleware is applied at the mount level via [vaultHandler].
 Router vaultRouter() {
   final router = Router();
 
-  // GET / - List items (handles filters)
+  // GET /stats
+  router.get('/stats', (Request request) async {
+    try {
+      final user = getAuthUser(request);
+      final items = await vaultItemRepo.find({'user': user.id!, 'isDeleted': false});
+
+      int photos = 0, videos = 0, docs = 0, zips = 0, audios = 0;
+      double totalSize = 0;
+
+      for (final item in items) {
+        if (item.type == 'photo') photos++;
+        else if (item.type == 'video') videos++;
+        else if (item.type == 'document') docs++;
+        else if (item.type == 'zip') zips++;
+        else if (item.type == 'audio') audios++;
+
+        final parts = item.size.split(' ');
+        if (parts.length == 2) {
+          final val = double.tryParse(parts[0]) ?? 0;
+          final unit = parts[1];
+          if (unit == 'KB') totalSize += val * 1024;
+          else if (unit == 'MB') totalSize += val * 1024 * 1024;
+          else if (unit == 'GB') totalSize += val * 1024 * 1024 * 1024;
+          else totalSize += val;
+        }
+      }
+
+      return Response.ok(jsonEncode({
+        'count': items.length,
+        'photoCount': photos,
+        'videoCount': videos,
+        'docCount': docs,
+        'zipCount': zips,
+        'audioCount': audios,
+        'totalSize': totalSize.toInt(),
+        'sizeFormatted': _formatSize(totalSize.toInt()),
+      }), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error: $e'}));
+    }
+  });
+
+  // GET /recent
+  router.get('/recent', (Request request) async {
+    try {
+      final user = getAuthUser(request);
+      final items = await vaultItemRepo.find({'user': user.id!, 'isDeleted': false}, {'createdAt': 'desc'});
+      final result = items.take(10).map((i) => i.toJson()).toList();
+      return Response.ok(jsonEncode(result), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
+    }
+  });
+
+  // GET /
   router.get('/', (Request request) async {
     try {
       final user = getAuthUser(request);
@@ -49,52 +100,13 @@ Router vaultRouter() {
       final type = query['type'];
       final isDeleted = query['isDeleted'] == 'true';
 
-      final filter = {
-        'user': user.id!,
-        'isDeleted': isDeleted,
-      };
-
-      if (type != null && type.isNotEmpty) {
-        filter['type'] = type;
-      }
+      final filter = {'user': user.id!, 'isDeleted': isDeleted};
+      if (type != null && type.isNotEmpty) filter['type'] = type;
 
       final items = await vaultItemRepo.find(filter);
-
-      return Response.ok(
-          jsonEncode(items.map((i) => i.toJson()).toList()),
-          headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode(items.map((i) => i.toJson()).toList()), headers: {'content-type': 'application/json'});
     } catch (e) {
-      print('Get vault items error: $e');
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
-    }
-  });
-
-  // POST / - Create text note / entry (non-file)
-  router.post('/', (Request request) async {
-    try {
-      final user = getAuthUser(request);
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-
-      final item = await vaultItemRepo.create({
-        'user': user.id!,
-        'name': body['name'] ?? 'Untitled',
-        'type': body['type'] ?? 'note',
-        'size': body['size'] ?? '0 B',
-        'content': body['content'],
-        'url': body['url'],
-        'isDeleted': false,
-      });
-
-      return Response(201,
-          body: jsonEncode(item.toJson()),
-          headers: {'content-type': 'application/json'});
-    } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
     }
   });
 
@@ -103,19 +115,14 @@ Router vaultRouter() {
     try {
       final user = getAuthUser(request);
       final contentType = request.headers['content-type'];
-
       if (contentType == null || !contentType.contains('multipart/form-data')) {
-        return Response(400,
-            body: jsonEncode({'message': 'Expected multipart/form-data'}),
-            headers: {'content-type': 'application/json'});
+        return Response.badRequest(body: jsonEncode({'message': 'Expected multipart/form-data'}));
       }
 
       final mediaType = MediaType.parse(contentType);
       final boundary = mediaType.parameters['boundary'];
       if (boundary == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Missing boundary in content-type'}),
-            headers: {'content-type': 'application/json'});
+        return Response.badRequest(body: jsonEncode({'message': 'Missing boundary'}));
       }
 
       final transformer = MimeMultipartTransformer(boundary);
@@ -130,43 +137,31 @@ Router vaultRouter() {
           final header = HeaderValue.parse(contentDisposition);
           filename = header.parameters['filename'];
           fileBytes = await part.expand((b) => b).toList();
-          break; // Stop at first file for now as per current mobile logic
+          break;
         }
       }
 
       if (filename == null || fileBytes == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'No file found in multipart request'}),
-            headers: {'content-type': 'application/json'});
+        return Response.badRequest(body: jsonEncode({'message': 'No file found'}));
       }
 
-      // Save file
-      final uploadsDir = Directory(Env.uploadsPath);
-      if (!uploadsDir.existsSync()) {
-        uploadsDir.createSync(recursive: true);
-      }
-      
       final storedName = '${_uuid.v4()}_$filename';
       final filePath = '${Env.uploadsPath}/$storedName';
       await File(filePath).writeAsBytes(fileBytes);
 
+      String type = request.url.queryParameters['type'] ?? _detectType(filename);
       final item = await vaultItemRepo.create({
         'user': user.id!,
         'name': filename,
-        'type': _detectType(filename),
+        'type': type,
         'size': _formatSize(fileBytes.length),
         'url': '/uploads/$storedName',
         'isDeleted': false,
       });
 
-      return Response(201,
-          body: jsonEncode(item.toJson()),
-          headers: {'content-type': 'application/json'});
+      return Response(201, body: jsonEncode(item.toJson()), headers: {'content-type': 'application/json'});
     } catch (e) {
-      print('Upload error: $e');
-      return Response(500,
-          body: jsonEncode({'message': 'Server error: $e'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error: $e'}));
     }
   });
 
@@ -174,18 +169,10 @@ Router vaultRouter() {
   router.delete('/empty-bin', (Request request) async {
     try {
       final user = getAuthUser(request);
-      await vaultItemRepo.deleteMany({
-        'user': user.id!,
-        'isDeleted': true,
-      });
-
-      return Response.ok(
-          jsonEncode({'message': 'Recycle bin emptied'}),
-          headers: {'content-type': 'application/json'});
+      await vaultItemRepo.deleteMany({'user': user.id!, 'isDeleted': true});
+      return Response.ok(jsonEncode({'message': 'Recycle bin emptied'}), headers: {'content-type': 'application/json'});
     } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
     }
   });
 
@@ -195,100 +182,67 @@ Router vaultRouter() {
       final user = getAuthUser(request);
       final item = await vaultItemRepo.findById(id);
       if (item == null || item.user != user.id) {
-        return Response(404,
-            body: jsonEncode({'message': 'Item not found'}),
-            headers: {'content-type': 'application/json'});
+        return Response.notFound(jsonEncode({'message': 'Item not found'}));
       }
 
-      final body =
-          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      if (body['name'] != null) item.name = body['name'] as String;
-      if (body['content'] != null) item.content = body['content'] as String;
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      if (body['name'] != null) item.name = body['name'];
+      if (body['content'] != null) item.content = body['content'];
       await item.save();
 
-      return Response.ok(jsonEncode(item.toJson()),
-          headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode(item.toJson()), headers: {'content-type': 'application/json'});
     } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
     }
   });
 
-  // DELETE /<id> (Handles both soft and permanent delete)
-  router.delete('/<id>',
-      (Request request, String id) async {
+  // DELETE /<id>
+  router.delete('/<id>', (Request request, String id) async {
     try {
       final user = getAuthUser(request);
       final item = await vaultItemRepo.findById(id);
       if (item == null || item.user != user.id) {
-        return Response(404,
-            body: jsonEncode({'message': 'Item not found'}),
-            headers: {'content-type': 'application/json'});
+        return Response.notFound(jsonEncode({'message': 'Item not found'}));
       }
 
-      final query = request.url.queryParameters;
-      final permanent = query['permanent'] == 'true';
-
+      final permanent = request.url.queryParameters['permanent'] == 'true';
       if (permanent) {
-         // Delete file from disk
         if (item.url != null) {
-          final filePath = '${Env.uploadsPath}/${item.url!.replaceFirst('/uploads/', '')}';
-          try {
-            await File(filePath).delete();
-          } catch (_) {
-            // File may not exist
-          }
+          try { await File('${Env.uploadsPath}/${item.url!.replaceFirst('/uploads/', '')}').delete(); } catch (_) {}
         }
         await item.deleteOne();
-        return Response.ok(
-            jsonEncode({'message': 'Item permanently deleted'}),
-            headers: {'content-type': 'application/json'});
-
+        return Response.ok(jsonEncode({'message': 'Item permanently deleted'}), headers: {'content-type': 'application/json'});
       } else {
         item.isDeleted = true;
         item.deletedAt = DateTime.now();
         await item.save();
-        return Response.ok(
-            jsonEncode({'message': 'Item moved to recycle bin'}),
-            headers: {'content-type': 'application/json'});
+        return Response.ok(jsonEncode({'message': 'Item moved to recycle bin'}), headers: {'content-type': 'application/json'});
       }
     } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
     }
   });
 
   // POST /<id>/restore
-  router.post('/<id>/restore',
-      (Request request, String id) async {
+  router.post('/<id>/restore', (Request request, String id) async {
     try {
       final user = getAuthUser(request);
       final item = await vaultItemRepo.findById(id);
       if (item == null || item.user != user.id) {
-        return Response(404,
-            body: jsonEncode({'message': 'Item not found'}),
-            headers: {'content-type': 'application/json'});
+        return Response.notFound(jsonEncode({'message': 'Item not found'}));
       }
-
       item.isDeleted = false;
       item.deletedAt = null;
       await item.save();
-
-      return Response.ok(jsonEncode({'message': 'Item restored'}),
-          headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode({'message': 'Item restored'}), headers: {'content-type': 'application/json'});
     } catch (e) {
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
     }
   });
 
   return router;
 }
 
-/// Creates a [Handler] for vault routes with auth middleware applied.
 Handler vaultHandler() {
   return const Pipeline()
       .addMiddleware(authMiddleware())

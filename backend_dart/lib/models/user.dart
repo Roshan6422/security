@@ -8,13 +8,11 @@ class User extends FirestoreModel {
   String role;
   String subscriptionStatus;
   DateTime? subscriptionExpiry;
-  String? recoveryKey;
   String? calculatorPassword;
   bool isSuspended;
   String? deviceToken;
   String? resetOtp;
   DateTime? resetOtpExpire;
-  String? userKey;
 
   User({
     this.email = '',
@@ -23,13 +21,11 @@ class User extends FirestoreModel {
     this.role = 'user',
     this.subscriptionStatus = 'free',
     this.subscriptionExpiry,
-    this.recoveryKey,
     this.calculatorPassword,
     this.isSuspended = false,
     this.deviceToken,
     this.resetOtp,
     this.resetOtpExpire,
-    this.userKey,
   });
 
   @override
@@ -43,11 +39,9 @@ class User extends FirestoreModel {
         'role': role,
         'subscriptionStatus': subscriptionStatus,
         'subscriptionExpiry': subscriptionExpiry?.toIso8601String(),
-        'recoveryKey': recoveryKey,
         'calculatorPassword': calculatorPassword,
         'isSuspended': isSuspended,
         'deviceToken': deviceToken,
-        'userKey': userKey,
       };
 
   /// Creates a [User] from a Firestore document map.
@@ -59,11 +53,9 @@ class User extends FirestoreModel {
       role: map['role'] as String? ?? 'user',
       subscriptionStatus: map['subscriptionStatus'] as String? ?? 'free',
       subscriptionExpiry: FirestoreModel.parseDate(map['subscriptionExpiry']),
-      recoveryKey: map['recoveryKey'] as String?,
       calculatorPassword: map['calculatorPassword'] as String?,
       isSuspended: map['isSuspended'] as bool? ?? false,
       deviceToken: map['deviceToken'] as String?,
-      userKey: map['userKey'] as String?,
     );
     user.populateFromMap(map);
     return user;

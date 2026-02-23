@@ -232,56 +232,71 @@ class MainActivity: FlutterFragmentActivity() {
 
     private fun setLockedApps(packages: List<String>) {
         val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
+        Log.d("SafeShell", "Syncing locked apps to Native: $packages")
         prefs.edit().putStringSet("locked_packages", packages.toSet()).apply()
         
-        // Start the monitoring service if we have packages and usage permission.
-        // On MIUI, the overlay permission might be reported as false even if 'Display pop-up' is on, 
-        // so we start it anyway to allow the service to run and log.
-        if (packages.isNotEmpty() && hasUsageStatsPermission()) {
-            val serviceIntent = Intent(this, AppLockService::class.java)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
+        // Start/Update the monitoring service
+        // Even if packages is empty, we start the service so it can clear its internal list
+        val serviceIntent = Intent(this, AppLockService::class.java)
+        serviceIntent.putExtra("LOCKED_PACKAGES", packages.toTypedArray())
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
         }
     }
 
     private fun hideApp(packageName: String): Boolean {
+        Log.d("SafeShell", "hideApp called for $packageName")
         return try {
             val pm = packageManager
-            // Find all launcher activities for the package
+            val componentNames = mutableListOf<ComponentName>()
+
+            // Method 1: Standard Launcher Query
             val intent = Intent(Intent.ACTION_MAIN)
             intent.addCategory(Intent.CATEGORY_LAUNCHER)
             intent.`package` = packageName
             val resolveInfos = pm.queryIntentActivities(intent, 0)
-            
-            if (resolveInfos.isEmpty()) {
-                // Try getting the launch intent as a fallback
-                val launchIntent = pm.getLaunchIntentForPackage(packageName) ?: return false
-                val componentName = launchIntent.component ?: return false
+            for (info in resolveInfos) {
+                componentNames.add(ComponentName(packageName, info.activityInfo.name))
+            }
+
+            // Method 2: Fallback - Scan all activities in package
+            if (componentNames.isEmpty()) {
+                Log.d("SafeShell", "Fallback: Scanning all activities for $packageName")
+                val pkgInfo = pm.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES)
+                pkgInfo.activities?.forEach { activity ->
+                    // Typically you only want to hide the 'Main' activity, but we'll try all if launcher is empty
+                    componentNames.add(ComponentName(packageName, activity.name))
+                }
+            }
+
+            if (componentNames.isEmpty()) {
+                Log.e("SafeShell", "CRITICAL: No components found to hide for $packageName")
+                return false
+            }
+
+            for (componentName in componentNames) {
+                Log.d("SafeShell", "Hiding component: $componentName")
                 pm.setComponentEnabledSetting(
                     componentName,
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                    PackageManager.DONT_KILL_APP
+                    0 // Force sync
                 )
-            } else {
-                for (info in resolveInfos) {
-                    val componentName = ComponentName(packageName, info.activityInfo.name)
-                    pm.setComponentEnabledSetting(
-                        componentName,
-                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                        0 // Force launcher refresh by killing app component process
-                    )
-                }
             }
             true
+        } catch (e: SecurityException) {
+            Log.e("SafeShell", "MIUI SECURITY BLOCK: Failed to hide $packageName. Error: ${e.message}")
+            false
         } catch (e: Exception) {
+            Log.e("SafeShell", "Failed to hide $packageName: ${e.message}")
             false
         }
     }
 
     private fun unhideApp(packageName: String): Boolean {
+        Log.d("SafeShell", "unhideApp called for $packageName")
         return try {
             val pm = packageManager
             // We need to get the component from the package info since launch intent won't work when disabled
@@ -291,6 +306,7 @@ class MainActivity: FlutterFragmentActivity() {
                 val compName = ComponentName(packageName, activity.name)
                 val state = pm.getComponentEnabledSetting(compName)
                 if (state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
+                    Log.d("SafeShell", "Unhiding component: $compName")
                     pm.setComponentEnabledSetting(
                         compName,
                         PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
@@ -300,6 +316,8 @@ class MainActivity: FlutterFragmentActivity() {
             }
             true
         } catch (e: Exception) {
+            Log.e("SafeShell", "Failed to unhide $packageName: ${e.message}")
+            e.printStackTrace()
             false
         }
     }

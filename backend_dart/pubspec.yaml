@@ -8,13 +8,13 @@ environment:
 
 dependencies:
   shelf: any
-  shelf_router: any
-  shelf_static: any
+  shelf_router: ^1.1.4
+  shelf_static: ^1.1.2
   dart_firebase_admin: any
   dart_jsonwebtoken: any
   dbcrypt: any
   dotenv: any
-  crypto: any
+  crypto: ^3.0.3
   mime: any
   args: any
   http_parser: any
