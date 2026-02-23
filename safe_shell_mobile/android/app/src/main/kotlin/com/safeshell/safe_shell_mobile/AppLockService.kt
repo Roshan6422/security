@@ -44,14 +44,16 @@ class AppLockService : Service() {
             while (isRunning) {
                 val foregroundApp = getForegroundApp()
                 if (foregroundApp != null) {
-                    // If focusing on a different app, we might want to relock others?
-                    // For now, let's keep it simple: if foreground is NOT the locked package, nothing happens.
-                    // If it IS a locked package and NOT temp-unlocked, intercept.
+                    // Check if it's a locked app and NOT already temp unlocked
                     if (isAppLocked(foregroundApp)) {
+                        // Tiny delay to allow system to settle before interception
+                        Thread.sleep(100) 
                         interceptApp(foregroundApp)
+                        // Sleep a bit more after interception to prevent flickering 
+                        Thread.sleep(500)
                     }
                 }
-                Thread.sleep(400) // Polling interval (reduced for faster response)
+                Thread.sleep(400) // Polling interval
             }
         }.start()
     }

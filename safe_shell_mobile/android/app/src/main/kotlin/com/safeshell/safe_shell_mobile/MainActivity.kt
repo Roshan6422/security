@@ -121,9 +121,17 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(Settings.canDrawOverlays(this))
                 }
                 "requestOverlayPermission" -> {
-                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                    startActivity(intent)
-                    result.success(true)
+                    val packageName = call.argument<String>("packageName") ?: this.packageName
+                    try {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        // Fallback if the package URI intent fails
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                        startActivity(intent)
+                        result.success(true)
+                    }
                 }
 
                 else -> result.notImplemented()
