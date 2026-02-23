@@ -134,6 +134,22 @@ class AppHiderService {
     }
   }
 
+  Future<bool> checkServiceStatus() async {
+    try {
+      return await _channel.invokeMethod('checkServiceStatus');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> isMiui() async {
+    try {
+      return await _channel.invokeMethod('isMiui');
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> requestOverlayPermission() async {
     try {
       await _channel.invokeMethod('requestOverlayPermission', {'packageName': 'com.safeshell.safe_shell_mobile'});

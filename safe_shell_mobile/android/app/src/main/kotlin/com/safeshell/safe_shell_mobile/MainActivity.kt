@@ -18,6 +18,10 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
+import android.util.Log
+import java.util.Properties
+import java.io.FileInputStream
+import java.io.File
 
 class MainActivity: FlutterFragmentActivity() {
     private val CHANNEL = "com.safeshell.safe_shell_mobile/stealth"
@@ -118,7 +122,15 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(isAppHidden(packageName))
                 }
                 "checkOverlayPermission" -> {
-                    result.success(Settings.canDrawOverlays(this))
+                    val canDraw = Settings.canDrawOverlays(this)
+                    Log.d("SafeShell", "checkOverlayPermission: $canDraw")
+                    result.success(canDraw)
+                }
+                "checkServiceStatus" -> {
+                    result.success(AppLockService.isServiceRunning)
+                }
+                "isMiui" -> {
+                    result.success(isMiui())
                 }
                 "requestOverlayPermission" -> {
                     val packageName = call.argument<String>("packageName") ?: this.packageName
@@ -222,8 +234,10 @@ class MainActivity: FlutterFragmentActivity() {
         val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
         prefs.edit().putStringSet("locked_packages", packages.toSet()).apply()
         
-        // Start the monitoring service if we have packages and required permissions
-        if (packages.isNotEmpty() && hasUsageStatsPermission() && Settings.canDrawOverlays(this)) {
+        // Start the monitoring service if we have packages and usage permission.
+        // On MIUI, the overlay permission might be reported as false even if 'Display pop-up' is on, 
+        // so we start it anyway to allow the service to run and log.
+        if (packages.isNotEmpty() && hasUsageStatsPermission()) {
             val serviceIntent = Intent(this, AppLockService::class.java)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
@@ -257,7 +271,7 @@ class MainActivity: FlutterFragmentActivity() {
                     pm.setComponentEnabledSetting(
                         componentName,
                         PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                        PackageManager.DONT_KILL_APP
+                        0 // Force launcher refresh by killing app component process
                     )
                 }
             }
@@ -280,7 +294,7 @@ class MainActivity: FlutterFragmentActivity() {
                     pm.setComponentEnabledSetting(
                         compName,
                         PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                        PackageManager.DONT_KILL_APP
+                        0 // Force launcher refresh
                     )
                 }
             }
@@ -298,6 +312,17 @@ class MainActivity: FlutterFragmentActivity() {
             launchIntent == null
         } catch (e: Exception) {
             false
+        }
+    }
+
+    private fun isMiui(): Boolean {
+        return try {
+            val properties = java.util.Properties()
+            properties.load(java.io.FileInputStream(java.io.File("/system/build.prop")))
+            properties.getProperty("ro.miui.ui.version.name", null) != null
+        } catch (e: Exception) {
+            // Fallback: check if manufacturer is Xiaomi
+            android.os.Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
         }
     }
 }

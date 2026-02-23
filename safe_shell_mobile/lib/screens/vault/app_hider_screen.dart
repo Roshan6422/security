@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme.dart';
 import '../../services/app_hider_service.dart';
 import '../../widgets/premium_snackbar.dart';
@@ -18,6 +19,8 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
   bool _isLoading = true;
   bool _hasUsagePermission = false;
   bool _hasOverlayPermission = false;
+  bool _isMiui = false;
+  bool _isServiceRunning = false;
 
   @override
   void initState() {
@@ -29,9 +32,13 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
     await _loadHiddenApps();
     final hasUsage = await _service.checkUsagePermission();
     final hasOverlay = await _service.checkOverlayPermission();
+    final isMiui = await _service.isMiui();
+    final isServiceRunning = await _service.checkServiceStatus();
     setState(() {
       _hasUsagePermission = hasUsage;
       _hasOverlayPermission = hasOverlay;
+      _isMiui = isMiui;
+      _isServiceRunning = isServiceRunning;
     });
     
     // Sync initial locked list to native if permissions are granted
@@ -229,16 +236,57 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                   GestureDetector(
                     onTap: () async {
                       await _service.requestUsagePermission();
-                      // Check again after returning
                       Future.delayed(const Duration(seconds: 2), () async {
                         final hasUsage = await _service.checkUsagePermission();
                         if (mounted) setState(() => _hasUsagePermission = hasUsage);
                       });
                     },
-                    child: const Text(
-                      'GRANT',
-                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
-                    ),
+                    child: const Text('GRANT', style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Service Status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _isServiceRunning ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _isServiceRunning ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isServiceRunning ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                  color: _isServiceRunning ? Colors.greenAccent : Colors.redAccent,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isServiceRunning ? 'PROTECTION SERVICE: RUNNING' : 'PROTECTION SERVICE: NOT RUNNING',
+                  style: TextStyle(
+                    color: _isServiceRunning ? Colors.greenAccent : Colors.redAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                if (!_isServiceRunning && _hasUsagePermission) ...[
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () async {
+                      // Attempt to restart by syncing apps
+                      final locked = _apps.where((a) => a.isLocked).map((a) => a.packageName).toList();
+                      await _service.setLockedApps(locked);
+                      Future.delayed(const Duration(seconds: 1), () async {
+                        final status = await _service.checkServiceStatus();
+                        if (mounted) setState(() => _isServiceRunning = status);
+                      });
+                    },
+                    child: const Text('RESTART', style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline)),
                   ),
                 ],
               ],
@@ -276,25 +324,83 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                   GestureDetector(
                     onTap: () async {
                       await _service.requestOverlayPermission();
-                      // Check again after returning
                       Future.delayed(const Duration(seconds: 2), () async {
                         final hasOverlay = await _service.checkOverlayPermission();
                         if (mounted) setState(() => _hasOverlayPermission = hasOverlay);
                       });
                     },
-                    child: const Text(
-                      'GRANT',
-                      style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline),
-                    ),
+                    child: const Text('GRANT', style: TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.w900, decoration: TextDecoration.underline)),
                   ),
                 ],
               ],
             ),
           ),
+          
+          // MIUI Tip Header — Only show if it's a MI device or overlay is missing
+          if (_isMiui || !_hasOverlayPermission) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 14),
+                      const SizedBox(width: 6),
+                      Text('MIUI / REDMI DEVICE TIP', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Xiaomi devices block App Lock by default. You MUST enable this:',
+                    style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  _buildMIUITip('Settings > Apps > Manage Apps > SafeShell'),
+                  _buildMIUITip('Other permissions > Display pop-up windows while running in background > ALWAYS ALLOW'),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => openAppSettings(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: const Text('OPEN APP SETTINGS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  Widget _buildMIUITip(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+          Expanded(child: Text(text, style: const TextStyle(color: Colors.white60, fontSize: 9))),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildEmptyState(bool isLight) {
     return Center(
