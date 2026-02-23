@@ -83,11 +83,12 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
 
     try {
       bool authenticated = await _auth.authenticate(
-        localizedReason: 'Unlock SafeShell Vault (Face ID or Fingerprint)',
+        localizedReason: 'Unlock SafeShell (Face ID, Fingerprint or PIN)',
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: false,
+          biometricOnly: false, // Allows PIN fallback if biometrics fail
           useErrorDialogs: true,
+          sensitiveTransaction: false, // Better for Face ID on some devices
         ),
       );
 

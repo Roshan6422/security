@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/fcm_service.dart';
@@ -11,6 +12,7 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
   final ApiService _apiService = ApiService();
   final _storage = const FlutterSecureStorage();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   User? get user => _user;
   bool get isLoading => _isLoading;
@@ -99,9 +101,49 @@ class AuthProvider with ChangeNotifier {
 
 
 
+  Future<void> signInWithGoogle() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Google sign-in cancelled');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw Exception('Google sign-in failed: missing idToken');
+      }
+
+      final response = await _apiService.post('/auth/google', {
+        'idToken': idToken,
+      });
+
+      _user = User.fromJson(response);
+      if (_user?.token != null) {
+        await _storage.write(key: AppConstants.keyToken, value: _user!.token);
+        await _storage.write(key: 'saved_email', value: _user!.email);
+        await FCMService.initialize();
+      }
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout() async {
     _user = null;
     await _storage.delete(key: AppConstants.keyToken);
+    try {
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+    } catch (_) {}
     notifyListeners();
   }
 }

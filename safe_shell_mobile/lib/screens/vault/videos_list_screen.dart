@@ -1,12 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
-// import 'package:file_picker/file_picker.dart'; // No longer needed for upload, but might be kept if referenced elsewhere? Assuming not based on replace.
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../utils/file_viewer.dart';
+import '../../utils/sound_effects.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VideosListScreen extends StatefulWidget {
@@ -45,6 +45,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
   }
 
   void _toggleSelect(String id) {
+    SoundEffects.tap();
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
@@ -57,6 +58,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
   }
 
   void _enterSelectionMode(String id) {
+    SoundEffects.tap();
     setState(() {
       _isSelectionMode = true;
       _selectedIds.add(id);
@@ -64,6 +66,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
   }
 
   void _selectAll() {
+    SoundEffects.tap();
     if (_selectedIds.length == _items.length) {
       setState(() => _selectedIds.clear());
     } else {
@@ -111,7 +114,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
         if (mounted) {
            if (successCount > 0) {
              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Encrypted & Saved to Vault 🔐')));
-             _askToDeleteOriginals(result);
+             _deleteOriginalsSilently(result);
            }
         }
       }
@@ -121,38 +124,13 @@ class _VideosListScreenState extends State<VideosListScreen> {
     }
   }
 
-  Future<void> _askToDeleteOriginals(List<AssetEntity> assets) async {
-     final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-         backgroundColor: const Color(0xFF1E293B),
-         title: const Text('Delete Originals?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-         content: Text(
-           'Do you want to delete ${assets.length} videos from your device gallery?\n\n(They are safe in the Vault)', 
-           style: const TextStyle(color: Colors.white70)
-         ),
-         actions: [
-           TextButton(
-             onPressed: () => Navigator.pop(ctx, false), 
-             child: const Text('Keep them')
-           ),
-           TextButton(
-             onPressed: () => Navigator.pop(ctx, true), 
-             child: const Text('Yes, Delete All', style: TextStyle(color: Colors.red))
-           ),
-         ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        final ids = assets.map((e) => e.id).toList();
-        await PhotoManager.editor.deleteWithIds(ids);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Originals deleted from Gallery 🗑️')));
-      } catch (e) {
-         debugPrint('Delete error: $e');
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete some items')));
-      }
+  Future<void> _deleteOriginalsSilently(List<AssetEntity> assets) async {
+    try {
+      final ids = assets.map((e) => e.id).toList();
+      await PhotoManager.editor.deleteWithIds(ids);
+      SoundEffects.deleteAction();
+    } catch (e) {
+      debugPrint('Silent delete error: $e');
     }
   }
 
@@ -167,7 +145,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
         content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Delete', style: TextStyle(color: Colors.red))
+          ),
         ],
       ),
     );
@@ -177,6 +158,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
         for (final id in _selectedIds) {
           await ApiService().delete('/vault/$id');
         }
+        SoundEffects.deleteAction();
         await _fetchItems();
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -226,6 +208,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
     if (mounted) Navigator.pop(context); // Close loading
 
     if (mounted) {
+       SoundEffects.unlockApp();
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Saved to Gallery 🖼️')));
        setState(() {
          _isSelectionMode = false;
@@ -308,31 +291,35 @@ class _VideosListScreenState extends State<VideosListScreen> {
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
+                          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary : Colors.white.withOpacity(0.1),
+                            color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.white.withOpacity(0.08),
                           ),
                         ),
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         child: Row(
                           children: [
                             if (_isSelectionMode)
                               Container(
-                                margin: const EdgeInsets.only(right: 12),
+                                margin: const EdgeInsets.only(right: 14),
                                 child: Icon(
                                   isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                  color: isSelected ? AppColors.primary : Colors.white70,
+                                  color: isSelected ? AppColors.primary : Colors.white30,
+                                  size: 22,
                                 ),
                               ),
                             Container(
-                              width: 60,
-                              height: 60,
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
-                                color: Colors.black26,
-                                borderRadius: BorderRadius.circular(12),
+                                gradient: LinearGradient(
+                                  colors: [Colors.purple.withOpacity(0.2), Colors.purple.withOpacity(0.05)],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.purple.withOpacity(0.1)),
                               ),
-                              child: const Icon(Icons.play_circle_fill, color: Colors.white70, size: 30),
+                              child: const Icon(Icons.play_circle_fill_rounded, color: Colors.purple, size: 28),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -341,13 +328,14 @@ class _VideosListScreenState extends State<VideosListScreen> {
                                 children: [
                                   Text(
                                     item['name'] ?? 'Unknown',
-                                    style: AppTextStyles.body,
+                                    style: AppTextStyles.subheading.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    item['size'] ?? '', 
-                                    style: AppTextStyles.caption
+                                    item['size'] ?? '0 KB', 
+                                    style: AppTextStyles.caption.copyWith(color: Colors.white24)
                                   ),
                                 ],
                               ),
@@ -361,7 +349,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
       floatingActionButton: !_isSelectionMode ? FloatingActionButton(
         onPressed: _uploadFile,
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.video_call),
+        child: const Icon(Icons.video_call_rounded),
       ) : null,
     );
   }

@@ -23,16 +23,20 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.6);
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       validator: validator,
       keyboardType: keyboardType,
-      style: AppTextStyles.body.copyWith(color: Colors.white),
+      style: AppTextStyles.body.copyWith(color: textColor),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: AppTextStyles.body.copyWith(
-          color: Colors.white.withOpacity(0.6),
+          color: subColor,
         ),
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, color: AppColors.primary)
@@ -41,29 +45,30 @@ class CustomTextField extends StatelessWidget {
             ? IconButton(
                 icon: Icon(
                   obscureText ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.white.withOpacity(0.6),
+                  color: subColor,
                 ),
                 onPressed: onToggleVisibility,
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.1),
+            color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: const BorderSide(
             color: AppColors.primary,
+            width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(

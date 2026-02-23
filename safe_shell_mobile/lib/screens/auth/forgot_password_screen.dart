@@ -199,7 +199,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: Stack(
         children: [
           // Background blobs
@@ -211,8 +211,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
-                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 120)],
+                color: AppColors.primary.withOpacity(0.04),
+                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.02), blurRadius: 150)],
               ),
             ),
           ),
@@ -224,8 +224,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.08), blurRadius: 120)],
+                color: const Color(0xFF8B5CF6).withOpacity(0.03),
+                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.02), blurRadius: 180)],
               ),
             ),
           ),

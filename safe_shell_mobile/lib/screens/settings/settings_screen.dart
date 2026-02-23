@@ -1,23 +1,28 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../core/theme.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/panic_button.dart';
 import '../calculator/calculator_screen.dart';
-import 'support_screen.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart';
-import '../../services/api_service.dart';
+import '../analytics/analytics_screen.dart';
+import '../support/support_screen.dart';
+import '../../widgets/text_field_m3.dart';
+import '../../widgets/primary_button.dart';
 import '../profile/profile_screen.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'privacy_policy_screen.dart';
-import '../../services/background_service_config.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/login_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../utils/sound_effects.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -27,22 +32,154 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _backgroundRun = true;
   bool _batterySaver = false;
   bool _biometrics = false;
-  bool _discreetMode = false;
+
   bool _localCloak = false;
+  bool _discreetMode = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final _storage = const FlutterSecureStorage();
   bool _canUseBiometrics = false;
+  bool _allowScreenshots = false;
+
+  // Auto-lock options in seconds (0 = off)
+  static const _lockOptions = [0, 30, 60, 120, 300, 600];
+  static const _lockLabels = ['Off', '30s', '1m', '2m', '5m', '10m'];
+  int _autoLockSeconds = 0;
+
+  static const _stealthChannel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
 
   @override
   void initState() {
     super.initState();
     _loadBiometricSetting();
-    _checkServiceStatus();
-    _loadDiscreetMode();
     _loadLocalCloakStatus();
+    _loadDiscreetMode();
+    _loadAutoLock();
+  }
+
+  Future<void> _loadAutoLock() async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final val = settings.autoLockSeconds;
+    if (mounted) setState(() => _autoLockSeconds = val);
+  }
+
+  String _labelForSeconds(int seconds) {
+    final idx = _lockOptions.indexOf(seconds);
+    if (idx == -1) return '${seconds}s';
+    return _lockLabels[idx];
+  }
+
+  Future<void> _setAutoLock(int seconds) async {
+    await Provider.of<SettingsProvider>(context, listen: false).setAutoLockSeconds(seconds);
+    setState(() => _autoLockSeconds = seconds);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(seconds == 0
+              ? 'Auto-Lock disabled'
+              : 'Auto-Lock set to ${_labelForSeconds(seconds)}'),
+          backgroundColor: seconds == 0 ? null : const Color(0xFFA855F7),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadDiscreetMode() async {
+    final mode = await _storage.read(key: 'discreet_mode');
+    if (mounted) setState(() => _discreetMode = mode == 'true');
+  }
+
+  Future<void> _toggleDiscreetMode(bool value) async {
+    if (value) {
+      // Check if PIN is set first
+      final pin = await _storage.read(key: 'calculator_pin');
+      if (pin == null || pin.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please set a Calculator PIN first')),
+          );
+        }
+        return;
+      }
+    }
+
+    await _storage.write(key: 'discreet_mode', value: value.toString());
+    
+    // Trigger native icon swap
+    try {
+      await _stealthChannel.invokeMethod('toggleStealthMode', {'enable': value});
+    } catch (e) {
+      debugPrint('Error toggling stealth mode: $e');
+    }
+
+    setState(() => _discreetMode = value);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(value ? 'Stealth Mode Active' : 'Stealth Mode Disabled'),
+          backgroundColor: value ? Colors.blue : null,
+        ),
+      );
+    }
+  }
+
+  Future<void> _setCalculatorPin() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final pinController = TextEditingController();
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: const Text('Set Calculator PIN',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFieldM3(
+                controller: pinController,
+                label: '4-digit PIN',
+                icon: Icons.pin_rounded,
+                obscure: true,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Enter 4 digits to use in the calculator disguise.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            ),
+            SizedBox(
+              width: 100,
+              child: PrimaryButton(
+                text: 'Save',
+                onPressed: () => Navigator.pop(ctx, pinController.text),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.length == 4) {
+      await _storage.write(key: 'calculator_pin', value: result);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PIN Saved! Type this on calculator to unlock.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _changePinFlow() async {
+    await _setCalculatorPin();
   }
 
   Future<void> _loadLocalCloakStatus() async {
@@ -64,111 +201,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
   }
 
-  Future<void> _loadDiscreetMode() async {
-    final saved = await _storage.read(key: 'discreet_mode');
-    if (mounted) setState(() => _discreetMode = saved == 'true');
-  }
-
-  Future<void> _toggleDiscreetMode(bool value) async {
-    if (value) {
-      // Show explanation dialog before enabling
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text('Enable Discreet Mode?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          content: const Text(
-            'When enabled, the app icon will appear as a calculator for added privacy.\n\nYou can switch back to the standard icon anytime from this settings page.',
-            style: TextStyle(color: Colors.white70, height: 1.5),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Enable', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
-
-      if (proceed != true) return;
-    }
-
-    try {
-      final channel = const MethodChannel('com.safeshell.safe_shell_mobile/stealth');
-      await channel.invokeMethod('toggleStealthMode', {'enable': value});
-      await _storage.write(key: 'discreet_mode', value: value.toString());
-      if (mounted) {
-        setState(() => _discreetMode = value);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(value ? 'Discreet Mode enabled — icon switched to Calculator' : 'Standard icon restored')),
-        );
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
-
-  Future<void> _checkServiceStatus() async {
-    final service = FlutterBackgroundService();
-    var isRunning = await service.isRunning();
-    if (mounted) setState(() => _backgroundRun = isRunning);
-  }
-  
-  Future<void> _toggleBackgroundService(bool value) async {
-    final service = FlutterBackgroundService();
-    if (value) {
-      await BackgroundServiceConfig.initializeService();
-      var isRunning = await service.startService();
-      if (!isRunning) {
-         // Try again or wait a bit? usually startService returns distinct bool
-      }
-    } else {
-      service.invoke('stopService');
-    }
-    setState(() => _backgroundRun = value);
-  }
-
   Future<void> _requestBatteryOptimization(bool value) async {
     if (!value) {
-       setState(() => _batterySaver = false);
-       return;
+      setState(() => _batterySaver = false);
+      return;
     }
 
-    // 1. Explanation Dialog
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Enable Ultra Protection?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Enable Ultra Protection?',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: const Text(
           'To ensure your files remain protected at all times, please allow SafeShell to run without battery restrictions.\n\nThis prevents the system from stopping the protection service.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true), 
-            child: const Text('Enable Protection', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Enable Protection',
+                style: TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
 
     if (proceed == true) {
-      // 2. Request System Dialog
       var status = await Permission.ignoreBatteryOptimizations.status;
       if (!status.isGranted) {
         status = await Permission.ignoreBatteryOptimizations.request();
       }
-      
+
       if (mounted) {
-         setState(() => _batterySaver = status.isGranted);
-         if (status.isGranted) {
-           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ultra Protection Enabled! 🛡️')));
-         } else {
-           setState(() => _batterySaver = false); // Revert
-         }
+        setState(() => _batterySaver = status.isGranted);
+        if (status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ultra Protection Enabled! ???')));
+        } else {
+          setState(() => _batterySaver = false);
+        }
       }
     } else {
       setState(() => _batterySaver = false);
@@ -177,31 +253,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _toggleBiometric(bool value) async {
     if (value) {
-      // 1. Check hardware capability first
       try {
         final bool isSupported = await _localAuth.isDeviceSupported();
         final bool canCheck = await _localAuth.canCheckBiometrics;
-        
+
         if (!isSupported || !canCheck) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Biometric hardware not available or not setup on this device.')),
+              const SnackBar(
+                  content: Text(
+                      'Biometric hardware not available or not setup on this device.')),
             );
           }
           return;
         }
 
-        // 2. Prompt for biometric before enabling
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Confirm identity to enable Biometric Lock',
           options: const AuthenticationOptions(
             stickyAuth: true,
-            biometricOnly: false, // Allow PIN/Pattern if fingerprint fails
+            biometricOnly: false,
+            sensitiveTransaction: false,
+            useErrorDialogs: true,
           ),
         );
         if (!authenticated) return;
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Verification failed: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Verification failed: $e')));
+        }
         return;
       }
     }
@@ -210,39 +291,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       setState(() => _biometrics = value);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(value ? 'Biometric lock enabled ✅' : 'Biometric lock disabled')),
+        SnackBar(
+            content: Text(value
+                ? 'Biometric lock enabled ?'
+                : 'Biometric lock disabled')),
       );
     }
   }
 
+  Future<void> _toggleScreenshot(bool value) async {
+    try {
+      await _stealthChannel.invokeMethod('toggleScreenshot', {'allow': value});
+      setState(() => _allowScreenshots = value);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text(value ? 'Screenshots Allowed' : 'Screenshots Blocked'),
+            backgroundColor: value ? Colors.green : null,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error toggling screenshots: $e');
+    }
+  }
+
   Future<void> _toggleLocalCloak(bool value) async {
-    // 1. Request Storage Permissions
     if (value) {
       if (await Permission.storage.request().isDenied) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Storage permission required for Local Cloak')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Storage permission required for Local Cloak')));
+        }
         return;
       }
-      
-      // On Android 11+ (API 30+), MANAGE_EXTERNAL_STORAGE is often required to write .nomedia in system folders
+
       if (await Permission.manageExternalStorage.isDenied) {
         final status = await Permission.manageExternalStorage.request();
         if (status.isDenied) {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All Files Access is required to hide system Gallery folders. Please enable it in Settings.'))
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text(
+                    'All Files Access is required to hide system Gallery folders. Please enable it in Settings.')));
+          }
           return;
         }
       }
     }
 
-    // Update global state via provider
     if (mounted) {
-      await Provider.of<SettingsProvider>(context, listen: false).toggleLocalCloak(value);
+      await Provider.of<SettingsProvider>(context, listen: false)
+          .toggleLocalCloak(value);
     }
-    
+
     setState(() => _localCloak = value);
 
-    // 2. Perform File Operations
     try {
       final List<String> targetDirs = [
         '/storage/emulated/0/DCIM/Camera',
@@ -261,9 +365,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       int successCount = 0;
       int failCount = 0;
 
-      for (var path in targetDirs) {
+      for (var dirPath in targetDirs) {
         try {
-          final dir = Directory(path);
+          final dir = Directory(dirPath);
           if (await dir.exists()) {
             final nomediaFile = File('${dir.path}/.nomedia');
             if (value) {
@@ -279,184 +383,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         } catch (e) {
           failCount++;
-          debugPrint('Error for $path: $e');
+          debugPrint('Error for $dirPath: $e');
+        }
+      }
+
+      int restoredCount = 0;
+      if (!value) {
+        try {
+          final appDir = await getApplicationDocumentsDirectory();
+          final cloakDir =
+              Directory(p.join(appDir.path, '.SafeShellCloak'));
+
+          if (await cloakDir.exists()) {
+            Map<String, String> metadata = {};
+            final metaFile =
+                File(p.join(cloakDir.path, 'cloak_metadata.json'));
+            if (await metaFile.exists()) {
+              try {
+                final content = await metaFile.readAsString();
+                final decoded =
+                    jsonDecode(content) as Map<String, dynamic>;
+                metadata =
+                    decoded.map((k, v) => MapEntry(k, v.toString()));
+              } catch (_) {}
+            }
+
+            final entities = cloakDir.listSync();
+            for (var entity in entities) {
+              if (entity is File &&
+                  entity.path.endsWith('.safe_cloak')) {
+                try {
+                  final obfName = p.basename(entity.path);
+                  final originalPath = metadata[obfName];
+
+                  if (originalPath != null && originalPath.isNotEmpty) {
+                    final parentDir =
+                        Directory(p.dirname(originalPath));
+                    if (!await parentDir.exists()) {
+                      await parentDir.create(recursive: true);
+                    }
+                    await entity.copy(originalPath);
+                  } else {
+                    final encoded =
+                        obfName.replaceAll('.safe_cloak', '');
+                    String originalName;
+                    try {
+                      originalName =
+                          utf8.decode(base64Url.decode(encoded));
+                    } catch (_) {
+                      originalName = obfName;
+                    }
+                    final restoreDir = Directory(
+                        '/storage/emulated/0/SafeShell_Restored');
+                    if (!await restoreDir.exists()) {
+                      await restoreDir.create(recursive: true);
+                    }
+                    await entity.copy(
+                        p.join(restoreDir.path, originalName));
+                  }
+
+                  await entity.delete();
+                  restoredCount++;
+                } catch (e) {
+                  debugPrint('Error restoring file: $e');
+                }
+              }
+            }
+
+            if (await metaFile.exists()) {
+              await metaFile.delete();
+            }
+          }
+        } catch (e) {
+          debugPrint('Error restoring cloaked files: $e');
         }
       }
 
       if (mounted) {
         if (failCount > 0 && successCount == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Operation failed. Please ensure All Files Access is granted.'), backgroundColor: Colors.redAccent)
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: const Text(
+                  'Operation failed. Please ensure All Files Access is granted.'),
+              backgroundColor: Colors.redAccent));
         } else {
+          final msg = value
+              ? 'Local Cloak Active: Media hidden from Gallery'
+              : 'Local Cloak Disabled: Media restored to Gallery${restoredCount > 0 ? ' ($restoredCount files recovered)' : ''}';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(value ? 'Local Cloak Active: Media hidden from Gallery' : 'Local Cloak Disabled: Media restored to Gallery'),
+              content: Text(msg),
               backgroundColor: value ? AppColors.primary : Colors.grey,
             ),
           );
         }
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Critical Error: $e')));
-    }
-  }
-
-  int get _perfScore {
-    int score = 92;
-    if (!_backgroundRun) score -= 6;
-    if (_batterySaver) score -= 4;
-    if (!_biometrics) score -= 2;
-    return score.clamp(70, 99);
-  }
-
-  String get _statusText {
-    if (_perfScore >= 92) return 'Optimized';
-    if (_perfScore >= 84) return 'Good';
-    return 'Balanced';
-  }
-
-  Color get _statusColor {
-    if (_perfScore >= 92) return const Color(0xFF10B981);
-    if (_perfScore >= 84) return AppColors.primary;
-    return const Color(0xFFF59E0B);
-  }
-
-  // --- Calculator PIN Logic ---
-  Future<void> _setCalculatorPin() async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Set Calculator PIN', style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Enter a numeric PIN to open the vault from the calculator. Default is 112233.',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'e.g. 123456',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null && result.isNotEmpty) {
-      if (!RegExp(r'^\d+$').hasMatch(result)) {
-         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN must be numeric only')));
-         return;
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Critical Error: $e')));
       }
-
-      // Check current PIN first (simulated security flow - in real app would ask old pin)
-      // For now just update directly
-       try {
-        await ApiService().put('/auth/calculator-password', {'newPassword': result}); // Note: Api needs adjustment if we want to skip old password check or we add a "Force" flag. 
-        // Actually the backend expects oldPassword if one exists.
-        // Let's rely on the user knowing the old one? Or if first time?
-        // Let's try to update. If 401, we ask for old.
-        // Simplified flow: Just Try Update (assuming raw update or improve backend later).
-        // Wait, the backend verification logic:
-        /*
-        if (user.calculatorPassword) {
-            if (user.calculatorPassword !== oldPassword) {
-                return res.status(401).json({ message: 'Incorrect old password' });
-            }
-        }
-        */
-        // So we need to ask Old Password if set. 
-        // For this "Emergency Fix", let's ask for Old Password only if the first attempt fails?
-        // Or simpler: Just a dialog with "Old PIN (optional/default 112233)" and "New PIN".
-        
-        // Let's do a better dialog flow really quick.
-      } catch (e) {
-         // ignore error for the optimistic update below, but ideally we should handle it.
-      }
-      
-      // RE-IMPLEMENTING DIALOG TO ASK OLD AND NEW
     }
-  }
-  
-  Future<void> _changePinFlow() async {
-      final oldController = TextEditingController();
-      final newController = TextEditingController();
-      
-      await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
-          title: const Text('Set Connection PIN', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Enter your current PIN (default 112233) and new PIN.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: oldController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'Old PIN', labelStyle: TextStyle(color: Colors.white54)),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: newController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: 'New PIN', labelStyle: TextStyle(color: Colors.white54)),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                final oldPin = oldController.text.isEmpty ? '112233' : oldController.text;
-                final newPin = newController.text;
-                if (newPin.isEmpty) return;
-                                try {
-                    await ApiService().put('/auth/calculator-password', {
-                      'oldPassword': oldPin,
-                      'newPassword': newPin
-                    });
-                    
-                    // SAVE LOCALLY FOR OFFLINE ACCESS
-                    await _storage.write(key: 'calculator_pin', value: newPin);
-
-                     if (mounted) {
-                       Navigator.pop(ctx);
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PIN Updated Successfully!')));
-                     }
-                  } catch(e) {
-                   if (mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
-                   }
-                }
-              }, 
-              child: const Text('Update', style: TextStyle(color: AppColors.primary))
-            ),
-          ],
-        ),
-      );
   }
 
   Future<void> _confirmClearAppData() async {
@@ -464,16 +490,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Reset Application?', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+        title: const Text('Reset Application?',
+            style: TextStyle(
+                color: Colors.redAccent, fontWeight: FontWeight.bold)),
         content: const Text(
           'This will delete all local settings, clear cache, and log you out.\n\nYour SafeShell vault data in the cloud will be PRESERVED.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset & Logout', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: const Text('Reset & Logout',
+                style: TextStyle(
+                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -481,8 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (confirmed == true) {
       if (!mounted) return;
-      
-      // Show loading
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -490,223 +521,284 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
       try {
-        // 1. Clear Cache
         await DefaultCacheManager().emptyCache();
-        
-        // 2. Clear Secure Storage
         await const FlutterSecureStorage().deleteAll();
-        
-        // 3. Clear Shared Prefs
         final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
 
         if (mounted) {
-           // Navigate to Login (Remove all routes)
-           Navigator.of(context).pushAndRemoveUntil(
-             MaterialPageRoute(builder: (_) => const LoginScreen()),
-             (route) => false,
-           );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
         }
       } catch (e) {
         if (mounted) {
-          Navigator.pop(context); // Pop loading
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to reset: $e')));
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Failed to reset: $e')));
         }
       }
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFF0B0F14),
       body: Stack(
         children: [
           // Background gradients
           Positioned(
-            top: -100,
-            right: -100,
+            top: -120,
+            right: -120,
             child: Container(
-              width: 520,
-              height: 520,
+              width: 350,
+              height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.12),
-                boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 120),
-                ],
+                gradient: RadialGradient(colors: [
+                  AppColors.primary.withOpacity(0.06),
+                  Colors.transparent
+                ]),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -80,
+            left: -80,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  const Color(0xFF8B5CF6).withOpacity(0.04),
+                  Colors.transparent
+                ]),
               ),
             ),
           ),
 
           SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 24,
-              left: 24,
-              right: 24,
-              bottom: 24,
+              top: MediaQuery.of(context).padding.top + 20,
+              left: 20,
+              right: 20,
+              bottom: 100,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                Text('Settings', style: AppTextStyles.display.copyWith(fontSize: 28)),
+                Text('Settings',
+                    style: AppTextStyles.display.copyWith(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5)),
                 const SizedBox(height: 4),
-                Text(
-                  'Customize your vault experience',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary.withOpacity(0.55), fontSize: 14),
-                ),
-                const SizedBox(height: 24),
+                Text('Customize your vault experience',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.25), fontSize: 13)),
+                const SizedBox(height: 20),
 
-                // Performance Card
-                GlassCard(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+                // App Version Info
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(colors: [
+                      AppColors.primary.withOpacity(0.08),
+                      AppColors.primary.withOpacity(0.02)
+                    ]),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.1)),
+                  ),
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF10B981), Color(0xFF059669)],
-                              ),
-                              boxShadow: [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.28), blurRadius: 16)],
-                            ),
-                            child: const Icon(Icons.trending_up, color: Colors.white, size: 24),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('App Performance', style: AppTextStyles.subheading.copyWith(fontSize: 16)),
-                                Text(
-                                  '$_statusText • $_perfScore%',
-                                  style: AppTextStyles.caption.copyWith(color: _statusColor, fontWeight: FontWeight.w600, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              _miniCircleIcon(Icons.memory),
-                              const SizedBox(width: 8),
-                              _miniCircleIcon(Icons.verified_user),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Progress Bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: SizedBox(
-                          height: 10,
-                          child: Stack(
-                            children: [
-                              Container(color: Colors.white.withOpacity(0.1)),
-                              FractionallySizedBox(
-                                widthFactor: _perfScore / 100,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                    ),
-                                    boxShadow: [BoxShadow(color: const Color(0xFF10B981).withOpacity(0.4), blurRadius: 10)],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [
+                            AppColors.primary.withOpacity(0.2),
+                            AppColors.primary.withOpacity(0.06)
+                          ]),
+                          borderRadius: BorderRadius.circular(14),
                         ),
+                        child: const Icon(Icons.shield_rounded,
+                            color: AppColors.primary, size: 22),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
+                      const SizedBox(width: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _miniStat(Icons.bolt, 'Background', _backgroundRun ? 'On' : 'Off')),
-                          const SizedBox(width: 8),
-                          Expanded(child: _miniStat(Icons.battery_saver, 'Saver', _batterySaver ? 'On' : 'Off')),
-                          const SizedBox(width: 8),
-                          Expanded(child: _miniStat(Icons.security, 'Biometric', _biometrics ? 'On' : 'Off')),
+                          Text('SafeShell Base',
+                              style: AppTextStyles.subheading.copyWith(
+                                  fontSize: 15, fontWeight: FontWeight.w700)),
+                          Text('Version 1.0.0',
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.2),
+                                  fontSize: 11)),
                         ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF34D399).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('Latest',
+                            style: TextStyle(
+                                color:
+                                    const Color(0xFF34D399).withOpacity(0.7),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // Discreet Mode Toggle (Play Store Safe)
-                _toggleTile(
-                  Icons.calculate,
-                  'Discreet Mode',
-                  _discreetMode ? 'Calculator icon active' : 'Switch to calculator-style icon',
-                  _discreetMode,
-                  (v) => _toggleDiscreetMode(v),
-                ),
-                const SizedBox(height: 24),
-
-                // System Section
-                _sectionTitle(Icons.auto_awesome, 'System'),
-                const SizedBox(height: 12),
-                _toggleTile(Icons.bolt, 'Background Protection', 'Keep app running to secure files', _backgroundRun, (v) => _toggleBackgroundService(v)),
-                const SizedBox(height: 8),
-                _toggleTile(Icons.battery_full, 'Disable Battery Opt', 'Prevent system killing app', _batterySaver, (v) => _requestBatteryOptimization(v)),
                 const SizedBox(height: 24),
 
                 // Security Section
-                _sectionTitle(Icons.lock, 'Security'),
+                _sectionTitle(
+                    Icons.lock_rounded, 'Security', const Color(0xFFA855F7)),
                 const SizedBox(height: 12),
-                const SizedBox(height: 12),
-                _actionTile(Icons.person, 'My Profile', 'Manage account & data', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))),
+                _actionTile(
+                    Icons.person_rounded,
+                    'My Profile',
+                    'Manage account & data',
+                    const Color(0xFFA855F7), () {
+                  SoundEffects.tap();
+                  HapticFeedback.selectionClick();
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                }),
                 const SizedBox(height: 8),
-                _toggleTile(Icons.security, 'Biometric Lock', _canUseBiometrics ? 'Use Face ID or Fingerprint' : 'Not supported on this device', _biometrics, _canUseBiometrics ? _toggleBiometric : null),
+                _toggleTile(
+                    Icons.fingerprint_rounded,
+                    'Biometric Lock',
+                    _canUseBiometrics
+                        ? 'Use fingerprint to unlock'
+                        : 'Not supported',
+                    _biometrics,
+                    const Color(0xFF8B5CF6),
+                    _canUseBiometrics
+                        ? (v) {
+                            SoundEffects.tap();
+                            _toggleBiometric(v);
+                          }
+                        : null),
                 const SizedBox(height: 8),
-                // NEW: Change Password Option
-                _actionTile(Icons.pin, 'Set Calculator PIN', 'Change the math hidden PIN', () => _changePinFlow()),
+                _toggleTile(
+                    Icons.screenshot_rounded,
+                    'Allow Screenshots',
+                    'Temporarily enable screenshots',
+                    _allowScreenshots,
+                    const Color(0xFFF59E0B), (v) {
+                  SoundEffects.tap();
+                  _toggleScreenshot(v);
+                }),
+                const SizedBox(height: 8),
+                _toggleTile(
+                    Icons.calculate_rounded,
+                    'Discreet Mode',
+                    'Disguise SafeShell as a Calculator',
+                    _discreetMode,
+                    const Color(0xFF34D399), (v) {
+                  SoundEffects.tap();
+                  _toggleDiscreetMode(v);
+                }),
+                const SizedBox(height: 8),
+                _actionTile(Icons.pin_rounded, 'Set Calculator PIN',
+                    'Change the maths hidden Pin', const Color(0xFFA855F7),
+                    () {
+                  SoundEffects.tap();
+                  HapticFeedback.selectionClick();
+                  _changePinFlow();
+                }),
                 const SizedBox(height: 24),
 
-
                 // Tools Section
-                _sectionTitle(Icons.refresh, 'Tools'),
+                _sectionTitle(Icons.build_circle_rounded, 'Tools',
+                    const Color(0xFF34D399)),
                 const SizedBox(height: 12),
-                _actionTile(Icons.cleaning_services, 'Clear Cache', 'Free up space & memory', () async {
+                _actionTile(
+                    Icons.cleaning_services_rounded,
+                    'Clear Cache',
+                    'Free up space & memory',
+                    const Color(0xFF34D399), () async {
+                  HapticFeedback.mediumImpact();
                   try {
                     await DefaultCacheManager().emptyCache();
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cache cleared & Memory Optimized! 🧹✨')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content:
+                              Text('Cache cleared & Memory Optimized! ???'),
+                          backgroundColor: Color(0xFF34D399)));
                     }
                   } catch (e) {
-                     if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to clear cache: $e')));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to clear cache: $e')));
+                    }
                   }
                 }),
                 const SizedBox(height: 8),
-                _actionTile(
-                  Icons.delete_forever,
-                  'Clear App Data',
-                  'Reset everything (Log out)',
-                  () => _confirmClearAppData(),
-                ),
+
+                _actionTile(Icons.bar_chart_rounded, 'Analytics',
+                    'View storage charts & trends', const Color(0xFF34D399),
+                    () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AnalyticsScreen()));
+                }),
                 const SizedBox(height: 8),
-                _toggleTile(
-                  Icons.visibility_off, 
-                  'Local Cloak Mode', 
-                  'Hide phone media from other apps', 
-                  _localCloak, 
-                  (v) => _toggleLocalCloak(v)
-                ),
+                _actionTile(Icons.headset_mic_rounded, 'Customer Support',
+                    'Get help', const Color(0xFFF59E0B), () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SupportScreen()));
+                }),
+                const SizedBox(height: 8),
+                _actionTile(Icons.privacy_tip_rounded, 'Privacy Policy',
+                    'Read our policy', const Color(0xFF8B5CF6), () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyScreen()));
+                }),
+                const SizedBox(height: 24),
+
+                // Auto-Lock Timer Section
+                _sectionTitle(
+                    Icons.timer_rounded, 'Auto-Lock', const Color(0xFF8B5CF6)),
+                const SizedBox(height: 12),
+                _autoLockTile(),
+                const SizedBox(height: 24),
+
+                // Danger Zone
+                _sectionTitle(Icons.warning_amber_rounded, 'Danger Zone',
+                    const Color(0xFFEF4444)),
+                const SizedBox(height: 12),
+                const PanicButton(),
                 const SizedBox(height: 8),
                 _actionTile(
-                  Icons.privacy_tip, 
-                  'Privacy Policy', 
-                  'Read our policy', 
-                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                ),
+                    Icons.delete_forever_rounded,
+                    'Clear App Data',
+                    'Reset everything (Log out)',
+                    const Color(0xFFEF4444), () {
+                  SoundEffects.deleteAction();
+                  HapticFeedback.heavyImpact();
+                  _confirmClearAppData();
+                }),
                 const SizedBox(height: 24),
               ],
             ),
@@ -716,46 +808,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _miniCircleIcon(IconData icon) {
+  Widget _autoLockTile() {
+    const color = Color(0xFF8B5CF6);
     return Container(
-      width: 40,
-      height: 40,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF161B22),
+        border: Border.all(color: color.withOpacity(0.08)),
       ),
-      child: Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
-    );
-  }
-
-  Widget _miniStat(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.25), Colors.white.withOpacity(0.05)]),
-            ),
-            child: Icon(icon, color: Colors.white.withOpacity(0.85), size: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(colors: [
+                    color.withOpacity(0.2),
+                    color.withOpacity(0.05)
+                  ]),
+                ),
+                child:
+                    const Icon(Icons.timer_rounded, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Auto-Lock Timer',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13)),
+                    Text(
+                      _autoLockSeconds == 0
+                          ? 'App stays unlocked'
+                          : 'Lock after ${_labelForSeconds(_autoLockSeconds)} of inactivity',
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.25),
+                          fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(color: AppColors.textSecondary.withOpacity(0.45), fontSize: 11, fontWeight: FontWeight.w600)),
-                Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
-              ],
+          const SizedBox(height: 14),
+          // Pill options
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_lockOptions.length, (i) {
+                final selected = _lockOptions[i] == _autoLockSeconds;
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _setAutoLock(_lockOptions[i]);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: selected ? color : color.withOpacity(0.06),
+                      border: Border.all(
+                          color:
+                              selected ? color : color.withOpacity(0.15)),
+                    ),
+                    child: Text(
+                      _lockLabels[i],
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.white
+                            : color.withOpacity(0.6),
+                        fontSize: 12,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
         ],
@@ -763,93 +902,131 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _sectionTitle(IconData icon, String title) {
+  Widget _sectionTitle(IconData icon, String title, Color color) {
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
+          padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.white.withOpacity(0.05),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(10),
+            gradient: LinearGradient(colors: [
+              color.withOpacity(0.15),
+              color.withOpacity(0.04)
+            ]),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 16),
+          child: Icon(icon, color: color, size: 15),
         ),
-        const SizedBox(width: 8),
-        Text(title, style: AppTextStyles.subheading.copyWith(fontSize: 18)),
+        const SizedBox(width: 10),
+        Text(title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700)),
       ],
     );
   }
 
-  Widget _toggleTile(IconData icon, String title, String subtitle, bool value, ValueChanged<bool>? onChanged) {
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
+  Widget _toggleTile(IconData icon, String title, String subtitle, bool value,
+      Color color, ValueChanged<bool>? onChanged) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF161B22),
+        border: Border.all(color: color.withOpacity(0.06)),
+      ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.25), Colors.white.withOpacity(0.05)]),
+              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(colors: [
+                color.withOpacity(0.2),
+                color.withOpacity(0.05)
+              ]),
             ),
-            child: Icon(icon, color: Colors.white.withOpacity(0.85), size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 14)),
-                Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.5), fontSize: 12)),
+                Text(title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.25),
+                        fontSize: 11)),
               ],
             ),
           ),
           Switch(
             value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.primary,
-            activeTrackColor: AppColors.primary.withOpacity(0.3),
-            inactiveThumbColor: Colors.white.withOpacity(0.5),
-            inactiveTrackColor: Colors.white.withOpacity(0.1),
+            onChanged: (v) {
+              HapticFeedback.selectionClick();
+              if (onChanged != null) onChanged(v);
+            },
+            activeThumbColor: color,
+            activeTrackColor: color.withOpacity(0.3),
+            inactiveThumbColor: Colors.white.withOpacity(0.4),
+            inactiveTrackColor: Colors.white.withOpacity(0.06),
           ),
         ],
       ),
     );
   }
 
-  Widget _actionTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _actionTile(IconData icon, String title, String subtitle, Color color,
+      VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: GlassCard(
-        padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: const Color(0xFF161B22),
+          border: Border.all(color: color.withOpacity(0.06)),
+        ),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.25), Colors.white.withOpacity(0.05)]),
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.05)
+                ]),
               ),
-              child: Icon(icon, color: Colors.white.withOpacity(0.85), size: 20),
+              child: Icon(icon, color: color, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 14)),
-                  Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.5), fontSize: 12)),
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.25),
+                          fontSize: 11)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
+            Icon(Icons.chevron_right_rounded,
+                color: color.withOpacity(0.2), size: 20),
           ],
         ),
       ),
     );
   }
 }
-

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../widgets/glass_card.dart';
 import '../../services/api_service.dart';
@@ -213,16 +213,16 @@ class _SupportScreenState extends State<SupportScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isOpen ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                    color: isOpen ? const Color(0xFF34D399).withOpacity(0.1) : Colors.white.withOpacity(0.05),
                     border: Border.all(
-                      color: isOpen ? const Color(0xFF10B981).withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                      color: isOpen ? const Color(0xFF34D399).withOpacity(0.2) : Colors.white.withOpacity(0.1),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status.toString().toUpperCase(),
                     style: TextStyle(
-                      color: isOpen ? const Color(0xFF10B981) : Colors.white38,
+                      color: isOpen ? const Color(0xFF34D399) : Colors.white38,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),

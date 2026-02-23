@@ -54,13 +54,24 @@ dependencies:
   flutter_local_notifications: ^20.1.0
   photo_manager: ^3.8.3
   wechat_assets_picker: ^10.1.0
-  flutter_background_service: ^5.0.10
   url_launcher: ^6.2.5
   math_expressions: ^2.4.0
 
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   encrypt: ^5.0.3
+  device_info_plus: ^11.3.3
+  
+  # Premium Features from SafeShell-main
+  google_sign_in: ^6.2.1
+  google_mobile_ads: ^5.1.0
+  in_app_purchase: ^3.2.0
+  lottie: ^3.1.2
+  flutter_animate: ^4.5.0
+  animations: ^2.0.11
+  firebase_auth: ^5.2.0
+  cryptography: ^2.7.0
+  photo_view: ^0.15.0
 
 dev_dependencies:
   flutter_test:

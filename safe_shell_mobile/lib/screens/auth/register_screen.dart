@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -15,15 +15,75 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStateMixin {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  double _passwordStrength = 0.0;
+  String _strengthLabel = '';
+  Color _strengthColor = Colors.transparent;
+
+  late AnimationController _staggerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _staggerController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)..forward();
+    _passwordController.addListener(_calculateStrength);
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    _passwordController.removeListener(_calculateStrength);
+    super.dispose();
+  }
+
+  void _calculateStrength() {
+    final pw = _passwordController.text;
+    double strength = 0.0;
+    if (pw.length >= 4) strength += 0.15;
+    if (pw.length >= 8) strength += 0.2;
+    if (pw.length >= 12) strength += 0.15;
+    if (pw.contains(RegExp(r'[A-Z]'))) strength += 0.15;
+    if (pw.contains(RegExp(r'[0-9]'))) strength += 0.15;
+    if (pw.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) strength += 0.2;
+
+    String label;
+    Color color;
+    if (strength <= 0.25) { label = 'Weak'; color = const Color(0xFFEF4444); }
+    else if (strength <= 0.5) { label = 'Fair'; color = const Color(0xFFF59E0B); }
+    else if (strength <= 0.75) { label = 'Good'; color = const Color(0xFFA855F7); }
+    else { label = 'Strong ??'; color = const Color(0xFF34D399); }
+
+    setState(() {
+      _passwordStrength = strength.clamp(0.0, 1.0);
+      _strengthLabel = pw.isEmpty ? '' : label;
+      _strengthColor = color;
+    });
+  }
+
+  Widget _anim(int index, Widget child) {
+    final start = (index * 0.1).clamp(0.0, 1.0);
+    final end = (start + 0.3).clamp(0.0, 1.0);
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
+      ),
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
+        ),
+        child: child,
+      ),
+    );
+  }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      HapticFeedback.lightImpact();
       try {
         await Provider.of<AuthProvider>(context, listen: false).register(
           _nameController.text,
@@ -31,59 +91,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
           _passwordController.text,
         );
         if (mounted) {
+          HapticFeedback.heavyImpact();
           final user = Provider.of<AuthProvider>(context, listen: false).user;
           final userKey = user?.userKey ?? 'N/A';
           final recoveryKey = user?.recoveryKey ?? 'N/A';
           
-          // Show user key dialog
           await showDialog(
             context: context,
             barrierDismissible: false,
             builder: (ctx) => AlertDialog(
-              backgroundColor: const Color(0xFF1E293B),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: const Color(0xFF0D1520),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               title: Column(
                 children: [
                   Container(
-                    width: 60, height: 60,
+                    width: 64, height: 64,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.2),
                       shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: [const Color(0xFF34D399).withOpacity(0.2), const Color(0xFF34D399).withOpacity(0.05)]),
                     ),
-                    child: const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 36),
+                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 36),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Account Created!', 
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                    textAlign: TextAlign.center,
-                  ),
+                  const Text('Account Created! ??', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
                 ],
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Save these keys securely!', 
-                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13)),
+                  Text('Save these keys securely!', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
                   const SizedBox(height: 20),
-                  _keyDisplay('Your User Key', userKey, Icons.tag),
+                  _keyDisplay('Your User Key', userKey, Icons.tag_rounded),
                   const SizedBox(height: 12),
-                  _keyDisplay('Recovery Key', recoveryKey, Icons.vpn_key),
+                  _keyDisplay('Recovery Key', recoveryKey, Icons.vpn_key_rounded),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
+                      color: const Color(0xFFF59E0B).withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.15)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber, color: Colors.amber.shade300, size: 18),
+                        const Icon(Icons.warning_amber_rounded, color: Color(0xFFF59E0B), size: 18),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: Text('You need these to recover your account!',
-                            style: TextStyle(color: Colors.amber.shade200, fontSize: 12)),
-                        ),
+                        Expanded(child: Text('You need these to recover your account!', style: TextStyle(color: const Color(0xFFF59E0B).withOpacity(0.7), fontSize: 12))),
                       ],
                     ),
                   ),
@@ -94,12 +147,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      backgroundColor: const Color(0xFFA855F7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('I saved my keys', style: TextStyle(color: Colors.white)),
+                    onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(ctx); },
+                    child: const Text('I saved my keys', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -110,11 +163,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       } catch (e) {
         if (mounted) {
+          HapticFeedback.heavyImpact();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString().replaceAll('Exception: ', '')),
-              backgroundColor: AppColors.error,
-            ),
+            SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: AppColors.error),
           );
         }
       }
@@ -125,32 +176,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 18),
+          Icon(icon, color: const Color(0xFFA855F7), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
               ],
             ),
           ),
           GestureDetector(
             onTap: () {
+              HapticFeedback.selectionClick();
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('$label copied!'), duration: const Duration(seconds: 1)),
+                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFFA855F7)),
               );
             },
-            child: Icon(Icons.copy, color: Colors.white.withOpacity(0.4), size: 18),
+            child: Icon(Icons.copy_rounded, color: Colors.white.withOpacity(0.3), size: 18),
           ),
         ],
       ),
@@ -160,143 +212,168 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          image: DecorationImage(
-            image: NetworkImage('https://images.unsplash.com/photo-1550751827-4bd374c3f58b'), // Same as Login
-            fit: BoxFit.cover,
-            opacity: 0.2,
+      backgroundColor: AppColors.darkBackground,
+      body: Stack(
+        children: [
+          // Background blobs
+          Positioned(
+            bottom: -120,
+            left: -120,
+            child: Container(
+              width: 320, height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [const Color(0xFFA855F7).withOpacity(0.04), Colors.transparent]),
+              ),
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-             // Gradient Blobs
-            Positioned(
-              bottom: -100,
-              left: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
-                      blurRadius: 100,
-                      spreadRadius: 50,
-                    ),
-                  ],
-                ),
+          Positioned(
+            top: -80,
+            right: -80,
+            child: Container(
+              width: 250, height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withOpacity(0.03), Colors.transparent]),
               ),
             ),
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Create Account',
-                      style: AppTextStyles.display.copyWith(fontSize: 32),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _anim(0, Column(
+                    children: [
+                      Text('Create Account', style: AppTextStyles.display.copyWith(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                      const SizedBox(height: 6),
+                      Text('Join SafeShell today.', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14)),
+                    ],
+                  )),
+                  const SizedBox(height: 40),
+                  
+                  _anim(1, Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      color: const Color(0xFF0D1520),
+                      border: Border.all(color: Colors.white.withOpacity(0.04)),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Join SafeShell today.',
-                      style: AppTextStyles.body,
-                    ),
-                    const SizedBox(height: 48),
-                    
-                    GlassCard(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            CustomTextField(
-                              controller: _nameController,
-                              label: 'Name',
-                              prefixIcon: Icons.person_outline,
-                              validator: (value) =>
-                                  value!.isEmpty ? 'Please enter name' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            CustomTextField(
-                              controller: _emailController,
-                              label: 'Email',
-                              prefixIcon: Icons.email_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) =>
-                                  value!.isEmpty ? 'Please enter email' : null,
-                            ),
-                            const SizedBox(height: 16),
-                            CustomTextField(
-                              controller: _passwordController,
-                              label: 'Password',
-                              prefixIcon: Icons.lock_outlined,
-                              obscureText: _obscurePassword,
-                              onToggleVisibility: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                              validator: (value) =>
-                                  value!.isEmpty ? 'Please enter password' : null,
-                            ),
-                            const SizedBox(height: 24),
-                            Consumer<AuthProvider>(
-                              builder: (context, auth, child) {
-                                return PrimaryButton(
-                                  text: 'Register',
-                                  onPressed: _register,
-                                  isLoading: auth.isLoading,
-                                );
-                              },
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          CustomTextField(
+                            controller: _nameController,
+                            label: 'Name',
+                            prefixIcon: Icons.person_outline,
+                            validator: (value) => value!.isEmpty ? 'Please enter name' : null,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _emailController,
+                            label: 'Email',
+                            prefixIcon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) => value!.isEmpty ? 'Please enter email' : null,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _passwordController,
+                            label: 'Password',
+                            prefixIcon: Icons.lock_outlined,
+                            obscureText: _obscurePassword,
+                            onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
+                            validator: (value) => value!.isEmpty ? 'Please enter password' : null,
+                          ),
+                          // Password Strength Meter
+                          if (_passwordController.text.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Password Strength', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                    Text(_strengthLabel, style: TextStyle(color: _strengthColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: SizedBox(
+                                    height: 5,
+                                    child: TweenAnimationBuilder<double>(
+                                      tween: Tween(begin: 0.0, end: _passwordStrength),
+                                      duration: const Duration(milliseconds: 400),
+                                      curve: Curves.easeOutCubic,
+                                      builder: (context, value, child) {
+                                        return Stack(
+                                          children: [
+                                            Container(color: Colors.white.withOpacity(0.05)),
+                                            FractionallySizedBox(
+                                              widthFactor: value,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(colors: [_strengthColor.withOpacity(0.6), _strengthColor]),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
+                          const SizedBox(height: 24),
+                          Consumer<AuthProvider>(
+                            builder: (context, auth, child) {
+                              return PrimaryButton(
+                                text: 'Register',
+                                onPressed: _register,
+                                isLoading: auth.isLoading,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.body,
-                          children: [
-                            const TextSpan(text: "Already have an account? "),
-                            TextSpan(
-                              text: 'Login',
-                              style: AppTextStyles.subheading.copyWith(
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
+                  )),
+                  const SizedBox(height: 24),
+                  _anim(2, Column(
+                    children: [
+                      TextButton(
+                        onPressed: () { HapticFeedback.selectionClick(); Navigator.of(context).pop(); },
+                        child: RichText(
+                          text: TextSpan(
+                            style: AppTextStyles.body,
+                            children: [
+                              TextSpan(text: "Already have an account? ", style: TextStyle(color: Colors.white.withOpacity(0.4))),
+                              TextSpan(text: 'Login', style: TextStyle(color: const Color(0xFFA855F7), fontWeight: FontWeight.w700)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Privacy Policy Link
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                      child: Text(
-                        'Privacy Policy',
-                        style: AppTextStyles.caption.copyWith(
-                          color: Colors.white54, 
-                          decoration: TextDecoration.underline
-                        ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                        child: Text('Privacy Policy', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12, decoration: TextDecoration.underline)),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  )),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-

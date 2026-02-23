@@ -1,13 +1,16 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:safe_shell_mobile/utils/sound_effects.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../services/api_service.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/glass_card.dart';
-import '../../widgets/primary_button.dart';
+import '../../widgets/premium_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../main_shell.dart';
 import 'register_screen.dart';
@@ -40,10 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _checkBiometrics() async {
     try {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
+      final canCheck = await _localAuth.canCheckBiometrics;
       final biometricEnabled = await _storage.read(key: 'biometric_enabled');
+      
       setState(() {
-        // Broaden support: if hardware is supported and user enabled it, show the button
-        _canCheckBiometrics = isDeviceSupported && biometricEnabled == 'true';
+        _canCheckBiometrics = isDeviceSupported && canCheck && biometricEnabled == 'true';
       });
     } catch (_) {}
   }
@@ -54,7 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
         localizedReason: 'Authenticate to access SafeShell Vault',
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: false, // Allow PIN/Pattern/Face fallback
+          biometricOnly: false,
+          sensitiveTransaction: false, // Set to false to allow Face Unlock (often Class 2/Weak)
+          useErrorDialogs: true,
         ),
       );
 
@@ -68,10 +74,25 @@ class _LoginScreenState extends State<LoginScreen> {
           _login(isBiometric: true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No credentials saved. Please login manually first.')),
+            const SnackBar(content: Text('No credentials saved. Please login manually first to enable biometrics.')),
           );
         }
       }
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      String message = 'Authentication error';
+      if (e.code == 'LockedOut') {
+        message = 'Too many attempts. Biometrics locked temporarily.';
+      } else if (e.code == 'PermanentlyLockedOut') {
+        message = 'Biometrics locked. Use PIN/Password to unlock.';
+      } else if (e.code == 'NotEnrolled') {
+        message = 'No biometrics enrolled on this device.';
+      } else if (e.code == 'PasscodeNotSet') {
+        message = 'Device PIN/Pattern not set.';
+      } else {
+        message = 'Biometric Error: ${e.message}';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.redAccent));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
@@ -92,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (mounted) {
+          SoundEffects.unlockApp();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const MainShell()),
           );
@@ -203,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: Stack(
         children: [
           // 1. Animated Background Blobs
@@ -271,20 +293,53 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 24),
                           Consumer<AuthProvider>(
                             builder: (context, auth, child) {
-                              return PrimaryButton(
+                              return PremiumButton(
                                 text: 'Login',
                                 onPressed: _login,
                                 isLoading: auth.isLoading,
                               );
                             },
                           ),
-                          if (_canCheckBiometrics) ...[
-                            const SizedBox(height: 16),
-                            IconButton(
-                              icon: const Icon(Icons.fingerprint, size: 44, color: AppColors.primary),
-                              tooltip: 'Login with Biometrics',
-                              onPressed: _authenticate,
+                          const SizedBox(height: 16),
+                          
+                          // Google Sign-In Button
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                await Provider.of<AuthProvider>(context, listen: false).signInWithGoogle();
+                                if (mounted) {
+                                  SoundEffects.unlockApp();
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(builder: (_) => const MainShell()),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            icon: Image.network(
+                              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                              height: 18,
                             ),
+                            label: const Text('Sign in with Google'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 54),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          
+                          if (_canCheckBiometrics) ...[
+                            const SizedBox(height: 20),
+                            _BiometricRippleButton(onTap: _authenticate),
                           ],
                           const SizedBox(height: 24),
                         ],
@@ -333,42 +388,47 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         // Primary Blue Blob
         Positioned(
-          top: -100,
-          right: -50,
+          top: -150,
+          right: -100,
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 8),
             builder: (context, value, child) {
+              final move = math.sin(value * 2 * math.pi);
               return Transform.translate(
-                offset: Offset(value * 20, value * 30),
+                offset: Offset(move * 40, move * 50),
                 child: Container(
-                  width: 350,
-                  height: 350,
+                  width: 450,
+                  height: 450,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.15),
-                    boxShadow: [
-                      BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 100, spreadRadius: 50),
-                    ],
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.primary.withOpacity(0.1),
+                        AppColors.primary.withOpacity(0.0),
+                      ],
+                    ),
                   ),
                 ),
               );
             },
           ),
         ),
-        // Secondary Purple Blob
+        // Secondary Indigo Blob
         Positioned(
-          bottom: 0,
-          left: -100,
+          bottom: -100,
+          left: -150,
           child: Container(
-            width: 300,
-            height: 300,
+            width: 500,
+            height: 500,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF8B5CF6).withOpacity(0.08),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.05), blurRadius: 120, spreadRadius: 60),
-              ],
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.secondary.withOpacity(0.08),
+                  AppColors.secondary.withOpacity(0.0),
+                ],
+              ),
             ),
           ),
         ),
@@ -385,14 +445,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1 * value),
+            color: AppColors.primary.withOpacity(0.01 * value),
             shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withOpacity(0.3 * value), width: 1.5),
+            border: Border.all(color: AppColors.primary.withOpacity(0.05 * value), width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.4 * value),
-                blurRadius: 30 * value,
-                spreadRadius: 5 * value,
+                color: AppColors.primary.withOpacity(0.02 * value),
+                blurRadius: 50 * value,
+                spreadRadius: 1 * value,
               ),
             ],
           ),
@@ -448,3 +508,108 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+/// Animated pulsing ripple effect around biometric fingerprint button
+class _BiometricRippleButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _BiometricRippleButton({required this.onTap});
+
+  @override
+  State<_BiometricRippleButton> createState() => _BiometricRippleButtonState();
+}
+
+class _BiometricRippleButtonState extends State<_BiometricRippleButton> with TickerProviderStateMixin {
+  late AnimationController _ripple1;
+  late AnimationController _ripple2;
+  late AnimationController _scaleCtrl;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ripple1 = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this)..repeat();
+    _ripple2 = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this);
+    // Start second ripple with delay
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) _ripple2.repeat();
+    });
+    _scaleCtrl = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ripple1.dispose();
+    _ripple2.dispose();
+    _scaleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _scaleCtrl.forward(),
+      onTapUp: (_) {
+        _scaleCtrl.reverse();
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      onTapCancel: () => _scaleCtrl.reverse(),
+      child: ScaleTransition(
+        scale: _scaleAnim,
+        child: SizedBox(
+          width: 80, height: 80,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Ripple 1
+              AnimatedBuilder(
+                animation: _ripple1,
+                builder: (context, child) {
+                  return Container(
+                    width: 50 + (_ripple1.value * 30),
+                    height: 50 + (_ripple1.value * 30),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity((1 - _ripple1.value) * 0.4),
+                        width: 2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Ripple 2
+              AnimatedBuilder(
+                animation: _ripple2,
+                builder: (context, child) {
+                  return Container(
+                    width: 50 + (_ripple2.value * 30),
+                    height: 50 + (_ripple2.value * 30),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity((1 - _ripple2.value) * 0.25),
+                        width: 1.5,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Core icon
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.15), AppColors.primary.withOpacity(0.05)]),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12)],
+                ),
+                child: const Icon(Icons.fingerprint, size: 30, color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

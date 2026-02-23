@@ -1,92 +1,143 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:convert';
-import 'dart:math';
-import 'package:encrypt/encrypt.dart' as enc;
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-/// AES-256-CBC encryption service for vault files.
 class EncryptionService {
+  // Use AES-GCM with 256-bit keys.
+  // GCM is an Authenticated Encryption mode (AEAD), safer than CBC.
+  static final _algorithm = AesGcm.with256bits();
   static const _storage = FlutterSecureStorage();
-  static const _keyStorageKey = 'vault_encryption_key';
-  static const _ivStorageKey = 'vault_encryption_iv';
+  static const _keyStorageKey = 'safe_shell_vault_key_v1';
 
-  /// Get or generate the encryption key (stored in secure storage).
-  static Future<enc.Key> _getKey() async {
-    String? storedKey = await _storage.read(key: _keyStorageKey);
-    if (storedKey == null) {
-      // Generate a random 256-bit key
-      final random = Random.secure();
-      final keyBytes = List<int>.generate(32, (_) => random.nextInt(256));
-      storedKey = base64Encode(keyBytes);
-      await _storage.write(key: _keyStorageKey, value: storedKey);
+  /// ─── Key Management ──────────────────────────────────────────────
+
+  /// Retrieves the existing key or generates a new one if it doesn't exist.
+  static Future<SecretKey> _getOrCreateKey() async {
+    // 1. Try to read from secure storage
+    String? storedKeyBase64 = await _storage.read(key: _keyStorageKey);
+
+    if (storedKeyBase64 != null) {
+      // 2. Decode existing key
+      final keyBytes = base64Decode(storedKeyBase64);
+      return SecretKey(keyBytes);
+    } else {
+      // 3. Generate new key
+      final key = await _algorithm.newSecretKey();
+      final keyBytes = await key.extractBytes();
+      
+      // 4. Save to secure storage
+      await _storage.write(
+        key: _keyStorageKey, 
+        value: base64Encode(keyBytes),
+      );
+      
+      return key;
     }
-    return enc.Key.fromBase64(storedKey);
   }
 
-  /// Get or generate the IV (stored in secure storage).
-  static Future<enc.IV> _getIV() async {
-    String? storedIV = await _storage.read(key: _ivStorageKey);
-    if (storedIV == null) {
-      final random = Random.secure();
-      final ivBytes = List<int>.generate(16, (_) => random.nextInt(256));
-      storedIV = base64Encode(ivBytes);
-      await _storage.write(key: _ivStorageKey, value: storedIV);
-    }
-    return enc.IV.fromBase64(storedIV);
-  }
+  /// ─── File Operations ─────────────────────────────────────────────
 
-  /// Encrypt a file and save it to the app's private vault directory.
-  /// Returns the path to the encrypted file.
+  /// Encrypts a file from [sourcePath] and saves it to the App's secure vault.
+  /// 
+  /// Returns the path to the newly created encrypted file.
+  /// 
+  /// Structure of saved file: [Nonce (12 bytes)] + [Ciphertext] + [MAC (16 bytes)]
   static Future<String> encryptFile(String sourcePath) async {
-    final key = await _getKey();
-    final iv = await _getIV();
-    final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
+    final key = await _getOrCreateKey();
+    final file = File(sourcePath);
+    
+    // 1. Read bytes (Be careful with very large files > 500MB on mobile RAM)
+    final clearText = await file.readAsBytes();
 
-    final sourceFile = File(sourcePath);
-    final bytes = await sourceFile.readAsBytes();
-    final encrypted = encrypter.encryptBytes(bytes, iv: iv);
+    // 2. Encrypt
+    // The algorithm automatically generates a random 12-byte Nonce
+    final secretBox = await _algorithm.encrypt(
+      clearText,
+      secretKey: key,
+    );
 
-    // Save to app private vault directory
+    // 3. Prepare Vault Directory
     final appDir = await getApplicationDocumentsDirectory();
-    final vaultDir = Directory('${appDir.path}/vault_encrypted');
+    final vaultDir = Directory(p.join(appDir.path, 'vault_storage'));
     if (!await vaultDir.exists()) {
       await vaultDir.create(recursive: true);
     }
 
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${p.basename(sourcePath)}.enc';
-    final encryptedPath = '${vaultDir.path}/$fileName';
-    await File(encryptedPath).writeAsBytes(encrypted.bytes);
+    // 4. Generate Filename (Timestamp + Original Extension)
+    // We obscure the original filename for privacy.
+    final ext = p.extension(sourcePath);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final newFileName = 'enc_$timestamp$ext.shell'; // Custom extension
+    final targetPath = p.join(vaultDir.path, newFileName);
 
-    return encryptedPath;
+    // 5. Write Concatenation to Disk
+    // concatenation() returns: Nonce + CipherText + Mac
+    await File(targetPath).writeAsBytes(secretBox.concatenation());
+
+    return targetPath;
   }
 
-  /// Decrypt an encrypted file and return it as a temporary decrypted file.
-  /// The caller should delete this temp file after use.
+  /// Decrypts a file from [encryptedPath] to a temporary file.
+  /// 
+  /// Returns the path to the temporary decrypted file.
+  /// NOTE: The caller is responsible for deleting this file after viewing.
   static Future<String> decryptFile(String encryptedPath) async {
-    final key = await _getKey();
-    final iv = await _getIV();
-    final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
-
+    final key = await _getOrCreateKey();
     final encryptedFile = File(encryptedPath);
-    final encryptedBytes = await encryptedFile.readAsBytes();
-    final encrypted = enc.Encrypted(encryptedBytes);
-    final decryptedBytes = encrypter.decryptBytes(encrypted, iv: iv);
 
-    // Write to temp
+    if (!await encryptedFile.exists()) {
+      throw Exception('Encrypted file not found');
+    }
+
+    // 1. Read all bytes
+    final fileBytes = await encryptedFile.readAsBytes();
+
+    // 2. Reconstruct the SecretBox from the bytes
+    // AES-GCM standard: Nonce (12) + Cipher + MAC (16)
+    final secretBox = SecretBox.fromConcatenation(
+      fileBytes,
+      nonceLength: 12, 
+      macLength: 16,
+    );
+
+    // 3. Decrypt
+    final clearText = await _algorithm.decrypt(
+      secretBox,
+      secretKey: key,
+    );
+
+    // 4. Write to Temp Directory
     final tempDir = await getTemporaryDirectory();
-    final originalName = p.basename(encryptedPath).replaceAll('.enc', '');
-    final tempPath = '${tempDir.path}/$originalName';
-    await File(tempPath).writeAsBytes(decryptedBytes);
+    // recover original extension if possible, or default to .tmp
+    // We stored it as .shell, but usually we need the logic layer to know the real extension
+    // For now, we strip .shell and hope the OS handles the mime type, 
+    // or rely on the caller to rename it based on database metadata.
+    String tempFileName = p.basename(encryptedPath).replaceAll('.shell', '');
+    
+    // If the original extension is missing, the viewer might fail. 
+    // Ideally, you store the original extension in your Database (SQLite/Hive).
+    
+    final tempPath = p.join(tempDir.path, 'dec_$tempFileName');
+    await File(tempPath).writeAsBytes(clearText);
 
     return tempPath;
   }
 
-  /// Get the vault encrypted directory path.
-  static Future<String> getVaultPath() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    return '${appDir.path}/vault_encrypted';
+  /// ─── Helpers ─────────────────────────────────────────────────────
+
+  /// Permanently deletes a file from the vault
+  static Future<void> deleteFromVault(String path) async {
+    final file = File(path);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
+  /// Clears the encryption key (Dangerous: makes all data unreadable)
+  static Future<void> dangerousClearKey() async {
+    await _storage.delete(key: _keyStorageKey);
   }
 }

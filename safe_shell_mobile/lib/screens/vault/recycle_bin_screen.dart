@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import 'package:safe_shell_mobile/widgets/glass_card.dart';
 import 'package:safe_shell_mobile/widgets/primary_button.dart';
@@ -140,11 +140,11 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   Color _getColorForType(String type) {
     switch (type) {
-      case 'photo': return const Color(0xFF4DA3FF);
+      case 'photo': return const Color(0xFFA855F7);
       case 'video': return const Color(0xFF8B5CF6);
       case 'note': return const Color(0xFFFCD34D);
       case 'zip': return const Color(0xFFF59E0B);
-      default: return const Color(0xFF10B981);
+      default: return const Color(0xFF34D399);
     }
   }
 

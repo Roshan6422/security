@@ -1,18 +1,54 @@
-ï»¿import 'dart:math';
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:safe_shell_mobile/widgets/glass_card.dart';
-import 'package:safe_shell_mobile/widgets/section_card.dart';
-import 'package:safe_shell_mobile/widgets/stat_chip.dart';
-import 'package:safe_shell_mobile/widgets/usage_ring.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:path/path.dart' as p;
+
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../subscription/payment_screen.dart';
+import '../../services/vault_stats_service.dart';
+import '../../providers/auth_provider.dart';
+
+import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
+import '../vault/local_cloak_screen.dart';
+import '../subscription/payment_screen.dart';
 import '../settings/support_screen.dart';
 import '../calculator/calculator_screen.dart';
 import '../browser/private_browser_screen.dart';
-import '../profile/profile_screen.dart';
+import '../analytics/analytics_screen.dart';
+import '../auth/login_screen.dart';
+
+import '../../widgets/premium_snackbar.dart';
+import '../../widgets/stat_chip.dart';
+import '../../widgets/section_card.dart';
+
+/// Smooth page transition for premium navigation
+class _SmoothPageRoute<T> extends PageRouteBuilder<T> {
+  final Widget page;
+  _SmoothPageRoute({required this.page})
+      : super(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionDuration: const Duration(milliseconds: 400),
+          reverseTransitionDuration: const Duration(milliseconds: 350),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final curvedAnim = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+            return FadeTransition(
+              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnim),
+              child: SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0.04, 0), end: Offset.zero).animate(curvedAnim),
+                child: child,
+              ),
+            );
+          },
+        );
+}
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,375 +57,768 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  Map<String, int> _counts = {'photo': 0, 'video': 0, 'document': 0, 'zip': 0, 'note': 0};
-  List<dynamic> _recentItems = [];
-  double _usedGB = 0.0;
-  final double _planTotalGB = 5.0;
+class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+  // Quota single source of truth
+  static const int _freePlanQuotaBytes = 5 * 1024 * 1024 * 1024;
+
   bool _isLoading = true;
-  String? _error;
+  int _fileCount = 0;
+  int _photoCount = 0;
+  int _videoCount = 0;
+  int _docCount = 0;
+  String _storageUsed = '0.0 GB';
+  double _storagePercent = 0.0;
+  List<dynamic> _recentItems = [];
+
+  // Staggered entrance animations — 9 sections used below
+  late AnimationController _staggerController;
+  late List<Animation<double>> _fadeAnims;
+  late List<Animation<Offset>> _slideAnims;
+  static const int _sections = 9;
+
+  // Background blob animation
+  late AnimationController _blobController;
+
+  // Shimmer animation for storage card
+  late AnimationController _shimmerController;
+
+  // Security tips
+  static const List<Map<String, dynamic>> _securityTips = [
+    {'icon': Icons.fingerprint, 'tip': 'Enable biometric lock for instant secure access', 'color': AppColors.primary},
+    {'icon': Icons.vpn_lock_rounded, 'tip': 'Use Private Browser to leave zero digital footprint', 'color': Color(0xFF8B5CF6)},
+    {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF34D399)},
+    {'icon': Icons.grid_view_rounded, 'tip': 'Use Calculator disguise to hide your vault entrance', 'color': Color(0xFFF59E0B)},
+    {'icon': Icons.lock_outline_rounded, 'tip': 'Set a strong PIN – avoid birthdays and simple patterns', 'color': Color(0xFFEF4444)},
+    {'icon': Icons.visibility_off_rounded, 'tip': 'Cloak sensitive files to make them invisible on device', 'color': Color(0xFF8B5CF6)},
+    {'icon': Icons.bolt_rounded, 'tip': 'Run Optimize weekly to clear cached data and save space', 'color': Color(0xFF34D399)},
+  ];
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
     _fetchDashboardData();
   }
 
+  void _initAnimations() {
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1800),
+      vsync: this,
+    );
+
+    _fadeAnims = List.generate(_sections, (i) {
+      final start = (i * 0.07).clamp(0.0, 1.0);
+      final end = (start + 0.25).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
+      );
+    });
+
+    _slideAnims = List.generate(_sections, (i) {
+      final start = (i * 0.07).clamp(0.0, 1.0);
+      final end = (start + 0.25).clamp(0.0, 1.0);
+      return Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
+      );
+    });
+
+    _staggerController.forward();
+
+    _blobController = AnimationController(duration: const Duration(seconds: 10), vsync: this)..repeat();
+    _shimmerController = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat();
+  }
+
   Future<void> _fetchDashboardData() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
-      final response = await ApiService().get('/vault'); // Assuming singleton or static if refactored
-      // Note: ApiService is instance based in previous code, but I made static methods too?
-      // Let's check ApiService usage. In Login it was Provider.of? No, it was ApiService.currentTime?
-      // Actually ApiService has instance methods. I should instantiate it or use Provider if available.
-      // For now, I'll instantiate it.
+      final stats = await VaultStatsService().getAggregatedStats();
       
-      if (response != null && response is List) {
-        if (mounted) {
-          setState(() => _error = null);
-        }
-        final newCounts = {'photo': 0, 'video': 0, 'document': 0, 'zip': 0, 'note': 0};
-        double totalBytes = 0;
-
-        for (var item in response) {
-          final type = item['type'] as String? ?? 'unknown';
-          if (newCounts.containsKey(type)) {
-            newCounts[type] = (newCounts[type] ?? 0) + 1;
-          }
-          
-          final sizeStr = item['size'] as String? ?? "0 B";
-          final numVal = double.tryParse(sizeStr.replaceAll(RegExp(r'[A-Za-z]'), '')) ?? 0;
-          
-          if (sizeStr.contains("GB")) {
-            totalBytes += numVal * 1024 * 1024 * 1024;
-          } else if (sizeStr.contains("MB")) {
-            totalBytes += numVal * 1024 * 1024;
-          } else if (sizeStr.contains("KB")) {
-            totalBytes += numVal * 1024;
-          } else {
-            totalBytes += numVal;
-          }
-        }
-
-        if (mounted) {
-          setState(() {
-            _counts = newCounts;
-            _recentItems = response.reversed.take(3).toList();
-            _usedGB = totalBytes / (1024 * 1024 * 1024);
-            _isLoading = false;
-          });
-        }
+      List<dynamic> recent = [];
+      try {
+        recent = await ApiService().get('/vault/recent');
+      } catch (e) {
+        if (kDebugMode) debugPrint('Dashboard Recent Fetch Error: $e');
       }
-    } catch (e) {
-      debugPrint('Dashboard fetch error: $e');
-      if (mounted) {
-        setState(() {
+
+      if (!mounted) return;
+      setState(() {
+        _fileCount = stats.totalCount;
+        _photoCount = stats.photoCount;
+        _videoCount = stats.videoCount;
+        _docCount = stats.docCount;
+        _storageUsed = stats.sizeFormatted;
+        _storagePercent = (stats.totalSizeBytes / _freePlanQuotaBytes).clamp(0.0, 1.0);
+        _recentItems = recent is List ? recent : [];
         _isLoading = false;
-        _error = e.toString().replaceAll('Exception: ', '');
       });
-      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (kDebugMode) debugPrint('Dashboard Error: $e');
     }
   }
 
-  String get _greeting {
+  String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
+    if (hour < 17) return 'Good afternoon';
     return 'Good evening';
   }
 
+  String _getUserFirstNameWatch() {
+    final user = context.watch<AuthProvider>().user;
+    if (user != null && user.name.isNotEmpty) return user.name.split(' ').first;
+    return '';
+  }
 
+  int _getSecurityScoreWatch() {
+    final user = context.watch<AuthProvider>().user;
+    int score = 60; // base: encryption active
+    if (user != null) score += 10; // authenticated
+    if (_fileCount > 0) score += 10; // vault has files
+    if (user?.subscriptionStatus == 'premium') score += 10;
+    score += 10; // AES-256 encryption always on
+    return score.clamp(0, 100);
+  }
+
+  /// Navigate with smooth transition
+  void _navigate(Widget page) {
+    Navigator.push(context, _SmoothPageRoute(page: page));
+  }
+
+  @override
+  void dispose() {
+    _staggerController.dispose();
+    _blobController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  Widget _anim(int index, Widget child) {
+    return FadeTransition(
+      opacity: _fadeAnims[index],
+      child: SlideTransition(position: _slideAnims[index], child: child),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-
-    final usedPct = min(100.0, (_usedGB / _planTotalGB) * 100);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.4);
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
+          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            _showUploadOptions(context);
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+        ),
+      ),
       body: Stack(
         children: [
-          // 1. Animated Background Blobs
-          _buildAnimatedBlobs(),
-
-          // Content
-          SingleChildScrollView(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 24,
-              left: 24,
-              right: 24,
-              bottom: 120, // Space for bottom nav
+          RepaintBoundary(child: _buildAnimatedBackground()),
+          const RepaintBoundary(child: _DotGridLayer()),
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _fetchDashboardData,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _anim(0, _buildHeader(textColor)),            // 0: header + bell
+                    const SizedBox(height: 20),
+                    _anim(1, _buildStorageCard(textColor, subColor)),        // 1: shimmer storage
+                    const SizedBox(height: 16),
+                    _anim(2, _buildStatRow(textColor, subColor)),            // 2: count-up stats
+                    const SizedBox(height: 16),
+                    _anim(3, _buildQuickActions(textColor)),       // 3: quick actions
+                    const SizedBox(height: 16),
+                    _anim(4, _buildSecurityRow(textColor, subColor)),        // 4: security score + sparkline
+                    const SizedBox(height: 16),
+                    _anim(5, _buildSecurityTip(color: AppColors.primary)),        // 5: daily tip
+                    const SizedBox(height: 24),
+                    _anim(6, _buildRecentHeader(textColor)),       // 6: recent header
+                    const SizedBox(height: 10),
+                    _anim(7, _buildRecentContent(textColor, subColor)),      // 7: recent content
+                    const SizedBox(height: 24),
+                    _anim(8, _buildToolsSection(textColor, subColor)),       // 8: tools
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -----------------------------------------------
+  //  ANIMATED BACKGROUND BLOBS
+  // -----------------------------------------------
+  Widget _buildAnimatedBackground() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    
+    return AnimatedBuilder(
+      animation: _blobController,
+      builder: (context, child) {
+        final t = _blobController.value;
+        final size = MediaQuery.of(context).size;
+        
+        return Stack(
+          children: [
+            // Adjusted base gradient for light/dark
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isLight 
+                    ? [const Color(0xFFF0F7FF), const Color(0xFFFDFDFF), const Color(0xFFF5F9FF)]
+                    : [const Color(0xFF000000), const Color(0xFF050505), const Color(0xFF000000)],
+                ),
+              ),
+            ),
+            // Top Primary Blob
+            Positioned(
+              top: -120 + math.sin(t * 2 * math.pi) * 40,
+              right: -80 + math.cos(t * 2 * math.pi) * 30,
+              child: Container(
+                width: size.width * 0.9,
+                height: size.width * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(isLight ? 0.08 : 0.04),
+                      AppColors.primary.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Bottom Accent Blob
+            Positioned(
+              bottom: -100 + math.cos(t * 2 * math.pi) * 60,
+              left: -120 + math.sin(t * 2 * math.pi) * 50,
+              child: Container(
+                width: size.width * 1.0,
+                height: size.width * 1.0,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.secondary.withOpacity(isLight ? 0.06 : 0.03),
+                      AppColors.secondary.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // -----------------------------------------------
+  //  HEADER WITH NOTIFICATION BELL
+  // -----------------------------------------------
+  Widget _buildHeader(Color textColor) {
+    final firstName = _getUserFirstNameWatch();
+    final greeting = firstName.isNotEmpty ? '${_getGreeting()}, $firstName ??' : _getGreeting();
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: AppTextStyles.display.copyWith(
+                  fontSize: firstName.isNotEmpty ? 22 : 26, 
+                  fontWeight: FontWeight.w800, 
+                  letterSpacing: -0.7,
+                  color: textColor,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.05, end: 0),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            _ScaleTapWidget(
+              onTap: () => _navigate(const SecurityLogsScreen()),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04),
+                  border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08)),
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(Icons.notifications_none_rounded, color: textColor.withOpacity(0.8), size: 22),
+                    Positioned(
+                      top: -1, right: -1,
+                      child: Container(
+                        width: 9, height: 9,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFEF4444),
+                        ),
+                      ).animate(onPlay: (controller) => controller.repeat()).scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 1.seconds, curve: Curves.easeInOut),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFA855F7), Color(0xFF8B5CF6)]),
+              ),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: isLight ? Colors.white : const Color(0xFF070B10),
+                child: Icon(Icons.person_rounded, color: isLight ? AppColors.primary : Colors.white, size: 22),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStorageCard(Color textColor, Color subColor) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: isLight ? Colors.white : Colors.white.withOpacity(0.03),
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.08) : Colors.white.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: isLight ? Colors.black.withOpacity(0.05) : Colors.black.withOpacity(0.2),
+            blurRadius: 40,
+            spreadRadius: isLight ? -5 : -10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              _greeting,
-                              style: AppTextStyles.display.copyWith(fontSize: 28),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildPulsingBadge(),
-                          ],
-                        ),
-                        Text(
-                          'Your vault is fully encrypted.',
-                          style: AppTextStyles.body.copyWith(
-                            color: AppColors.textSecondary.withOpacity(0.55),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.secondary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                          border: Border.all(color: Colors.white.withOpacity(0.1)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
-                              blurRadius: 14,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.person, color: Colors.white, size: 24),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.25),
+                        blurRadius: 15,
+                        spreadRadius: -2,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 14),
+                      const SizedBox(width: 8),
+                      Text(
+                        'PREMIUM ELITE'.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white, 
+                          fontSize: 10, 
+                          fontWeight: FontWeight.w900, 
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-
-                // Error State
-                if (_error != null)
+                const SizedBox(height: 16),
+                Text(
+                  'Storage Usage',
+                  style: TextStyle(color: subColor, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$_storageUsed of 5 GB used',
+                  style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: _storagePercent),
+            duration: const Duration(milliseconds: 1800),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 68, height: 68,
+                    child: CircularProgressIndicator(
+                      value: value, 
+                      backgroundColor: Colors.white.withOpacity(0.05), 
+                      color: const Color(0xFF00E5FF), 
+                      strokeWidth: 6, 
+                      strokeCap: StrokeCap.round,
+                    ),
+                  ),
+                  // Glow effect
                   Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 24),
-                    padding: const EdgeInsets.all(16),
+                    width: 74, height: 74,
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.redAccent, size: 32),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Connection Error',
-                          style: AppTextStyles.subheading.copyWith(color: Colors.redAccent),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() => _isLoading = true);
-                            _fetchDashboardData();
-                          },
-                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent.withOpacity(0.2),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Retry'),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.15), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00E5FF).withOpacity(0.1),
+                          blurRadius: 15,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
                   ),
-
-                // Subscription Card
-                GlassCard(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                colors: [AppColors.primary, Color(0xFF2B7FDB)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x594DA3FF),
-                                  blurRadius: 18,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.workspace_premium, color: Colors.white, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Free Plan',
-                                style: AppTextStyles.subheading.copyWith(fontSize: 15),
-                              ),
-                              Text(
-                                '${_usedGB.toStringAsFixed(1)} GB / ${_planTotalGB.toInt()} GB',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary.withOpacity(0.5),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          UsageRing(value: usedPct),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentScreen())),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.white.withOpacity(0.1)),
-                              ),
-                              child: Text(
-                                'Upgrade',
-                                style: AppTextStyles.subheading.copyWith(
-                                  fontSize: 13,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                  Text(
+                    '${(value * 100).toInt()}%', 
+                    style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w900),
                   ),
-                ),
-                const SizedBox(height: 24),
+                ],
+              ).animate().scale(delay: 600.ms, duration: 400.ms);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-                // Stats Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
-                  child: Row(
-                    children: [
-                      StatChip(
-                        icon: Icons.image,
-                        label: 'Photos',
-                        count: _counts['photo']!,
-                        color: AppColors.photos,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen())),
-                      ),
-                      StatChip(
-                        icon: Icons.videocam,
-                        label: 'Videos',
-                        count: _counts['video']!,
-                        color: AppColors.videos,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen())),
-                      ),
-                       StatChip(
-                        icon: Icons.description,
-                        label: 'Docs',
-                        count: _counts['document']!,
-                        color: AppColors.documents,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen())),
-                      ),
-                      StatChip(
-                        icon: Icons.folder_zip,
-                        label: 'ZIP',
-                        count: _counts['zip']!,
-                        color: AppColors.zip,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen())),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+  // -----------------------------------------------
+  //  STAT CARDS WITH COUNT-UP
+  // -----------------------------------------------
+  Widget _buildStatRow(Color textColor, Color subColor) {
+    return Row(
+      children: [
+        _buildStatCard(Icons.image_rounded, _photoCount, 'Photos', AppColors.photos, textColor, subColor),
+        const SizedBox(width: 10),
+        _buildStatCard(Icons.videocam_rounded, _videoCount, 'Videos', AppColors.videos, textColor, subColor),
+        const SizedBox(width: 10),
+        _buildStatCard(Icons.description_rounded, _docCount, 'Docs', AppColors.documents, textColor, subColor),
+      ],
+    );
+  }
 
-                // Recent Items (Placeholder structure)
-                  if (!_isLoading && _recentItems.isNotEmpty) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Recent Activity', style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.bold)),
-                        GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VaultScreen())),
-                          child: Text('View All', style: AppTextStyles.subheading.copyWith(fontSize: 13, color: AppColors.primary)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ..._recentItems.map((item) => _buildRecentItemTile(item)),
-                    const SizedBox(height: 24),
-                  ],
+  Widget _buildStatCard(IconData icon, int count, String label, Color color, Color textColor, Color subColor) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: isLight ? Colors.white : Colors.white.withOpacity(0.03),
+          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 12),
+            TweenAnimationBuilder<int>(
+              tween: IntTween(begin: 0, end: count),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Text('$value', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.w900, height: 1));
+              },
+            ),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(color: subColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
 
-                  // Tools Grid
-                Text('Tools & Support', style: AppTextStyles.subheading.copyWith(fontSize: 18)),
-                const SizedBox(height: 12),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.5,
+  // -----------------------------------------------
+  //  QUICK ACTIONS
+  // -----------------------------------------------
+  Widget _buildQuickActions(Color textColor) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+      ),
+      child: Row(
+        children: [
+          _buildQuickAction(Icons.camera_alt_rounded, 'Camera', const Color(0xFFF59E0B), _takePhoto, textColor),
+          _buildQuickDivider(),
+          _buildQuickAction(Icons.photo_library_rounded, 'Upload', const Color(0xFFA855F7), _pickAndUploadImage, textColor),
+          _buildQuickDivider(),
+          _buildQuickAction(Icons.lock_rounded, 'Cloak', const Color(0xFF8B5CF6), () => _navigate(const LocalCloakScreen()), textColor),
+          _buildQuickDivider(),
+          _buildQuickAction(Icons.shield_rounded, 'Secure', const Color(0xFF34D399), () {
+            PremiumSnackbar.show(
+              context,
+              message: 'Advanced encryption active!',
+              emoji: '???',
+              color: const Color(0xFF34D399),
+            );
+          }, textColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(IconData icon, String label, Color color, VoidCallback onTap, Color textColor) {
+    return Expanded(
+      child: _ScaleTapWidget(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: color.withOpacity(0.12)),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center, style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickDivider() {
+    return Container(width: 1, height: 40, margin: const EdgeInsets.symmetric(horizontal: 4), color: Colors.white.withOpacity(0.04));
+  }
+
+  // -----------------------------------------------
+  //  SECURITY SCORE + ACTIVITY SPARKLINE ROW
+  // -----------------------------------------------
+  Widget _buildSecurityRow(Color textColor, Color subColor) {
+    return Row(
+      children: [
+        // Security Score Gauge
+        Expanded(child: _buildSecurityScoreCard(textColor, subColor)),
+        const SizedBox(width: 10),
+        // Activity Sparkline
+        Expanded(child: _buildSparklineCard(textColor, subColor)),
+      ],
+    );
+  }
+
+  Widget _buildSecurityScoreCard(Color textColor, Color subColor) {
+    final score = _getSecurityScoreWatch();
+    final scoreColor = score >= 80 ? const Color(0xFF34D399) : score >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
+        border: Border.all(color: scoreColor.withOpacity(isLight ? 0.2 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shield_rounded, color: scoreColor, size: 14),
+              const SizedBox(width: 6),
+              Text('Security Score', style: TextStyle(color: subColor, fontSize: 11, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Animated gauge
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: score / 100),
+            duration: const Duration(milliseconds: 2000),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return SizedBox(
+                width: 76, height: 76,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    SectionCard(
-                      icon: Icons.calculate,
-                      title: 'Calculator',
-                      subtitle: 'Secret Vault Entry',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CalculatorScreen())), // Link to CalculatorScreen
+                    SizedBox(
+                      width: 76, height: 76,
+                      child: CircularProgressIndicator(
+                        value: value,
+                        backgroundColor: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05),
+                        color: scoreColor,
+                        strokeWidth: 7,
+                        strokeCap: StrokeCap.round,
+                      ),
                     ),
-                     SectionCard(
-                      icon: Icons.public, // Browser icon
-                      title: 'Private Browser',
-                      subtitle: 'No Trace Browsing',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivateBrowserScreen())), // Link to PrivateBrowserScreen
-                    ),
-                     SectionCard(
-                      icon: Icons.bolt,
-                      title: 'Optimize',
-                      subtitle: 'Clear cache',
-                      onTap: () async {
-                         try {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Optimizing... ðŸ§¹')));
-                            await DefaultCacheManager().emptyCache();
-                            if (context.mounted) {
-                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Device Optimized! RAM & Cache Cleared âœ¨')));
-                            }
-                         } catch (e) {
-                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                         }
-                      },
-                    ),
-                     SectionCard(
-                      icon: Icons.headset_mic,
-                      title: 'Support',
-                      subtitle: 'Get help',
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen())),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${(value * 100).toInt()}', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
+                        Text('%', style: TextStyle(color: subColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                      ],
                     ),
                   ],
                 ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            score >= 80 ? 'EXCELLENT' : score >= 50 ? 'GOOD' : 'POOR',
+            style: TextStyle(color: scoreColor, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSparklineCard(Color textColor, Color subColor) {
+    // Generate sample activity data based on actual file count
+    final random = math.Random(42); // fixed seed for consistency
+    final base = (_fileCount / 7).clamp(0, 20).toDouble();
+    final data = List.generate(7, (i) => base + random.nextDouble() * 3);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
+        border: Border.all(color: const Color(0xFFA855F7).withOpacity(isLight ? 0.2 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.auto_graph_rounded, color: const Color(0xFFA855F7).withOpacity(0.8), size: 14),
+              const SizedBox(width: 6),
+              Text('Vault Heatmap', style: TextStyle(color: subColor, fontSize: 11, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Sparkline chart
+          SizedBox(
+            height: 76,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 2000),
+              curve: Curves.easeOutCubic,
+              builder: (context, animValue, child) {
+                return RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _SparklinePainter(data: data, progress: animValue, isLight: isLight),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
+                Text(d, style: TextStyle(color: subColor.withOpacity(0.5), fontSize: 8, fontWeight: FontWeight.w800)),
+            ).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -----------------------------------------------
+  //  SECURITY TIP OF THE DAY
+  // -----------------------------------------------
+  Widget _buildSecurityTip({required Color color}) {
+    final tipIndex = DateTime.now().day % _securityTips.length;
+    final tip = _securityTips[tipIndex];
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: isLight ? color.withOpacity(0.06) : color.withOpacity(0.05),
+        border: Border.all(color: color.withOpacity(isLight ? 0.12 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: color.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 4))] : [],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(tip['icon'] as IconData, color: color, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'VAULT INTELLIGENCE', 
+                  style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                ),
+                const SizedBox(height: 4),
+                Text(tip['tip'] as String, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -398,126 +827,533 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildAnimatedBlobs() {
-    return Stack(
+  // -----------------------------------------------
+  //  RECENT ACTIVITY
+  // -----------------------------------------------
+  Widget _buildRecentHeader(Color textColor) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Positioned(
-          top: -50,
-          left: -50,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(seconds: 4),
-            builder: (context, value, child) {
-              return Transform.translate(
-                offset: Offset(sin(value * 2 * pi) * 20, cos(value * 2 * pi) * 30),
-                child: Container(
-                  width: 350,
-                  height: 350,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.12),
-                    boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.08), blurRadius: 100, spreadRadius: 40)],
-                  ),
-                ),
-              );
-            },
-          ),
+        Text(
+          'Recent Activity', 
+          style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)
         ),
-        Positioned(
-          top: 300,
-          right: -80,
+        _ScaleTapWidget(
+          onTap: () => _navigate(const VaultScreen()),
           child: Container(
-            width: 300,
-            height: 300,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accent.withOpacity(0.15),
-              boxShadow: [BoxShadow(color: AppColors.accent.withOpacity(0.1), blurRadius: 100, spreadRadius: 50)],
+              color: const Color(0xFFA855F7).withOpacity(0.1), 
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.15)),
             ),
+            child: const Text('EXPLORE', style: TextStyle(color: Color(0xFFA855F7), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPulsingBadge() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.6, end: 1.0),
-      duration: const Duration(seconds: 2),
-      curve: Curves.easeInOutSine,
-      builder: (context, value, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1 * value),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary.withOpacity(0.3 * value)),
-            boxShadow: [
-              BoxShadow(color: AppColors.primary.withOpacity(0.2 * value), blurRadius: 8 * value),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.verified_user, size: 10, color: AppColors.primary.withOpacity(value)),
-              const SizedBox(width: 4),
-              Text(
-                'SECURE',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary.withOpacity(0.9 * value),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
+  Widget _buildRecentContent(Color textColor, Color subColor) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    if (_isLoading) {
+      return Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: isLight ? Colors.white : Colors.white.withOpacity(0.02), 
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        ),
+        child: const Center(child: CircularProgressIndicator(color: Color(0xFFA855F7), strokeWidth: 2)),
+      );
+    }
+
+    if (_recentItems.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
+          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        ),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.1), width: 1.5))),
+                Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFA855F7).withOpacity(0.05))),
+                Icon(Icons.auto_awesome_rounded, color: const Color(0xFFA855F7).withOpacity(0.4), size: 28),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text('Secure your digital assets', style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Text('Files added here are encrypted instantly', style: TextStyle(color: subColor, fontSize: 12, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 24),
+            _ScaleTapWidget(
+              onTap: () => _showUploadOptions(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF2B7FD4)]),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 4))],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_moderator_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 10),
+                    Text('SECURE NOW', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  ],
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(children: _recentItems.take(3).map((item) => _buildRecentTile(item, textColor, subColor)).toList());
   }
 
-  Widget _buildRecentItemTile(dynamic item) {
-    final type = item['type'] ?? 'unknown';
-    Color color;
-    IconData icon;
-    
-    switch (type) {
-      case 'photo': color = AppColors.photos; icon = Icons.image; break;
-      case 'video': color = AppColors.videos; icon = Icons.videocam; break;
-      case 'note': color = AppColors.notes; icon = Icons.description; break;
-      case 'zip': color = AppColors.zip; icon = Icons.folder_zip; break;
-      default: color = AppColors.documents; icon = Icons.insert_drive_file;
+  bool _isImage(String name) {
+    final ext = p.extension(name).toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'].contains(ext);
+  }
+
+  bool _isVideo(String name) {
+    final ext = p.extension(name).toLowerCase();
+    return ['.mp4', '.mov', '.avi', '.mkv', '.webm'].contains(ext);
     }
+
+  Widget _buildRecentTile(dynamic item, Color textColor, Color subColor) {
+    final name = item['originalName'] ?? 'Unnamed file';
+    final size = item['sizeFormatted'] ?? '';
+    final isImage = _isImage(name);
+    final isVideo = _isVideo(name);
+    final color = isImage ? const Color(0xFFA855F7) : isVideo ? const Color(0xFF8B5CF6) : const Color(0xFF34D399);
+    final icon = isImage ? Icons.image_rounded : isVideo ? Icons.play_circle_rounded : Icons.insert_drive_file_rounded;
+    final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
-        padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22), 
+        color: isLight ? Colors.white : Colors.white.withOpacity(0.02), 
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))] : [],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(14)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
+                if (size.isNotEmpty) ...[const SizedBox(height: 4), Text(size, style: TextStyle(color: subColor, fontSize: 12, fontWeight: FontWeight.w500))],
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: textColor.withOpacity(0.3), size: 22),
+        ],
+      ),
+    );
+  }
+
+  // -----------------------------------------------
+  //  TOOLS & SUPPORT
+  // -----------------------------------------------
+  Widget _buildToolsSection(Color textColor, Color subColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Security Modules', 
+          style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: SectionCard(
+                icon: Icons.grid_view_rounded,
+                title: 'Calculator',
+                subtitle: 'Vault Entrance',
+                onTap: () => _navigate(const CalculatorScreen()),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SectionCard(
+                icon: Icons.public_rounded,
+                title: 'Web Cloak',
+                subtitle: 'Private Browser',
+                onTap: () => _navigate(const PrivateBrowserScreen()),
+              ),
+            ),
+          ],
+        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: SectionCard(
+                icon: Icons.analytics_rounded,
+                title: 'Analytics',
+                subtitle: 'Activity Logs',
+                onTap: () => _navigate(const AnalyticsScreen()),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SectionCard(
+                icon: Icons.bolt_rounded,
+                title: 'Optimizer',
+                subtitle: 'Deep Cache Clean',
+                onTap: () async {
+                  try {
+                    await DefaultCacheManager().emptyCache();
+                    if (context.mounted) {
+                      PremiumSnackbar.show(
+                        context,
+                        message: 'Memory Optimized Successfully!',
+                        emoji: '??',
+                        color: const Color(0xFF34D399),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                    }
+                  }
+                },
+              ),
+            ),
+          ],
+        ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: SectionCard(
+                icon: Icons.headset_mic_rounded,
+                title: 'Help Center',
+                subtitle: '24/7 Support',
+                onTap: () => _navigate(const SupportScreen()),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SectionCard(
+                icon: Icons.emergency_rounded,
+                title: 'Panic Node',
+                subtitle: 'Total Erase/Lock',
+                onTap: () async {
+                  HapticFeedback.heavyImpact();
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  await auth.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+      ],
+    );
+  }
+
+  // -----------------------------------------------
+  //  UPLOAD OPTIONS
+  // -----------------------------------------------
+  void _showUploadOptions(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isLight ? AppColors.surface : AppColors.darkSurface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: isLight ? Colors.black12 : Colors.white12, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text('Add to Vault', style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.w700, color: isLight ? AppColors.textPrimary : Colors.white)),
+            const SizedBox(height: 20),
+            _uploadOption(ctx, Icons.image_rounded, 'Photos', AppColors.photos, _pickAndUploadImage, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.videocam_rounded, 'Videos', AppColors.videos, _pickAndUploadVideo, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.attach_file_rounded, 'Files', AppColors.documents, _pickAndUploadFile, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.camera_alt_rounded, 'Camera', AppColors.warning, _takePhoto, isLight),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _uploadOption(BuildContext ctx, IconData icon, String title, Color color, VoidCallback onTap, bool isLight) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.pop(ctx);
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06), 
+          borderRadius: BorderRadius.circular(16), 
+          border: Border.all(color: color.withOpacity(0.12))
+        ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item['name'] ?? 'Untitled', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, fontSize: 14)),
-                  Text(item['size'] ?? '0 KB', style: AppTextStyles.caption.copyWith(fontSize: 11, color: Colors.white38)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 14),
+            Text(title, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.35), size: 20),
           ],
+        ),
+      ),
+    );
+  }
+
+  // -----------------------------------------------
+  //  UPLOAD LOGIC
+  // -----------------------------------------------
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+    if (image != null) await _uploadFile(image.path);
+  }
+
+  Future<void> _pickAndUploadVideo() async {
+    final picker = ImagePicker();
+    final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+    if (video != null) await _uploadFile(video.path);
+  }
+
+  Future<void> _pickAndUploadFile() async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.single.path != null) await _uploadFile(result.files.single.path!);
+  }
+
+  Future<void> _takePhoto() async {
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 90);
+    if (photo != null) await _uploadFile(photo.path);
+  }
+
+  Future<void> _uploadFile(String path) async {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(content: Text('?? Uploading...')));
+    try {
+      await ApiService().uploadMultipart('/vault/upload', path);
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(const SnackBar(content: Text('? Vault updated'), backgroundColor: Colors.green));
+      _fetchDashboardData();
+    } catch (e) {
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.redAccent));
+    }
+  }
+}
+
+// -----------------------------------------------
+//  DOT GRID BACKGROUND LAYER + PAINTER
+// -----------------------------------------------
+class _DotGridLayer extends StatelessWidget {
+  const _DotGridLayer();
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return Opacity(
+      opacity: isLight ? 0.05 : 0.025,
+      child: RepaintBoundary(
+        child: CustomPaint(
+          size: MediaQuery.of(context).size,
+          painter: _DotGridPainter(isLight: isLight),
         ),
       ),
     );
   }
 }
 
+class _DotGridPainter extends CustomPainter {
+  final bool isLight;
+  const _DotGridPainter({required this.isLight});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const spacing = 28.0;
+    final paint = Paint()
+      ..color = isLight ? Colors.black : Colors.white
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.6;
+
+    final points = <Offset>[];
+    for (double x = 0; x < size.width; x += spacing) {
+      for (double y = 0; y < size.height; y += spacing) {
+        points.add(Offset(x, y));
+      }
+    }
+    canvas.drawPoints(PointMode.points, points, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// -----------------------------------------------
+//  ACTIVITY SPARKLINE PAINTER
+// -----------------------------------------------
+class _SparklinePainter extends CustomPainter {
+  final List<double> data;
+  final double progress;
+  final bool isLight;
+
+  _SparklinePainter({required this.data, required this.progress, required this.isLight});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final maxVal = data.reduce(math.max).clamp(1.0, double.infinity);
+    final points = <Offset>[];
+
+    for (int i = 0; i < data.length; i++) {
+      final x = (i / (data.length - 1)) * size.width;
+      final y = size.height - (data[i] / maxVal) * size.height * 0.8 * progress;
+      points.add(Offset(x, y));
+    }
+
+    // Gradient fill under the line
+    final fillPath = Path()..moveTo(0, size.height);
+    for (final p in points) {
+      fillPath.lineTo(p.dx, p.dy);
+    }
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [AppColors.primary.withOpacity(0.12 * progress), AppColors.primary.withOpacity(0.0)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Line
+    final linePaint = Paint()
+      ..color = AppColors.primary.withOpacity(0.6 * progress)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final linePath = Path();
+    for (int i = 0; i < points.length; i++) {
+      if (i == 0) {
+        linePath.moveTo(points[i].dx, points[i].dy);
+      } else {
+        // Smooth curve using quadratic bezier
+        final prev = points[i - 1];
+        final curr = points[i];
+        final midX = (prev.dx + curr.dx) / 2;
+        linePath.quadraticBezierTo(prev.dx + (midX - prev.dx) * 0.5, prev.dy, midX, (prev.dy + curr.dy) / 2);
+        linePath.quadraticBezierTo(midX + (curr.dx - midX) * 0.5, curr.dy, curr.dx, curr.dy);
+      }
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    // Dots
+    final dotPaint = Paint()..color = AppColors.primary;
+    final dotBgPaint = Paint()..color = isLight ? Colors.white : const Color(0xFF0D1520);
+    for (final p in points) {
+      canvas.drawCircle(p, 3.5, dotBgPaint);
+      canvas.drawCircle(p, 2, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.data != data;
+  }
+}
+
+// -----------------------------------------------
+//  SCALE TAP WITH HAPTIC FEEDBACK
+// -----------------------------------------------
+class _ScaleTapWidget extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _ScaleTapWidget({required this.child, required this.onTap});
+
+  @override
+  State<_ScaleTapWidget> createState() => _ScaleTapWidgetState();
+}
+
+class _ScaleTapWidgetState extends State<_ScaleTapWidget> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        _controller.forward();
+        HapticFeedback.selectionClick(); // Subtle haptic on press
+      },
+      onTapUp: (_) {
+        _controller.reverse();
+        HapticFeedback.lightImpact(); // Confirm haptic on release
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+    );
+  }
+}

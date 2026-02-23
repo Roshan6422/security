@@ -105,56 +105,29 @@ class _AudioListScreenState extends State<AudioListScreen> {
         if (mounted) Navigator.pop(context); // Close loading
         await _fetchItems();
 
-        if (mounted) {
            if (successCount > 0) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Encrypted & Saved to Vault 🔐')));
-              _askToDeleteOriginals(uploadedPaths);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Encrypted & Saved to Vault 🔐')));
+                _deleteOriginalsSilently(uploadedPaths);
+              }
            }
         }
-      }
-    } catch (e) {
+      } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  Future<void> _askToDeleteOriginals(List<String> filePaths) async {
-     final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-         backgroundColor: const Color(0xFF1E293B),
-         title: const Text('Delete Originals?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-         content: Text(
-           'Do you want to delete ${filePaths.length} audio files from your device storage?\n\n(They are safe in the Vault)', 
-           style: const TextStyle(color: Colors.white70)
-         ),
-         actions: [
-           TextButton(
-             onPressed: () => Navigator.pop(ctx, false), 
-             child: const Text('Keep them')
-           ),
-           TextButton(
-             onPressed: () => Navigator.pop(ctx, true), 
-             child: const Text('Yes, Delete All', style: TextStyle(color: Colors.red))
-           ),
-         ],
-      ),
-    );
-
-    if (confirm == true) {
-      int deletedCount = 0;
-      for (final path in filePaths) {
-        try {
-          final file = File(path);
-          if (await file.exists()) {
-            await file.delete();
-            deletedCount++;
-          }
-        } catch (e) {
-           debugPrint('Delete error: $e');
+  Future<void> _deleteOriginalsSilently(List<String> filePaths) async {
+    for (final path in filePaths) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
         }
+      } catch (e) {
+        debugPrint('Silent delete error: $e');
       }
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$deletedCount originals deleted from storage 🗑️')));
     }
   }
 

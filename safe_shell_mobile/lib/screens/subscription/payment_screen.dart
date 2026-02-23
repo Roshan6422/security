@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../widgets/glass_card.dart';
@@ -78,7 +78,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (result == true) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('🎉 Payment successful! Premium features unlocked.'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('?? Payment successful! Premium features unlocked.'), backgroundColor: Colors.green),
           );
           Navigator.pop(context, true);
         }
@@ -220,8 +220,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: 500, height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF4DA3FF).withOpacity(0.1),
-                boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withOpacity(0.1), blurRadius: 120)],
+                color: const Color(0xFFA855F7).withOpacity(0.1),
+                boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.1), blurRadius: 120)],
               ),
             ),
           ),
@@ -274,8 +274,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         width: 48, height: 48,
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(16),
-                                          gradient: const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFF2B7FDB)]),
-                                          boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withOpacity(0.4), blurRadius: 24)],
+                                          gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]),
+                                          boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.4), blurRadius: 24)],
                                         ),
                                         child: const Icon(Icons.star, color: Colors.white, size: 24),
                                       ),
@@ -352,9 +352,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         // Payment Methods
                         Row(
                           children: [
-                            Expanded(child: _buildMethodCard('PayHere', 'payhere', Icons.credit_card, const Color(0xFF4DA3FF))),
+                            Expanded(child: _buildMethodCard('PayHere', 'payhere', Icons.credit_card, const Color(0xFFA855F7))),
                             const SizedBox(width: 12),
-                            Expanded(child: _buildMethodCard('Bank', 'bank', Icons.account_balance, const Color(0xFF10B981))),
+                            Expanded(child: _buildMethodCard('Bank', 'bank', Icons.account_balance, const Color(0xFF34D399))),
                           ],
                         ),
 
@@ -365,8 +365,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        _buildFeatureCard(Icons.cloud_queue, '8GB Storage', 'Store files, media, docs & more', const Color(0xFF4DA3FF)),
-                        _buildFeatureCard(Icons.security, 'Advanced Security', 'Strong encryption + vault hardening', const Color(0xFF10B981)),
+                        _buildFeatureCard(Icons.cloud_queue, '8GB Storage', 'Store files, media, docs & more', const Color(0xFFA855F7)),
+                        _buildFeatureCard(Icons.security, 'Advanced Security', 'Strong encryption + vault hardening', const Color(0xFF34D399)),
                         _buildFeatureCard(Icons.flash_on, 'Priority Support', 'Faster replies, dedicated help', const Color(0xFFF59E0B)),
 
                         const SizedBox(height: 24),
@@ -416,9 +416,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4DA3FF) : Colors.transparent,
+            color: isSelected ? const Color(0xFFA855F7) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            gradient: isSelected ? const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFF2B7FDB)]) : null,
+            gradient: isSelected ? const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]) : null,
           ),
           alignment: Alignment.center,
           child: Row(
@@ -484,7 +484,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.check_circle, size: 16, color: Color(0xFF10B981)),
+            const Icon(Icons.check_circle, size: 16, color: Color(0xFF34D399)),
           ],
         ),
       ),

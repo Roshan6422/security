@@ -1,4 +1,7 @@
-﻿import 'dart:io';
+import 'dart:io';
+import 'dart:math' as math;
+import '../../widgets/confetti_overlay.dart';
+import '../../widgets/premium_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,13 +16,15 @@ import 'videos_list_screen.dart';
 import 'audio_list_screen.dart';
 import 'notes_list_screen.dart';
 import 'documents_list_screen.dart';
-import 'zip_list_screen.dart';
 import 'recycle_bin_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'local_cloak_screen.dart';
 import 'package:provider/provider.dart';
+import '../../utils/sound_effects.dart';
 import '../../providers/settings_provider.dart';
 import '../../main.dart';
+import 'cloak_list_screen.dart';
+import 'app_hider_screen.dart';
 
 class VaultScreen extends StatefulWidget {
   const VaultScreen({super.key});
@@ -28,27 +33,31 @@ class VaultScreen extends StatefulWidget {
   State<VaultScreen> createState() => _VaultScreenState();
 }
 
-class _VaultScreenState extends State<VaultScreen> with RouteAware {
+class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProviderStateMixin {
   final _storage = const FlutterSecureStorage();
-  final LocalAuthentication _localAuth = LocalAuthentication();
-  bool _isUnlocked = false;
-  bool _isLoading = true;
-  bool _isAuthenticating = false;
-  bool _biometricEnabled = false;
+  bool _isLoading = false;
   
+  // Staggered entrance animation
+  late AnimationController _staggerController;
+
   final List<_VaultCategory> _categories = [
-    _VaultCategory(Icons.image, 'Photos', 'photo', const Color(0xFF4DA3FF)),
-    _VaultCategory(Icons.videocam, 'Videos', 'video', const Color(0xFF8B5CF6)),
-    _VaultCategory(Icons.audiotrack, 'Audio', 'audio', const Color(0xFFE11D48)),
-    _VaultCategory(Icons.sticky_note_2, 'Notes', 'note', const Color(0xFFFCD34D)),
-    _VaultCategory(Icons.description, 'Documents', 'document', const Color(0xFF10B981)),
-    _VaultCategory(Icons.folder_zip, 'ZIP Files', 'zip', const Color(0xFFF59E0B)),
+    _VaultCategory(Icons.image_rounded, 'Photos', 'photo', AppColors.photos),
+    _VaultCategory(Icons.videocam_rounded, 'Videos', 'video', AppColors.videos),
+    _VaultCategory(Icons.visibility_off_rounded, 'Invisible Files', 'local_cloak', const Color(0xFFF59E0B)),
+    _VaultCategory(Icons.audiotrack_rounded, 'Audio', 'audio', const Color(0xFF6366F1)),
+    _VaultCategory(Icons.sticky_note_2_rounded, 'Notes', 'note', AppColors.notes),
+    _VaultCategory(Icons.description_rounded, 'Documents', 'document', AppColors.documents),
+    _VaultCategory(Icons.lock_person_rounded, 'App Lock', 'app_hider', const Color(0xFF818CF8)),
   ];
+
 
   @override
   void initState() {
     super.initState();
-    _checkBiometric();
+    _staggerController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..forward();
   }
 
   @override
@@ -60,395 +69,162 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
+    _staggerController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didPopNext() {
-    // Refresh settings when returning to this screen
-    _checkBiometric();
-  }
-
-  /// Check if biometric is enabled, then gate access accordingly
-  Future<void> _checkBiometric() async {
-    try {
-      final saved = await _storage.read(key: 'biometric_enabled');
-      _biometricEnabled = saved == 'true';
-
-      if (_biometricEnabled && !_isUnlocked) {
-        // Biometric is enabled and currently locked → show lock screen, require fingerprint
-        if (mounted) {
-          setState(() {
-            _isUnlocked = false;
-            _isLoading = false;
-          });
-          WidgetsBinding.instance.addPostFrameCallback((_) => _authenticate());
-        }
-      } else {
-        // Biometric not enabled OR already unlocked
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (_) {
-      // On error, default to current state
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  /// Prompt fingerprint / Face ID / PIN authentication
-  Future<void> _authenticate() async {
-    if (_isAuthenticating) return;
-    
-    // 1. Check if device supports biometrics at all
-    final bool isSupported = await _localAuth.isDeviceSupported();
-    final bool canCheck = await _localAuth.canCheckBiometrics;
-    
-    if (!isSupported || !canCheck) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Biometric hardware not available or not setup.')),
-        );
-      }
-      return;
-    }
-
-    _isAuthenticating = true;
-
-    try {
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to unlock your Vault (Face ID or Fingerprint)',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false, // Allow PIN/Pattern fallback
-          useErrorDialogs: true,
-        ),
-      );
-
-      if (mounted) {
-        setState(() {
-          _isUnlocked = authenticated;
-          _isAuthenticating = false;
-        });
-      }
-    } on PlatformException catch (e) {
-      debugPrint('Biometric Error: $e');
-      if (mounted) {
-        setState(() => _isAuthenticating = false);
-        
-        String errorMsg = 'Authentication error. Try again.';
-        if (e.code == 'NotEnrolled') {
-          errorMsg = 'No Face/Fingerprint/PIN enrolled on this device.';
-        } else if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
-          errorMsg = 'Too many attempts. Locked out.';
-        } else if (e.code == 'NotAvailable') {
-          errorMsg = 'Biometric sensor (Face/Fingerprint) not available.';
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            action: SnackBarAction(label: 'Enter Password', onPressed: _showEmergencyUnlock),
-          ),
-        );
-      }
-    }
-  }
-
-  /// Show dialog to enter recovery key and bypass biometrics
-  Future<void> _showEmergencyUnlock() async {
-    final controller = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-            SizedBox(width: 12),
-            Text('Emergency Unlock', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter your Account Password to bypass biometric lock and access your vault.',
-              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
-              decoration: InputDecoration(
-                hintText: 'Enter Password',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), letterSpacing: 0),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () async {
-              final input = controller.text.trim();
-              final saved = await _storage.read(key: 'saved_password');
-              
-              if (input == (saved ?? "").trim()) {
-                if (ctx.mounted) Navigator.pop(ctx, true);
-              } else {
-                if (ctx.mounted) {
-                   ScaffoldMessenger.of(ctx).showSnackBar(
-                     const SnackBar(content: Text('Invalid Password'), backgroundColor: Colors.redAccent)
-                   );
-                }
-              }
-            },
-            child: const Text('Unlock', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && mounted) {
-      setState(() => _isUnlocked = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlocked via Password ✅'), backgroundColor: Color(0xFF10B981)),
-      );
-    }
-  }
-
-  /// Re-lock vault when user switches away (called externally via key or visibility)
-  void lockVault() {
-    if (_biometricEnabled && mounted) {
-      setState(() => _isUnlocked = false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-      );
-    }
-
-    // -- LOCKED STATE: show fingerprint prompt --
-    if (!_isUnlocked) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).brightness == Brightness.light ? AppColors.background : AppColors.darkBackground,
         body: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 2),
-                ),
-                child: const Icon(Icons.lock_person, size: 72, color: AppColors.primary),
-              ),
-              const SizedBox(height: 28),
-              Text('Vault Locked', style: AppTextStyles.display.copyWith(fontSize: 28)),
-              const SizedBox(height: 8),
-              Text(
-                'Use Face ID or Fingerprint to unlock',
-                style: AppTextStyles.body.copyWith(color: Colors.white54),
-              ),
-              const SizedBox(height: 36),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF2B7FDB)]),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 20)],
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: _isAuthenticating ? null : _authenticate,
-                  icon: const Icon(Icons.security, color: Colors.white),
-                  label: Text(
-                    _isAuthenticating ? 'Verifying...' : 'Unlock Vault',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-              ),
+              const CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2.5),
               const SizedBox(height: 16),
-              TextButton.icon(
-                onPressed: _showEmergencyUnlock,
-                icon: const Icon(Icons.password, size: 18, color: Colors.white38),
-                label: Text(
-                  'Unlock with Account Password',
-                  style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
-                ),
-              ),
+              Text('Unlocking vault...', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : AppColors.darkTextSecondary, fontSize: 13)),
             ],
           ),
         ),
       );
     }
 
-    // -- UNLOCKED VAULT UI --
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : AppColors.darkTextSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('My Vault', style: AppTextStyles.heading.copyWith(fontSize: 24)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.white70),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RecycleBinScreen())),
-            tooltip: 'Recycle Bin',
-          ),
-          const SizedBox(width: 8),
-        ],
+        title: Text('SAFE VAULT', style: AppTextStyles.heading.copyWith(letterSpacing: 2, fontSize: 16, color: isLight ? AppColors.textPrimary : AppColors.primary)),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('🔒 Encrypted Storage', style: AppTextStyles.caption.copyWith(color: Colors.white.withOpacity(0.4))),
-              const SizedBox(height: 16),
-              Consumer<SettingsProvider>(
-                builder: (context, settings, child) {
-                  if (!settings.localCloakEnabled) return const SizedBox.shrink();
-                  
-                  return GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LocalCloakScreen())),
-                    child: GlassCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Premium Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('My Vault', style: AppTextStyles.heading.copyWith(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: textColor)),
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Container(
-                            width: 48, height: 48,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.visibility_off, color: AppColors.primary, size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Local Cloak', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                                Text('View hidden phone media', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13)),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.arrow_forward_ios, color: Colors.white24, size: 16),
+                          Container(width: 5, height: 5, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF34D399))),
+                          const SizedBox(width: 6),
+                          Text('?? Encrypted & Cloaked', style: AppTextStyles.caption.copyWith(color: subColor, fontSize: 12)),
                         ],
                       ),
+                    ],
+                  ),
+                  _ScaleTapVault(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RecycleBinScreen()));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isLight ? AppColors.primary.withOpacity(0.08) : Colors.white.withOpacity(0.05),
+                        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.06)),
+                      ),
+                      child: Icon(Icons.delete_outline_rounded, color: isLight ? AppColors.primary.withOpacity(0.7) : Colors.white.withOpacity(0.4), size: 20),
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-              Expanded(
+            ),
+            const SizedBox(height: 24),
+
+            // Staggered Category Grid
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: GridView.builder(
+                  physics: const BouncingScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.1,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.15,
                   ),
                   itemCount: _categories.length,
                   itemBuilder: (ctx, i) {
-                    return _buildCategoryCard(_categories[i]);
+                    final delay = (i * 0.08).clamp(0.0, 1.0);
+                    final end = (delay + 0.25).clamp(0.0, 1.0);
+                    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+                      CurvedAnimation(parent: _staggerController, curve: Interval(delay, end, curve: Curves.easeOutCubic)),
+                    );
+                    final slideAnim = Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+                      CurvedAnimation(parent: _staggerController, curve: Interval(delay, end, curve: Curves.easeOutCubic)),
+                    );
+                    return FadeTransition(
+                      opacity: fadeAnim,
+                      child: SlideTransition(
+                        position: slideAnim,
+                        child: _buildCategoryCard(_categories[i]),
+                      ),
+                    );
                   },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF2B7FDB)]),
+          gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(isLight ? 0.3 : 0.4), blurRadius: 16, offset: const Offset(0, 4))],
         ),
         child: FloatingActionButton(
-          onPressed: () => _showUploadOptions(context),
+          onPressed: () { HapticFeedback.mediumImpact(); _showUploadOptions(context); },
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
         ),
       ),
     );
   }
 
   void _showUploadOptions(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E293B),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: isLight ? AppColors.surface : AppColors.darkSurface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-            ),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: isLight ? Colors.black12 : Colors.white12, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            Text('Import to Vault', style: AppTextStyles.subheading.copyWith(fontSize: 18)),
+            Text('Import to Vault', style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.w700, color: isLight ? AppColors.textPrimary : Colors.white)),
             const SizedBox(height: 6),
-            Text('Files are uploaded & originals auto-deleted', 
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+            Text('Files are uploaded & originals auto-deleted', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 12)),
             const SizedBox(height: 20),
-            _uploadOption(ctx, Icons.image, 'Import Photo', 'From gallery', () {
-              Navigator.pop(ctx);
-              _pickAndUploadImage();
-            }),
-            const SizedBox(height: 12),
-            _uploadOption(ctx, Icons.videocam, 'Import Video', 'From gallery', () {
-              Navigator.pop(ctx);
-              _pickAndUploadVideo();
-            }),
-            const SizedBox(height: 12),
-            _uploadOption(ctx, Icons.attach_file, 'Import File', 'Documents, ZIP, etc.', () {
-              Navigator.pop(ctx);
-              _pickAndUploadFile();
-            }),
-            const SizedBox(height: 12),
-            _uploadOption(ctx, Icons.camera_alt, 'Camera', 'Take photo directly', () {
-              Navigator.pop(ctx);
-              _takePhoto();
-            }),
-            const SizedBox(height: 12),
-            _uploadOption(ctx, Icons.videocam_outlined, 'Record Video', 'Record directly', () {
-              Navigator.pop(ctx);
-              _takeVideo();
-            }),
+            _uploadOption(ctx, Icons.image_rounded, 'Import Photo', 'From gallery', const Color(0xFFA855F7), () { Navigator.pop(ctx); _pickAndUploadImage(); }, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.videocam_rounded, 'Import Video', 'From gallery', const Color(0xFF8B5CF6), () { Navigator.pop(ctx); _pickAndUploadVideo(); }, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.attach_file_rounded, 'Import File', 'Documents, ZIP, etc.', const Color(0xFF34D399), () { Navigator.pop(ctx); _pickAndUploadFile(); }, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.camera_alt_rounded, 'Camera', 'Take photo directly', const Color(0xFFF59E0B), () { Navigator.pop(ctx); _takePhoto(); }, isLight),
+            const SizedBox(height: 8),
+            _uploadOption(ctx, Icons.videocam_outlined, 'Record Video', 'Record directly', const Color(0xFFE11D48), () { Navigator.pop(ctx); _takeVideo(); }, isLight),
             SizedBox(height: MediaQuery.of(ctx).padding.bottom + 12),
           ],
         ),
@@ -456,140 +232,116 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
     );
   }
 
-  Widget _uploadOption(BuildContext ctx, IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _uploadOption(BuildContext ctx, IconData icon, String title, String subtitle, Color color, VoidCallback onTap, bool isLight) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () { HapticFeedback.selectionClick(); onTap(); },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: color.withOpacity(0.06),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: color.withOpacity(isLight ? 0.15 : 0.08)),
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.3), Colors.white.withOpacity(0.05)]),
+                gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.06)]),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
-                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                  Text(title, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(subtitle, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 11)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white24),
+            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.3), size: 20),
           ],
         ),
       ),
     );
   }
 
-  /// Pick photo from gallery → upload → delete original
   Future<void> _pickAndUploadImage() async {
     try {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
-      if (image != null) {
-        await _uploadAndDelete(image.path);
-      }
+      if (image != null) await _uploadAndDelete(image.path);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  /// Pick video from gallery → upload → delete original
   Future<void> _pickAndUploadVideo() async {
     try {
       final picker = ImagePicker();
       final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
-      if (video != null) {
-        await _uploadAndDelete(video.path);
-      }
+      if (video != null) await _uploadAndDelete(video.path);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  /// Pick any file → upload → delete original
   Future<void> _pickAndUploadFile() async {
     try {
       final result = await FilePicker.platform.pickFiles();
-      if (result != null && result.files.single.path != null) {
-        await _uploadAndDelete(result.files.single.path!);
-      }
+      if (result != null && result.files.single.path != null) await _uploadAndDelete(result.files.single.path!);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  /// Take photo with camera → upload → delete temp
   Future<void> _takePhoto() async {
     try {
       final picker = ImagePicker();
       final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 90);
-      if (photo != null) {
-        await _uploadAndDelete(photo.path);
-      }
+      if (photo != null) await _uploadAndDelete(photo.path);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  /// Record video with camera → upload → delete temp
   Future<void> _takeVideo() async {
     try {
       final picker = ImagePicker();
       final XFile? video = await picker.pickVideo(source: ImageSource.camera);
-      if (video != null) {
-        await _uploadAndDelete(video.path);
-      }
+      if (video != null) await _uploadAndDelete(video.path);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
-  /// Upload file to database → auto-delete original from phone
   Future<void> _uploadAndDelete(String filePath) async {
     if (!mounted) return;
-    
+    HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('📤 Uploading to vault...'), duration: Duration(seconds: 60)),
+      const SnackBar(content: Text('?? Uploading to vault...'), duration: Duration(seconds: 60)),
     );
 
     try {
-      // 1. Upload to database via API
       await ApiService().uploadMultipart('/vault/upload', filePath);
-      
-      // 2. Auto-delete original from phone
       try {
         final originalFile = File(filePath);
-        if (await originalFile.exists()) {
-          await originalFile.delete();
-        }
-      } catch (_) {
-        // Can't delete original (permissions), that's OK
-      }
-      
+        if (await originalFile.exists()) await originalFile.delete();
+      } catch (_) {}
+
       if (mounted) {
+        HapticFeedback.mediumImpact();
+        await SoundEffects.uploadSuccess();
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Uploaded & deleted from phone'), 
-            backgroundColor: Color(0xFF10B981),
-          ),
-        );
+        ConfettiOverlay.show(context);
+        PremiumSnackbar.show(context, message: 'Uploaded & deleted from phone', emoji: '?', color: const Color(0xFF34D399));
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.redAccent),
@@ -599,7 +351,10 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
   }
 
   Widget _buildCategoryCard(_VaultCategory category) {
-    return GestureDetector(
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
+    return GlassCard(
       onTap: () {
         Widget screen;
         switch (category.type) {
@@ -608,28 +363,45 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware {
           case 'audio': screen = const AudioListScreen(); break;
           case 'note': screen = const NotesListScreen(); break;
           case 'document': screen = const DocumentsListScreen(); break;
-          case 'zip': screen = const ZipListScreen(); break;
+          case 'app_hider': screen = const AppHiderScreen(); break;
+          case 'local_cloak': screen = const LocalCloakScreen(); break;
+          case 'cloud_cloak': screen = const CloakListScreen(); break;
           default: screen = const PhotosListScreen();
         }
         Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
       },
-      child: GlassCard(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                color: category.color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
+      borderRadius: 24,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 54, height: 54,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [category.color.withOpacity(0.3), category.color.withOpacity(0.1)],
               ),
-              child: Icon(category.icon, color: category.color, size: 26),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: category.color.withOpacity(0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: category.color.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            Text(category.label, style: AppTextStyles.subheading.copyWith(fontSize: 14)),
-          ],
-        ),
+            child: Icon(category.icon, color: category.color, size: 26),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            category.label,
+            style: AppTextStyles.subheading.copyWith(fontSize: 14, fontWeight: FontWeight.w700, color: textColor, letterSpacing: -0.2),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -642,4 +414,39 @@ class _VaultCategory {
   final Color color;
 
   _VaultCategory(this.icon, this.label, this.type, this.color);
+}
+
+class _ScaleTapVault extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _ScaleTapVault({required this.child, required this.onTap});
+
+  @override
+  State<_ScaleTapVault> createState() => _ScaleTapVaultState();
+}
+
+class _ScaleTapVaultState extends State<_ScaleTapVault> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
+    _scale = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) { _ctrl.forward(); HapticFeedback.selectionClick(); },
+      onTapUp: (_) { _ctrl.reverse(); HapticFeedback.lightImpact(); widget.onTap(); },
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(scale: _scale, child: widget.child),
+    );
+  }
 }

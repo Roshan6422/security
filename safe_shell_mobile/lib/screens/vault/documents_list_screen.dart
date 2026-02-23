@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../utils/file_viewer.dart';
+import '../../utils/sound_effects.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DocumentsListScreen extends StatefulWidget {
@@ -44,6 +45,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
   }
 
   void _toggleSelect(String id) {
+    SoundEffects.tap();
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
@@ -56,6 +58,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
   }
 
   void _enterSelectionMode(String id) {
+    SoundEffects.tap();
     setState(() {
       _isSelectionMode = true;
       _selectedIds.add(id);
@@ -63,6 +66,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
   }
 
   void _selectAll() {
+    SoundEffects.tap();
     if (_selectedIds.length == _items.length) {
       setState(() => _selectedIds.clear());
     } else {
@@ -104,13 +108,32 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         _fetchItems();
 
         if (mounted && successCount > 0) {
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Encrypted & Saved to Vault 🔐')));
+           SoundEffects.uploadSuccess();
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Encrypted & Saved to Vault ??')));
+           // Automatically delete originals
+           _deleteOriginalsSilently(result.files);
         }
       }
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  Future<void> _deleteOriginalsSilently(List<PlatformFile> files) async {
+    for (final file in files) {
+      if (file.path != null) {
+        try {
+          final f = File(file.path!);
+          if (await f.exists()) {
+            await f.delete();
+          }
+        } catch (e) {
+          debugPrint('Silent delete error for ${file.name}: $e');
+        }
+      }
+    }
+    SoundEffects.deleteAction();
   }
 
   Future<void> _deleteSelected() async {
@@ -124,7 +147,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Delete', style: TextStyle(color: Colors.red))
+          ),
         ],
       ),
     );
@@ -134,6 +160,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         for (final id in _selectedIds) {
           await ApiService().delete('/vault/$id');
         }
+        SoundEffects.deleteAction();
         await _fetchItems();
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -188,7 +215,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     if (mounted) Navigator.pop(context); // Close loading
 
     if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Saved to Downloads/SafeShell/Documents 📂')));
+       SoundEffects.unlockApp();
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Saved to Downloads/SafeShell/Documents ??')));
        setState(() {
          _isSelectionMode = false;
          _selectedIds.clear();
@@ -266,36 +294,60 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                             }
                           }
                       },
-                      child: GlassCard(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFA855F7).withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFFA855F7).withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                          ),
+                        ),
                         child: Row(
                           children: [
                             if (_isSelectionMode)
                               Container(
-                                margin: const EdgeInsets.only(right: 12),
+                                margin: const EdgeInsets.only(right: 14),
                                 child: Icon(
                                   isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                  color: isSelected ? AppColors.primary : Colors.white70,
+                                  color: isSelected ? AppColors.primary : Colors.white30,
+                                  size: 22,
                                 ),
                               ),
                              Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.description, color: Colors.blueAccent),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.blue.withOpacity(0.2), Colors.blue.withOpacity(0.05)],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.blue.withOpacity(0.1)),
+                              ),
+                              child: const Icon(Icons.description_rounded, color: Colors.blue),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item['name'] ?? 'Document', style: AppTextStyles.body, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  Text(item['size'] ?? '', style: AppTextStyles.caption),
+                                  Text(
+                                    item['name'] ?? 'Document', 
+                                    style: AppTextStyles.subheading.copyWith(fontSize: 15, fontWeight: FontWeight.w600), 
+                                    maxLines: 1, 
+                                    overflow: TextOverflow.ellipsis
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item['size'] ?? '0 KB', 
+                                    style: AppTextStyles.caption.copyWith(color: Colors.white24)
+                                  ),
                                 ],
                               ),
                             ),
                             if (!_isSelectionMode)
-                              const Icon(Icons.chevron_right, color: Colors.white24),
+                              const Icon(Icons.chevron_right_rounded, color: Colors.white12),
                           ],
                         ),
                       ),
@@ -305,7 +357,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       floatingActionButton: !_isSelectionMode ? FloatingActionButton(
         onPressed: _uploadFile,
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.upload_file),
+        child: const Icon(Icons.upload_file_rounded),
       ) : null,
     );
   }

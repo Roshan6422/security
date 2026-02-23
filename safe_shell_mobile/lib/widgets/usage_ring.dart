@@ -47,17 +47,20 @@ class _UsageRingState extends State<UsageRing> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return SizedBox(
       width: 44,
       height: 44,
       child: Stack(
         children: [
-          CustomPaint(
-            size: const Size(44, 44),
-            painter: _RingPainter(
-              progress: _animation,
-              color: AppColors.primary,
-              backgroundColor: Colors.white.withOpacity(0.08),
+          RepaintBoundary(
+            child: CustomPaint(
+              size: const Size(44, 44),
+              painter: _RingPainter(
+                progress: _animation,
+                color: AppColors.primary,
+                backgroundColor: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08),
+              ),
             ),
           ),
           Center(
@@ -66,10 +69,10 @@ class _UsageRingState extends State<UsageRing> with SingleTickerProviderStateMix
               builder: (context, child) {
                 return Text(
                   '${_animation.value.round()}%',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: isLight ? AppColors.textPrimary : Colors.white,
                   ),
                 );
               },

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SafeShell</string>
+    <string name="device_admin_description">SafeShell requires Device Admin for app hiding functionality.</string>
+</resources>
