@@ -25,6 +25,7 @@ import '../../providers/settings_provider.dart';
 import '../../main.dart';
 import 'cloak_list_screen.dart';
 import 'app_hider_screen.dart';
+import '../../utils/vault_encryption_helper.dart';
 
 class VaultScreen extends StatefulWidget {
   const VaultScreen({super.key});
@@ -43,11 +44,11 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
   final List<_VaultCategory> _categories = [
     _VaultCategory(Icons.image_rounded, 'Photos', 'photo', AppColors.photos),
     _VaultCategory(Icons.videocam_rounded, 'Videos', 'video', AppColors.videos),
-    _VaultCategory(Icons.visibility_off_rounded, 'Invisible Files', 'local_cloak', const Color(0xFFF59E0B)),
-    _VaultCategory(Icons.audiotrack_rounded, 'Audio', 'audio', const Color(0xFF6366F1)),
+    _VaultCategory(Icons.visibility_off_rounded, 'Invisible Files', 'local_cloak', AppColors.warning),
+    _VaultCategory(Icons.audiotrack_rounded, 'Audio', 'audio', AppColors.accent),
     _VaultCategory(Icons.sticky_note_2_rounded, 'Notes', 'note', AppColors.notes),
     _VaultCategory(Icons.description_rounded, 'Documents', 'document', AppColors.documents),
-    _VaultCategory(Icons.lock_person_rounded, 'App Lock', 'app_hider', const Color(0xFF818CF8)),
+    _VaultCategory(Icons.lock_person_rounded, 'App Lock', 'app_hider', AppColors.primary),
   ];
 
 
@@ -184,9 +185,9 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
       ),
       floatingActionButton: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]),
+          gradient: LinearGradient(colors: [AppColors.primary, AppColors.primary.withOpacity(0.7)]),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(isLight ? 0.3 : 0.4), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(isLight ? 0.3 : 0.6), blurRadius: 20, offset: const Offset(0, 6))],
         ),
         child: FloatingActionButton(
           onPressed: () { HapticFeedback.mediumImpact(); _showUploadOptions(context); },
@@ -216,15 +217,15 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
             const SizedBox(height: 6),
             Text('Files are uploaded & originals auto-deleted', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 12)),
             const SizedBox(height: 20),
-            _uploadOption(ctx, Icons.image_rounded, 'Import Photo', 'From gallery', const Color(0xFFA855F7), () { Navigator.pop(ctx); _pickAndUploadImage(); }, isLight),
+            _uploadOption(ctx, Icons.image_rounded, 'Import Photo', 'From gallery', AppColors.photos, () { Navigator.pop(ctx); _pickAndUploadImage(); }, isLight),
             const SizedBox(height: 8),
-            _uploadOption(ctx, Icons.videocam_rounded, 'Import Video', 'From gallery', const Color(0xFF8B5CF6), () { Navigator.pop(ctx); _pickAndUploadVideo(); }, isLight),
+            _uploadOption(ctx, Icons.videocam_rounded, 'Import Video', 'From gallery', AppColors.videos, () { Navigator.pop(ctx); _pickAndUploadVideo(); }, isLight),
             const SizedBox(height: 8),
-            _uploadOption(ctx, Icons.attach_file_rounded, 'Import File', 'Documents, ZIP, etc.', const Color(0xFF34D399), () { Navigator.pop(ctx); _pickAndUploadFile(); }, isLight),
+            _uploadOption(ctx, Icons.attach_file_rounded, 'Import File', 'Documents, ZIP, etc.', AppColors.success, () { Navigator.pop(ctx); _pickAndUploadFile(); }, isLight),
             const SizedBox(height: 8),
-            _uploadOption(ctx, Icons.camera_alt_rounded, 'Camera', 'Take photo directly', const Color(0xFFF59E0B), () { Navigator.pop(ctx); _takePhoto(); }, isLight),
+            _uploadOption(ctx, Icons.camera_alt_rounded, 'Camera', 'Take photo directly', AppColors.warning, () { Navigator.pop(ctx); _takePhoto(); }, isLight),
             const SizedBox(height: 8),
-            _uploadOption(ctx, Icons.videocam_outlined, 'Record Video', 'Record directly', const Color(0xFFE11D48), () { Navigator.pop(ctx); _takeVideo(); }, isLight),
+            _uploadOption(ctx, Icons.videocam_outlined, 'Record Video', 'Record directly', AppColors.error, () { Navigator.pop(ctx); _takeVideo(); }, isLight),
             SizedBox(height: MediaQuery.of(ctx).padding.bottom + 12),
           ],
         ),
@@ -326,7 +327,7 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
     );
 
     try {
-      await ApiService().uploadMultipart('/vault/upload', filePath);
+      await VaultEncryptionHelper.encryptAndUpload(filePath, '/vault/upload');
       try {
         final originalFile = File(filePath);
         if (await originalFile.exists()) await originalFile.delete();

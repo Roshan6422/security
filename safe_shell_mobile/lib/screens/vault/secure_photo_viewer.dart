@@ -52,7 +52,7 @@ class _SecurePhotoViewerState extends State<SecurePhotoViewer> {
       final file = File(_tempDecryptedPath!);
       if (file.existsSync()) {
         file.deleteSync();
-        debugPrint('Secure Viewer: Temp file deleted safely. 🗑️');
+        debugPrint('Secure Viewer: Temp file deleted safely. ');
       }
     }
     super.dispose();
@@ -104,3 +104,4 @@ class _SecurePhotoViewerState extends State<SecurePhotoViewer> {
     return const Text("No file found", style: TextStyle(color: Colors.white));
   }
 }
+

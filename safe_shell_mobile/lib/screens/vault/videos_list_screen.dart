@@ -1,12 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../../utils/vault_encryption_helper.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/secure_network_viewer.dart';
+import '../../services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VideosListScreen extends StatefulWidget {
@@ -40,7 +43,15 @@ class _VideosListScreenState extends State<VideosListScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
+            ? 'Connection failed. Check server URL & internet.'
+            : 'Failed to load videos: ${e.toString().replaceAll('Exception: ', '')}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+        );
+      }
     }
   }
 
@@ -100,7 +111,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
           final file = await asset.file;
           if (file != null) {
             try {
-              await ApiService().uploadMultipart('/vault/upload', file.path);
+              await VaultEncryptionHelper.encryptAndUpload(file.path, '/vault/upload');
               successCount++;
             } catch (e) {
               debugPrint('Upload failed for ${asset.id}: $e');
@@ -113,7 +124,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
         
         if (mounted) {
            if (successCount > 0) {
-             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Encrypted & Saved to Vault 🔐')));
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Encrypted & Saved to Vault')));
              _deleteOriginalsSilently(result);
            }
         }
@@ -184,18 +195,23 @@ class _VideosListScreenState extends State<VideosListScreen> {
            final url = '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}';
            final response = await http.get(Uri.parse(url));
            if (response.statusCode == 200) {
-             // Save to temp file first for video
              final tempDir = await getTemporaryDirectory();
-             final tempFile = File('${tempDir.path}/${item['name'] ?? 'video_$id.mp4'}');
-             await tempFile.writeAsBytes(response.bodyBytes);
+             final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
+             final tempEncFile = File(tempEncPath);
+             await tempEncFile.writeAsBytes(response.bodyBytes);
+             
+             // Decrypt
+             final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+             final decryptedFile = File(decryptedPath);
              
              final result = await PhotoManager.editor.saveVideo(
-                tempFile,
+                decryptedFile,
                 title: item['name'] ?? 'video_$id',
              );
              
-             // Cleanup temp
-             if (await tempFile.exists()) await tempFile.delete();
+             // Cleanup
+             if (await tempEncFile.exists()) await tempEncFile.delete();
+             if (await decryptedFile.exists()) await decryptedFile.delete();
 
              if (result != null) successCount++;
            }
@@ -209,7 +225,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
 
     if (mounted) {
        SoundEffects.unlockApp();
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Saved to Gallery 🖼️')));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Saved to Gallery ')));
        setState(() {
          _isSelectionMode = false;
          _selectedIds.clear();
@@ -220,7 +236,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         leading: _isSelectionMode
             ? IconButton(
@@ -354,4 +370,5 @@ class _VideosListScreenState extends State<VideosListScreen> {
     );
   }
 }
+
 

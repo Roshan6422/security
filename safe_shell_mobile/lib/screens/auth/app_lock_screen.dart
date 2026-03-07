@@ -71,7 +71,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
       setState(() {
         _pinController.clear();
       });
-      PremiumSnackbar.show(context, message: 'Incorrect PIN', emoji: '❌', color: Colors.redAccent);
+      PremiumSnackbar.show(context, message: 'Incorrect PIN', emoji: '', color: Colors.redAccent);
     }
   }
 
@@ -195,3 +195,4 @@ class _AppLockScreenState extends State<AppLockScreen> {
     );
   }
 }
+

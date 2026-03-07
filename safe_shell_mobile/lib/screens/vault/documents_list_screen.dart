@@ -7,6 +7,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
+import '../../utils/vault_encryption_helper.dart';
+import '../../services/encryption_service.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DocumentsListScreen extends StatefulWidget {
@@ -40,7 +43,15 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
+            ? 'Connection failed. Check server URL & internet.'
+            : 'Failed to load documents: ${e.toString().replaceAll('Exception: ', '')}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+        );
+      }
     }
   }
 
@@ -96,7 +107,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         for (final platformFile in result.files) {
           if (platformFile.path != null) {
             try {
-              await ApiService().uploadMultipart('/vault/upload', platformFile.path!);
+              await VaultEncryptionHelper.encryptAndUpload(platformFile.path!, '/vault/upload');
               successCount++;
             } catch (e) {
                debugPrint('Upload failed for ${platformFile.name}: $e');
@@ -201,9 +212,23 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
            final url = '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}';
            final response = await http.get(Uri.parse(url));
            if (response.statusCode == 200) {
+             final tempDir = await getTemporaryDirectory();
+             final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
+             final tempEncFile = File(tempEncPath);
+             await tempEncFile.writeAsBytes(response.bodyBytes);
+
+             // Decrypt
+             final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+             final decryptedFile = File(decryptedPath);
+
              final fileName = item['name'] ?? 'doc_$id';
-             final file = File('${downloadDir.path}/$fileName');
-             await file.writeAsBytes(response.bodyBytes);
+             final targetFile = File('${downloadDir.path}/$fileName');
+             await targetFile.writeAsBytes(await decryptedFile.readAsBytes());
+
+             // Cleanup
+             if (await tempEncFile.exists()) await tempEncFile.delete();
+             if (await decryptedFile.exists()) await decryptedFile.delete();
+
              successCount++;
            }
         } catch (e) {

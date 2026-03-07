@@ -53,7 +53,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       ),
       body: Stack(
         children: [
-          // ✅ Ultra background (blue-dominant + soft depth)
+          //  Ultra background (blue-dominant + soft depth)
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -69,7 +69,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             ),
           ),
 
-          // ✅ Glow blobs (calmer + consistent hue)
+          //  Glow blobs (calmer + consistent hue)
           Positioned(
             top: -70,
             left: -45,
@@ -110,7 +110,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
 
-                                      // ✅ Blue-consistent icon gradient
+                                      //  Blue-consistent icon gradient
                                       gradient: LinearGradient(
                                         colors: [
                                           cs.primary.withOpacity(0.92),
@@ -118,7 +118,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                         ],
                                       ),
 
-                                      // ✅ Softer blue glow
+                                      //  Softer blue glow
                                       boxShadow: [
                                         BoxShadow(
                                           blurRadius: 22,
@@ -266,10 +266,10 @@ class _GlassCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(26),
 
-            // ✅ slightly more front-surface feel
+            //  slightly more front-surface feel
             color: cs.surface.withOpacity(0.78),
 
-            // ✅ slightly clearer border
+            //  slightly clearer border
             border: Border.all(color: cs.onSurface.withOpacity(0.10)),
 
             boxShadow: [
@@ -308,3 +308,4 @@ class _GlowBlob extends StatelessWidget {
     );
   }
 }
+

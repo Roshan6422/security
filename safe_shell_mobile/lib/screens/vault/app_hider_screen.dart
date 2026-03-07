@@ -130,7 +130,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                             
                             if (mounted) {
                               Navigator.pop(ctx);
-                              PremiumSnackbar.show(context, message: '${app.name} protected successfully', emoji: '🛡️', color: const Color(0xFF34D399));
+                              PremiumSnackbar.show(context, message: '${app.name} protected successfully', emoji: '', color: const Color(0xFF34D399));
                             }
                           },
                   );
@@ -147,7 +147,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
     HapticFeedback.lightImpact();
     final success = await _service.launchApp(app.packageName);
     if (!success && mounted) {
-      PremiumSnackbar.show(context, message: 'Could not launch ${app.name}', emoji: '❌', color: Colors.redAccent);
+      PremiumSnackbar.show(context, message: 'Could not launch ${app.name}', emoji: '', color: Colors.redAccent);
     }
   }
 
@@ -163,7 +163,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
     _syncLockedApps();
     
     if (mounted) {
-      PremiumSnackbar.show(context, message: '${app.name} removed & restored', emoji: '🗑️', color: Colors.orangeAccent);
+      PremiumSnackbar.show(context, message: '${app.name} removed & restored', emoji: '', color: Colors.orangeAccent);
     }
   }
 
@@ -338,7 +338,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
             ),
           ),
           
-          // MIUI Tip Header — Only show if it's a MI device or overlay is missing
+          // MIUI Tip Header  Only show if it's a MI device or overlay is missing
           if (_isMiui || !_hasOverlayPermission) ...[
             const SizedBox(height: 12),
             Container(
@@ -396,7 +396,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• ', style: TextStyle(color: AppColors.primary, fontSize: 9)),
+          const Text(' ', style: TextStyle(color: AppColors.primary, fontSize: 9)),
           Expanded(child: Text(text, style: const TextStyle(color: Colors.white60, fontSize: 9))),
         ],
       ),
@@ -445,11 +445,11 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
         setState(() => app.isHidden = false);
         _service.saveHiddenApps(_hiddenApps);
         if (mounted) {
-          PremiumSnackbar.show(context, message: '${app.name} is now visible in launcher', emoji: '👁️', color: Colors.blueAccent);
+          PremiumSnackbar.show(context, message: '${app.name} is now visible in launcher', emoji: '', color: Colors.blueAccent);
         }
       } else {
         if (mounted) {
-          PremiumSnackbar.show(context, message: 'Failed to unhide ${app.name}', emoji: '❌', color: Colors.redAccent);
+          PremiumSnackbar.show(context, message: 'Failed to unhide ${app.name}', emoji: '', color: Colors.redAccent);
         }
       }
     } else {
@@ -459,11 +459,11 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
         setState(() => app.isHidden = true);
         _service.saveHiddenApps(_hiddenApps);
         if (mounted) {
-          PremiumSnackbar.show(context, message: '${app.name} hidden from launcher', emoji: '🙈', color: const Color(0xFF34D399));
+          PremiumSnackbar.show(context, message: '${app.name} hidden from launcher', emoji: '', color: const Color(0xFF34D399));
         }
       } else {
         if (mounted) {
-          PremiumSnackbar.show(context, message: 'Failed to hide ${app.name}', emoji: '❌', color: Colors.redAccent);
+          PremiumSnackbar.show(context, message: 'Failed to hide ${app.name}', emoji: '', color: Colors.redAccent);
         }
       }
     }
@@ -550,7 +550,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                           ],
                         ),
                       ),
-                      // Lock toggle — top right
+                      // Lock toggle  top right
                       Positioned(
                         top: 6,
                         right: 6,
@@ -570,7 +570,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                           ),
                         ),
                       ),
-                      // Hide toggle — top left
+                      // Hide toggle  top left
                       Positioned(
                         top: 6,
                         left: 6,
@@ -623,4 +623,5 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
     );
   }
 }
+
 

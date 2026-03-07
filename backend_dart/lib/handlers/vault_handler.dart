@@ -10,6 +10,7 @@ import 'package:http_parser/http_parser.dart';
 import '../config/env.dart';
 import '../middleware/auth_middleware.dart';
 import '../models/vault_item.dart';
+import '../services/storage_service.dart';
 
 const _uuid = Uuid();
 
@@ -146,8 +147,20 @@ Router vaultRouter() {
       }
 
       final storedName = '${_uuid.v4()}_$filename';
-      final filePath = '${Env.uploadsPath}/$storedName';
-      await File(filePath).writeAsBytes(fileBytes);
+      
+      // Save temporarily to disk to upload to Firebase
+      final tempPath = 'data/temp_$storedName';
+      await File(tempPath).writeAsBytes(fileBytes);
+
+      String storagePath = 'vault/${user.id}/$storedName';
+      String firebaseUrl;
+      try {
+        firebaseUrl = await StorageService.uploadFile(tempPath, storagePath);
+      } finally {
+        // Cleanup temp file
+        final tempFile = File(tempPath);
+        if (await tempFile.exists()) await tempFile.delete();
+      }
 
       String type = request.url.queryParameters['type'] ?? _detectType(filename);
       final item = await vaultItemRepo.create({
@@ -155,7 +168,8 @@ Router vaultRouter() {
         'name': filename,
         'type': type,
         'size': _formatSize(fileBytes.length),
-        'url': '/uploads/$storedName',
+        'url': firebaseUrl,
+        'storagePath': storagePath, // Store for later deletion
         'isDeleted': false,
       });
 
@@ -207,8 +221,9 @@ Router vaultRouter() {
 
       final permanent = request.url.queryParameters['permanent'] == 'true';
       if (permanent) {
-        if (item.url != null) {
-          try { await File('${Env.uploadsPath}/${item.url!.replaceFirst('/uploads/', '')}').delete(); } catch (_) {}
+        final storagePath = item.toJson()['storagePath'];
+        if (storagePath != null) {
+          await StorageService.deleteFile(storagePath);
         }
         await item.deleteOne();
         return Response.ok(jsonEncode({'message': 'Item permanently deleted'}), headers: {'content-type': 'application/json'});

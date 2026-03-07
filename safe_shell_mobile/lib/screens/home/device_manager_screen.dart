@@ -295,7 +295,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                         style: AppTextStyles.subheading.copyWith(fontSize: 16),
                                       ),
                                       Text(
-                                        '$_trustedCount trusted · $_untrustedCount untrusted',
+                                        '$_trustedCount trusted  $_untrustedCount untrusted',
                                         style: AppTextStyles.caption.copyWith(color: Colors.white38),
                                       ),
                                     ],
@@ -373,7 +373,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            isCurrentDevice ? 'Online · Active now' : 'Offline',
+                                            isCurrentDevice ? 'Online  Active now' : 'Offline',
                                             style: TextStyle(color: isCurrentDevice ? Colors.white54 : Colors.white30, fontSize: 12),
                                           ),
                                           const Spacer(),
@@ -448,3 +448,4 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
     );
   }
 }
+

@@ -147,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 12),
               const Text(
                 'Enter 4 digits to use in the calculator disguise.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
               ),
             ],
           ),

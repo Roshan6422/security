@@ -70,7 +70,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   double _storagePercent = 0.0;
   List<dynamic> _recentItems = [];
 
-  // Staggered entrance animations — 9 sections used below
+  // Staggered entrance animations  9 sections used below
   late AnimationController _staggerController;
   late List<Animation<double>> _fadeAnims;
   late List<Animation<Offset>> _slideAnims;
@@ -88,7 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     {'icon': Icons.vpn_lock_rounded, 'tip': 'Use Private Browser to leave zero digital footprint', 'color': Color(0xFF8B5CF6)},
     {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF34D399)},
     {'icon': Icons.grid_view_rounded, 'tip': 'Use Calculator disguise to hide your vault entrance', 'color': Color(0xFFF59E0B)},
-    {'icon': Icons.lock_outline_rounded, 'tip': 'Set a strong PIN – avoid birthdays and simple patterns', 'color': Color(0xFFEF4444)},
+    {'icon': Icons.lock_outline_rounded, 'tip': 'Set a strong PIN  avoid birthdays and simple patterns', 'color': Color(0xFFEF4444)},
     {'icon': Icons.visibility_off_rounded, 'tip': 'Cloak sensitive files to make them invisible on device', 'color': Color(0xFF8B5CF6)},
     {'icon': Icons.bolt_rounded, 'tip': 'Run Optimize weekly to clear cached data and save space', 'color': Color(0xFF34D399)},
   ];

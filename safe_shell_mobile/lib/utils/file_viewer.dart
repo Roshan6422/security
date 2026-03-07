@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:open_filex/open_filex.dart';
 import '../services/api_service.dart';
+import '../services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -32,10 +33,17 @@ class FileViewer {
 
       if (response.statusCode == 200) {
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/$filename');
-        await file.writeAsBytes(response.bodyBytes);
+        final tempEncPath = '${dir.path}/temp_download_${DateTime.now().millisecondsSinceEpoch}.shell';
+        final tempEncFile = File(tempEncPath);
+        await tempEncFile.writeAsBytes(response.bodyBytes);
         
-        final result = await OpenFilex.open(file.path);
+        // Decrypt
+        final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+        
+        // Cleanup encrypted
+        if (await tempEncFile.exists()) await tempEncFile.delete();
+
+        final result = await OpenFilex.open(decryptedPath);
         if (result.type != ResultType.done) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open file: ${result.message}')));

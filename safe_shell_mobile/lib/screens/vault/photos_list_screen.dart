@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -9,7 +9,9 @@ import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
+import '../../utils/vault_encryption_helper.dart';
 import '../../widgets/file_preview_card.dart';
+import '../../widgets/secure_network_viewer.dart';
 import 'photo_viewer_screen.dart';
 
 class PhotosListScreen extends StatefulWidget {
@@ -32,7 +34,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     _fetchItems();
   }
 
-  // ─── Data Fetching ──────────────────────────────────────────────
+  //  Data Fetching 
 
   Future<void> _fetchItems() async {
     if (!mounted) return;
@@ -55,12 +57,15 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Failed to load photos');
+        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
+            ? 'Connection failed. Check server URL & internet.'
+            : 'Failed to load photos: ${e.toString().replaceAll('Exception: ', '')}';
+        _showError(errorMessage);
       }
     }
   }
 
-  // ─── Selection Logic ────────────────────────────────────────────
+  //  Selection Logic 
 
   void _toggleSelect(String id) {
     SoundEffects.tap();
@@ -104,7 +109,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     });
   }
 
-  // ─── Upload Logic ───────────────────────────────────────────────
+  //  Upload Logic 
 
   Future<void> _uploadFile() async {
     if (_isUploading) return;
@@ -135,7 +140,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
         }
 
         try {
-          await ApiService().uploadMultipart('/vault/upload', file.path);
+          await VaultEncryptionHelper.encryptAndUpload(file.path, '/vault/upload');
           successCount++;
         } catch (e) {
           debugPrint('Upload failed for ${asset.id}: $e');
@@ -153,7 +158,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       if (successCount > 0) {
         SoundEffects.uploadSuccess();
         _showSuccess(
-          '$successCount photo${successCount > 1 ? 's' : ''} encrypted & saved 🔐'
+          '$successCount photo${successCount > 1 ? 's' : ''} encrypted & saved'
           '${failCount > 0 ? ' ($failCount failed)' : ''}',
         );
         // Automatically delete originals if any were successful
@@ -179,7 +184,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     }
   }
 
-  // ─── Delete Logic ───────────────────────────────────────────────
+  //  Delete Logic 
 
   Future<void> _deleteSelected() async {
     if (_selectedIds.isEmpty) return;
@@ -239,7 +244,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     }
   }
 
-  // ─── Save to Gallery ───────────────────────────────────────────
+  //  Save to Gallery 
 
   Future<void> _saveSelectedToGallery() async {
     if (_selectedIds.isEmpty) return;
@@ -275,7 +280,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
     if (successCount > 0) {
       SoundEffects.unlockApp();
-      _showSuccess('$successCount photo${successCount > 1 ? 's' : ''} saved to gallery 🖼️');
+      _showSuccess('$successCount photo${successCount > 1 ? 's' : ''} saved to gallery');
     } else {
       _showError('Failed to save photos');
     }
@@ -283,7 +288,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     _exitSelectionMode();
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────
+  //  Helpers 
 
   Map<String, dynamic>? _findItemById(String id) {
     try {
@@ -351,12 +356,12 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     );
   }
 
-  // ─── UI ─────────────────────────────────────────────────────────
+  //  UI 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: _buildAppBar(),
       body: _buildBody(),
       floatingActionButton: _buildFAB(),
@@ -484,9 +489,9 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     final item = _items[index];
     final id = item['_id'].toString();
     final isSelected = _selectedIds.contains(id);
-    final imageUrl = item['url'] != null 
-        ? '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}' 
-        : '';
+    // final imageUrl = item['url'] != null
+    //     ? '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}'
+    //     : '';
 
     return GestureDetector(
       onLongPress: () => _enterSelectionMode(id),
@@ -511,14 +516,17 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           // Actual Image Preview (Full-bleed)
           Hero(
             tag: id,
-            child: CachedNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
+            child: SecureNetworkViewer(
+              relativeUrl: item['url'] ?? '',
+              builder: (context, localPath) => Image.file(
+                File(localPath),
+                fit: BoxFit.cover,
+              ),
+              loadingWidget: Container(
                 color: Colors.white.withOpacity(0.05),
                 child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
               ),
-              errorWidget: (context, url, error) => Container(
+              errorBuilder: (context, error) => Container(
                 color: Colors.white.withOpacity(0.05),
                 child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
               ),

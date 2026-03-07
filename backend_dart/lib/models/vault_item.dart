@@ -7,6 +7,7 @@ class VaultItem extends FirestoreModel {
   String type;
   String size;
   String? url;
+  String? storagePath;
   String? content;
   bool isDeleted;
   DateTime? deletedAt;
@@ -17,6 +18,7 @@ class VaultItem extends FirestoreModel {
     this.type = 'document',
     this.size = '0 B',
     this.url,
+    this.storagePath,
     this.content,
     this.isDeleted = false,
     this.deletedAt,
@@ -32,6 +34,7 @@ class VaultItem extends FirestoreModel {
         'type': type,
         'size': size,
         'url': url,
+        'storagePath': storagePath,
         'content': content,
         'isDeleted': isDeleted,
         'deletedAt': deletedAt?.toIso8601String(),
@@ -45,6 +48,7 @@ class VaultItem extends FirestoreModel {
       type: map['type'] as String? ?? 'document',
       size: map['size'] as String? ?? '0 B',
       url: map['url'] as String?,
+      storagePath: map['storagePath'] as String?,
       content: map['content'] as String?,
       isDeleted: map['isDeleted'] as bool? ?? false,
       deletedAt: FirestoreModel.parseDate(map['deletedAt']),

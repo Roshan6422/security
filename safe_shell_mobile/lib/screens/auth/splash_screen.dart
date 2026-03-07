@@ -115,13 +115,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     if (_isDiscreetMode) {
       return const Scaffold(
-        backgroundColor: Color(0xFF1C1C1E),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF636366))),
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white24)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF050A12),
+      backgroundColor: const Color(0xFF020010),
       body: Stack(
         children: [
           // Animated particles

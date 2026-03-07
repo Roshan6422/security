@@ -64,7 +64,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     await _scanCloakedFiles();
   }
 
-  // ─── Directory & Metadata Helpers ────────────────────────
+  //  Directory & Metadata Helpers 
 
   Future<Directory> _getCloakDir() async {
     final appDir = await getApplicationDocumentsDirectory();
@@ -110,7 +110,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     }
   }
 
-  // ─── Scan & Filter ──────────────────────────────────────
+  //  Scan & Filter 
 
   Future<void> _scanCloakedFiles() async {
     setState(() => _isLoading = true);
@@ -177,7 +177,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     }
   }
 
-  // ─── Display Helpers ──────────────────────────────────────
+  //  Display Helpers 
 
   String _getDisplayName(File file) {
     String name = p.basename(file.path);
@@ -237,7 +237,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     return AppColors.primary;
   }
 
-  // ─── UI ──────────────────────────────────────────────────
+  //  UI 
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +299,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── Stats Header ────────────────────────────────────────
+  //  Stats Header 
 
   Widget _buildStatsHeader() {
     final photoCount = _allFiles.where((f) => _getFileCategory(_getDisplayName(f)) == 'photo').length;
@@ -336,7 +336,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
                 Text('${_allFiles.length} Protected Files',
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 3),
-                Text('$photoCount photos • $videoCount videos • $docCount docs • ${_formatSize(_totalSize)}',
+                Text('$photoCount photos  $videoCount videos  $docCount docs  ${_formatSize(_totalSize)}',
                   style: const TextStyle(color: Colors.white38, fontSize: 11)),
               ],
             ),
@@ -361,7 +361,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── Category Tabs ───────────────────────────────────────
+  //  Category Tabs 
 
   Widget _buildCategoryTabs() {
     return Container(
@@ -395,7 +395,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── File Grid ───────────────────────────────────────────
+  //  File Grid 
 
   Widget _buildFileGrid() {
     if (_filteredFiles.isEmpty) {
@@ -528,7 +528,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── Empty State ─────────────────────────────────────────
+  //  Empty State 
 
   Widget _buildEmptyState() {
     return Center(
@@ -570,7 +570,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Android sandbox protection — files are encrypted and invisible to file managers',
+                      'Android sandbox protection  files are encrypted and invisible to file managers',
                       style: TextStyle(color: Colors.greenAccent, fontSize: 10, height: 1.4),
                     ),
                   ),
@@ -596,7 +596,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── Image Preview ───────────────────────────────────────
+  //  Image Preview 
 
   void _previewImage(File file) {
     Navigator.of(context).push(
@@ -608,7 +608,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── File Info Sheet ─────────────────────────────────────
+  //  File Info Sheet 
 
   void _showFileInfo(File file) async {
     final String displayName = _getDisplayName(file);
@@ -649,7 +649,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 3),
-                      Text('Protected • ${_formatSize(sizeBytes)}',
+                      Text('Protected  ${_formatSize(sizeBytes)}',
                         style: const TextStyle(color: Colors.white38, fontSize: 12)),
                     ],
                   ),
@@ -676,7 +676,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
             const SizedBox(height: 10),
             _infoRow(Icons.calendar_today, 'Hidden', '${modified.day}/${modified.month}/${modified.year} at ${modified.hour}:${modified.minute.toString().padLeft(2, '0')}'),
             const SizedBox(height: 10),
-            _infoRow(Icons.shield, 'Protection', 'App-private sandbox — invisible to all other apps'),
+            _infoRow(Icons.shield, 'Protection', 'App-private sandbox  invisible to all other apps'),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -718,7 +718,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     );
   }
 
-  // ─── Selection Helpers ───────────────────────────────────
+  //  Selection Helpers 
 
   void _cancelSelection() {
     setState(() {
@@ -727,7 +727,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     });
   }
 
-  // ─── Pick & Cloak ────────────────────────────────────────
+  //  Pick & Cloak 
 
   Future<void> _pickAndCloakFile() async {
     try {
@@ -801,7 +801,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$count file${count > 1 ? 's' : ''} hidden & protected! 🛡️'),
+              content: Text('$count file${count > 1 ? 's' : ''} hidden & protected! '),
               backgroundColor: AppColors.primary,
             ),
           );
@@ -818,7 +818,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     }
   }
 
-  // ─── Single Restore ──────────────────────────────────────
+  //  Single Restore 
 
   Future<void> _restoreFile(File file) async {
     final bool? confirmed = await showDialog<bool>(
@@ -868,7 +868,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File restored successfully! ✅')),
+            const SnackBar(content: Text('File restored successfully! ')),
           );
         }
         await _scanCloakedFiles();
@@ -882,7 +882,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     }
   }
 
-  // ─── Batch Restore ───────────────────────────────────────
+  //  Batch Restore 
 
   Future<void> _batchRestore() async {
     final count = _selectedPaths.length;
@@ -950,7 +950,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$restored file${restored > 1 ? 's' : ''} restored ✅'),
+          content: Text('$restored file${restored > 1 ? 's' : ''} restored '),
           backgroundColor: Colors.green,
         ),
       );
@@ -1009,7 +1009,7 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$deleted file${deleted > 1 ? 's' : ''} deleted permanently 🗑️'),
+          content: Text('$deleted file${deleted > 1 ? 's' : ''} deleted permanently '),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -1017,3 +1017,4 @@ class _LocalCloakScreenState extends State<LocalCloakScreen> with SingleTickerPr
     }
   }
 }
+

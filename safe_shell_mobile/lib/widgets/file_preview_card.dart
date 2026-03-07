@@ -12,7 +12,7 @@ class FilePreviewCard extends StatefulWidget {
   final String? thumbUrl;    // network image url or null
   final IconData fallbackIcon;
   final Color accentColor;
-  final String? subtitle;    // e.g. "2.4 MB • Photo"
+  final String? subtitle;    // e.g. "2.4 MB  Photo"
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final bool selected;
@@ -277,3 +277,4 @@ class _IconThumbnail extends StatelessWidget {
     );
   }
 }
+

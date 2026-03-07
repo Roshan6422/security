@@ -23,6 +23,18 @@ class FirebaseConfig {
   /// The Firestore instance, or `null` when running in-memory.
   static Firestore? get db => _db;
 
+  /// Returns the service account JSON if available.
+  static Map<String, dynamic>? get serviceAccount {
+    final base64Key = Env.firebaseServiceAccountBase64;
+    if (base64Key == null || base64Key.isEmpty) return null;
+    try {
+      final cleanBase64 = base64Key.replaceAll(RegExp(r'\s|"'), '');
+      return jsonDecode(utf8.decode(base64Decode(cleanBase64)));
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The Auth instance, or `null` when running in-memory.
   static Auth? get auth => _app != null ? Auth(_app!) : null;
 

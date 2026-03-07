@@ -169,7 +169,7 @@ class _CloakListScreenState extends State<CloakListScreen> {
     if (mounted) Navigator.pop(context);
 
     if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Items Restored ✅')));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Items Restored ')));
        setState(() {
          _isSelectionMode = false;
          _selectedIds.clear();
@@ -329,3 +329,4 @@ class _CloakListScreenState extends State<CloakListScreen> {
     }
   }
 }
+

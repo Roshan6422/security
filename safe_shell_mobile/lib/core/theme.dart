@@ -1,20 +1,20 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   AppColors._();
 
-  // ═══════════════════════════════════════════════════
-  // 🌌 MIDNIGHT AMETHYST — Premium Security Palette
-  // ═══════════════════════════════════════════════════
+  // =====================================================
+  // MIDNIGHT AMETHYST - Premium Security Palette
+  // =====================================================
 
   // Primary palette (Vivid Violet / Electric Purple)
-  static const Color primary = Color(0xFFA855F7);       // ✨ Vivid Amethyst
+  static const Color primary = Color(0xFFA855F7);       // Vivid Amethyst
   static const Color primaryLight = Color(0xFFC084FC);   // Soft Lavender
   static const Color secondary = Color(0xFF2DD4BF);      // Aurora Teal
   static const Color accent = Color(0xFF00F5D4);         // Neon Mint Glow
 
-  // Backgrounds & Surfaces (Light Mode — Porcelain Mist)
+  // Backgrounds & Surfaces (Light Mode)
   static const Color background = Color(0xFFF5F3FF);     // Ghostly Lavender
   static const Color surface = Color(0xFFFFFFFF);
   static const Color surfaceVariant = Color(0xFFEDE9FE); // Soft Violet Wash
@@ -24,7 +24,7 @@ class AppColors {
   static const Color textSecondary = Color(0xFF4C1D95);  // Royal Purple
   static const Color textTertiary = Color(0xFF8B5CF6);   // Medium Violet
 
-  // Backgrounds & Surfaces (Dark Mode — Deep Space Void)
+  // Backgrounds & Surfaces (Dark Mode)
   static const Color darkBackground = Color(0xFF030014);  // Cosmic Black-Violet
   static const Color darkSurface = Color(0xFF0A0620);     // Deep Nebula
   static const Color darkSurfaceVariant = Color(0xFF150D30); // Midnight Plum
@@ -65,41 +65,35 @@ class AppTextStyles {
   static TextStyle get display => GoogleFonts.inter(
         fontSize: 34,
         fontWeight: FontWeight.w900,
-        color: AppColors.textPrimary,
         letterSpacing: -1.2,
       );
 
   static TextStyle get heading => GoogleFonts.inter(
         fontSize: 26,
         fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary,
         letterSpacing: -0.6,
       );
 
   static TextStyle get subheading => GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
         letterSpacing: -0.2,
       );
 
   static TextStyle get body => GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
         height: 1.5,
       );
 
   static TextStyle get bodySmall => GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
       );
 
   static TextStyle get caption => GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w600,
-        color: AppColors.textTertiary,
         letterSpacing: 0.1,
       );
 
@@ -196,7 +190,7 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         surface: AppColors.darkSurface,
-        onSurface: AppColors.darkSurfaceVariant,
+        onSurface: AppColors.darkTextPrimary,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,

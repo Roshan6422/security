@@ -22,7 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     _OnboardingData(
       icon: Icons.shield_rounded,
       title: 'Military-Grade Security',
-      subtitle: 'Your files are encrypted with AES-256 encryption.\nNo one can access them — not even us.',
+      subtitle: 'Your files are encrypted with AES-256 encryption.\nNo one can access them  not even us.',
       gradient: [const Color(0xFFA855F7), const Color(0xFF1E6FD9)],
     ),
     _OnboardingData(
@@ -226,3 +226,4 @@ class _OnboardingData {
   final List<Color> gradient;
   const _OnboardingData({required this.icon, required this.title, required this.subtitle, required this.gradient});
 }
+

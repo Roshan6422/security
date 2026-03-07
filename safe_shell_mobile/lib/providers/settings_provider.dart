@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../services/billing_service.dart';
 
 class SettingsProvider with ChangeNotifier {
   final _storage = const FlutterSecureStorage();
-  final _billingService = BillingService();
   bool _localCloakEnabled = false;
   int _autoLockSeconds = 0; // 0 = disabled
-  bool _isPro = false;
+  bool _isPro = false; // Default to false, can be enabled later
 
   bool get localCloakEnabled => _localCloakEnabled;
   int get autoLockSeconds => _autoLockSeconds;
@@ -15,14 +13,6 @@ class SettingsProvider with ChangeNotifier {
 
   SettingsProvider() {
     _loadSettings();
-    _initBilling();
-  }
-
-  Future<void> _initBilling() async {
-    await _billingService.init(onProChanged: (value) {
-      _isPro = value;
-      notifyListeners();
-    });
   }
 
   Future<void> _loadSettings() async {

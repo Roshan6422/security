@@ -84,7 +84,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return BiometricGuardian(
       child: Scaffold(
         extendBody: true,
-        backgroundColor: const Color(0xFF050A12),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           switchInCurve: Curves.easeOutCubic,

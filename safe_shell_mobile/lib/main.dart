@@ -5,12 +5,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
-import 'services/ads_service.dart';
+import 'providers/settings_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth/key_setup_screen.dart';
 import 'screens/auth/app_lock_screen.dart';
+import 'screens/calculator/calculator_screen.dart';
 import 'security/key_manager.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -19,7 +20,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await AdsService.init();
   runApp(const MyApp());
 }
 
@@ -71,7 +71,7 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
         _showLockScreen(packageName);
       }
     });
-    // Signal native that Flutter is ready — flushes any pending lock target
+    // Signal native that Flutter is ready  flushes any pending lock target
     _signalReady();
   }
 
@@ -116,34 +116,44 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _authFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return Consumer<AuthProvider>(
-          builder: (context, auth, _) {
-            if (!auth.isAuthenticated) {
-              return LoginScreen();
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, child) {
+        return FutureBuilder(
+          future: _authFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
             }
 
-            return FutureBuilder<bool>(
-              future: _km.hasKey(),
-              builder: (context, keySnapshot) {
-                if (keySnapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
+            // App Hider takes priority at the very beginning
+            if (settings.localCloakEnabled) {
+              return const CalculatorScreen();
+            }
+
+            return Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                if (!auth.isAuthenticated) {
+                  return LoginScreen();
                 }
 
-                if (keySnapshot.data == true) {
-                  return const MainShell();
-                } else {
-                  return const KeySetupScreen();
-                }
+                return FutureBuilder<bool>(
+                  future: _km.hasKey(),
+                  builder: (context, keySnapshot) {
+                    if (keySnapshot.connectionState == ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    if (keySnapshot.data == true) {
+                      return const MainShell();
+                    } else {
+                      return const KeySetupScreen();
+                    }
+                  },
+                );
               },
             );
           },
@@ -152,3 +162,4 @@ class _AuthWrapperState extends State<AuthWrapper> {
     );
   }
 }
+

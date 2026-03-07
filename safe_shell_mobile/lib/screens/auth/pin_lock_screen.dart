@@ -72,7 +72,7 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050A12),
+      backgroundColor: const Color(0xFF020010),
       body: FadeTransition(
         opacity: CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
         child: SafeArea(

@@ -69,7 +69,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Backup saved: $fileName'),
+            content: Text(' Backup saved: $fileName'),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -152,7 +152,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Backup imported: $itemCount items restored'),
+            content: Text(' Backup imported: $itemCount items restored'),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -382,3 +382,4 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     );
   }
 }
+

@@ -7,18 +7,37 @@ import '../core/constants.dart';
 class ApiService {
   final _storage = const FlutterSecureStorage();
   static String _baseUrl = AppConstants.baseUrl;
+  static bool _baseUrlLoaded = false;
 
-  static void setBaseUrl(String url) {
+  static Future<void> _ensureBaseUrlLoaded() async {
+    if (_baseUrlLoaded) return;
+    const storage = FlutterSecureStorage();
+    final savedUrl = await storage.read(key: 'custom_base_url');
+    if (savedUrl != null && savedUrl.isNotEmpty) {
+      _baseUrl = savedUrl;
+    }
+    _baseUrlLoaded = true;
+  }
+
+  static Future<void> setBaseUrl(String url) async {
     if (url.isNotEmpty) {
-      _baseUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-      // Ensure /api suffix if missing, or user provides full path
-      if (!_baseUrl.endsWith('/api')) {
-        _baseUrl = '$_baseUrl/api';
+      String formattedUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+      if (!formattedUrl.endsWith('/api')) {
+        formattedUrl = '$formattedUrl/api';
       }
+      _baseUrl = formattedUrl;
+      const storage = FlutterSecureStorage();
+      await storage.write(key: 'custom_base_url', value: _baseUrl);
+      _baseUrlLoaded = true;
     }
   }
 
   static String get currentBaseUrl => _baseUrl;
+
+  static Future<String> getBaseUrl() async {
+    await _ensureBaseUrlLoaded();
+    return _baseUrl;
+  }
 
   Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.read(key: AppConstants.keyToken);
@@ -41,6 +60,7 @@ class ApiService {
   }
 
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+    await _ensureBaseUrlLoaded();
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
 
@@ -54,6 +74,7 @@ class ApiService {
   }
 
   Future<dynamic> get(String endpoint) async {
+    await _ensureBaseUrlLoaded();
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
     
@@ -74,6 +95,7 @@ class ApiService {
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
+    await _ensureBaseUrlLoaded();
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
 
@@ -87,6 +109,7 @@ class ApiService {
   }
 
   Future<dynamic> delete(String endpoint) async {
+    await _ensureBaseUrlLoaded();
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
 
@@ -96,6 +119,7 @@ class ApiService {
   }
 
   Future<dynamic> uploadMultipart(String endpoint, String filePath) async {
+    await _ensureBaseUrlLoaded();
     final url = Uri.parse('$_baseUrl$endpoint');
     final request = http.MultipartRequest('POST', url);
     final token = await _storage.read(key: AppConstants.keyToken);

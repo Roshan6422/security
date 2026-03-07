@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 import '../../security/key_manager.dart';
 import '../main_shell.dart';
@@ -96,10 +97,10 @@ class _KeySetupScreenState extends State<KeySetupScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  cs.primary.withOpacity(0.14),
-                  cs.surface,
-                  cs.secondary.withOpacity(0.06),
-                  cs.primary.withOpacity(0.08),
+                  AppColors.darkBackground,
+                  AppColors.darkSurface,
+                  AppColors.darkSurface.withOpacity(0.8),
+                  AppColors.darkBackground,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

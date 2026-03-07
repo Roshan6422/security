@@ -82,7 +82,7 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
     if (!_isHolding) return;
     setState(() => _isHolding = false);
     if (_fillController.value < 1.0) {
-      // Not held long enough — reset
+      // Not held long enough  reset
       _fillController.reverse();
       _shakeController.forward(from: 0).then((_) => _shakeController.reset());
     }
@@ -186,7 +186,7 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
                                   ),
                                 if (_isHolding)
                                   Text(
-                                    'Locking… ${(_fillController.value * 100).toInt()}%',
+                                    'Locking ${(_fillController.value * 100).toInt()}%',
                                     style: const TextStyle(
                                       color: Colors.white70,
                                       fontSize: 10,
@@ -209,3 +209,4 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
     );
   }
 }
+

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -209,9 +209,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                ApiService.setBaseUrl(urlController.text);
-                Navigator.pop(context);
+              onPressed: () async {
+                await ApiService.setBaseUrl(urlController.text);
+                if (mounted) Navigator.pop(context);
                 setState(() {}); // Refresh UI
               },
               child: const Text('Save'),
@@ -252,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   Text(
-                    'Private vault • Stealth mode',
+                    'Private vault  Stealth mode',
                     style: AppTextStyles.body.copyWith(color: Colors.white60, letterSpacing: 0.5),
                   ),
                   const SizedBox(height: 48),
@@ -499,7 +499,7 @@ class _LoginScreenState extends State<LoginScreen> {
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
           child: Text(
-            'Privacy Policy • Terms of Service',
+            'Privacy Policy  Terms of Service',
             style: AppTextStyles.caption.copyWith(color: Colors.white24, fontSize: 11),
           ),
         ),
@@ -613,3 +613,4 @@ class _BiometricRippleButtonState extends State<_BiometricRippleButton> with Tic
     );
   }
 }
+

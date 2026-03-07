@@ -12,7 +12,7 @@ class EncryptionService {
   static const _storage = FlutterSecureStorage();
   static const _keyStorageKey = 'safe_shell_vault_key_v1';
 
-  /// ─── Key Management ──────────────────────────────────────────────
+  ///  Key Management 
 
   /// Retrieves the existing key or generates a new one if it doesn't exist.
   static Future<SecretKey> _getOrCreateKey() async {
@@ -38,7 +38,7 @@ class EncryptionService {
     }
   }
 
-  /// ─── File Operations ─────────────────────────────────────────────
+  ///  File Operations 
 
   /// Encrypts a file from [sourcePath] and saves it to the App's secure vault.
   /// 
@@ -126,7 +126,7 @@ class EncryptionService {
     return tempPath;
   }
 
-  /// ─── Helpers ─────────────────────────────────────────────────────
+  ///  Helpers 
 
   /// Permanently deletes a file from the vault
   static Future<void> deleteFromVault(String path) async {

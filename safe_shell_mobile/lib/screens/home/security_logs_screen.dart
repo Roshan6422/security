@@ -263,7 +263,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _chainVerified ? 'Chain Verified ✓' : 'Chain Compromised ✗',
+                                        _chainVerified ? 'Chain Verified ' : 'Chain Compromised ',
                                         style: TextStyle(
                                           color: _chainVerified ? Colors.green : Colors.red,
                                           fontWeight: FontWeight.bold,
@@ -385,3 +385,4 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
     );
   }
 }
+

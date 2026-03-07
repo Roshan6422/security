@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -54,11 +55,11 @@ class _SupportScreenState extends State<SupportScreen>
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  cs.primary.withOpacity(0.14),
-                  cs.surface,
-                  cs.secondary.withOpacity(0.06),
-                  cs.primary.withOpacity(0.08),
+              colors: [
+                  AppColors.darkBackground,
+                  AppColors.darkSurface,
+                  AppColors.darkSurface.withOpacity(0.8),
+                  AppColors.darkBackground,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

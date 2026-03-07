@@ -4,9 +4,11 @@ import '../../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import '../../utils/vault_encryption_helper.dart';
 import '../../utils/file_viewer.dart';
+import '../../services/encryption_service.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-// import 'package:path_provider/path_provider.dart';
 
 class AudioListScreen extends StatefulWidget {
   const AudioListScreen({super.key});
@@ -39,7 +41,15 @@ class _AudioListScreenState extends State<AudioListScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
+            ? 'Connection failed. Check server URL & internet.'
+            : 'Failed to load audio: ${e.toString().replaceAll('Exception: ', '')}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+        );
+      }
     }
   }
 
@@ -107,7 +117,7 @@ class _AudioListScreenState extends State<AudioListScreen> {
 
            if (successCount > 0) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Encrypted & Saved to Vault 🔐')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Encrypted & Saved to Vault')));
                 _deleteOriginalsSilently(uploadedPaths);
               }
            }
@@ -133,7 +143,7 @@ class _AudioListScreenState extends State<AudioListScreen> {
 
   Future<void> _uploadToServer(PlatformFile file) async {
     if (file.path != null) {
-      await ApiService().uploadMultipart('/vault/upload', file.path!);
+      await VaultEncryptionHelper.encryptAndUpload(file.path!, '/vault/upload');
     }
   }
 
@@ -204,9 +214,23 @@ class _AudioListScreenState extends State<AudioListScreen> {
            final url = '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}';
            final response = await http.get(Uri.parse(url));
            if (response.statusCode == 200) {
+             final tempDir = await getTemporaryDirectory();
+             final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
+             final tempEncFile = File(tempEncPath);
+             await tempEncFile.writeAsBytes(response.bodyBytes);
+
+             // Decrypt
+             final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+             final decryptedFile = File(decryptedPath);
+
              final fileName = item['name'] ?? 'audio_$id.mp3';
-             final file = File('${downloadDir.path}/$fileName');
-             await file.writeAsBytes(response.bodyBytes);
+             final targetFile = File('${downloadDir.path}/$fileName');
+             await targetFile.writeAsBytes(await decryptedFile.readAsBytes());
+
+             // Cleanup
+             if (await tempEncFile.exists()) await tempEncFile.delete();
+             if (await decryptedFile.exists()) await decryptedFile.delete();
+             
              successCount++;
            }
         } catch (e) {
@@ -218,7 +242,7 @@ class _AudioListScreenState extends State<AudioListScreen> {
     if (mounted) Navigator.pop(context); // Close loading
 
     if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Saved to Downloads/SafeShell/Audio 📂')));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Saved to Downloads/SafeShell/Audio ')));
        setState(() {
          _isSelectionMode = false;
          _selectedIds.clear();
@@ -229,7 +253,7 @@ class _AudioListScreenState extends State<AudioListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       appBar: AppBar(
         leading: _isSelectionMode
             ? IconButton(
@@ -360,3 +384,4 @@ class _AudioListScreenState extends State<AudioListScreen> {
     );
   }
 }
+
