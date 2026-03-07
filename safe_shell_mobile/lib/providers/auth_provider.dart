@@ -52,15 +52,33 @@ class AuthProvider with ChangeNotifier {
       _user = User.fromJson(response);
       if (_user?.token != null) {
         await _storage.write(key: AppConstants.keyToken, value: _user!.token);
-        // Save password for offline emergency unlock
+        // Save credentials for offline emergency unlock
         await _storage.write(key: 'saved_password', value: password);
+        await _storage.write(key: 'saved_email', value: email);
         if (_user?.recoveryKey != null) {
           await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
         }
         await FCMService.initialize();
       }
     } catch (e) {
-      rethrow;
+      // Offline Local Fallback
+      final savedEmail = await _storage.read(key: 'saved_email') ?? await _storage.read(key: 'bio_email');
+      final savedPassword = await _storage.read(key: 'saved_password') ?? await _storage.read(key: 'bio_password');
+      final token = await _storage.read(key: AppConstants.keyToken);
+
+      if (savedEmail == email && savedPassword == password && token != null) {
+        // Successful Offline Login
+        _user = User(
+          id: 'offline_mode',
+          email: email,
+          name: 'SafeShell User',
+          role: 'user',
+          subscriptionStatus: 'free',
+          token: token,
+        );
+      } else {
+        rethrow; 
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

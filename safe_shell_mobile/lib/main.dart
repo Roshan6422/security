@@ -12,7 +12,6 @@ import 'screens/auth/key_setup_screen.dart';
 import 'screens/auth/app_lock_screen.dart';
 import 'screens/calculator/calculator_screen.dart';
 import 'security/key_manager.dart';
-import 'services/file_recovery_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -20,9 +19,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
-  // Trigger legacy file recovery
-  FileRecoveryService().restoreLegacyFiles();
 
   runApp(const MyApp());
 }

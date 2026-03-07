@@ -33,19 +33,22 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
     super.dispose();
   }
 
+  bool _isAuthenticating = false;
+  DateTime? _lastAuthTime;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Prevent double-triggering from lifecycle resumed event when native prompt closes
+      if (_isAuthenticating) return;
+      if (_lastAuthTime != null && DateTime.now().difference(_lastAuthTime!).inSeconds < 2) {
+        return; // Skip lock if we just returned from an auth prompt
+      }
       _checkAndAuthenticate();
     } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-        // Optional: We could set _isLocked=true here immediately to hide content in multitasking 
-        // but that might be annoying if accidental. 
-        // For high security: 
-        // _showBlur();
+        // App goes to background or native overlay shows (like system biometric prompt)
     }
   }
-
-  bool _isAuthenticating = false;
 
   Future<void> _checkAndAuthenticate() async {
     // Read fresh value every time we resume
@@ -83,7 +86,7 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
 
     try {
       bool authenticated = await _auth.authenticate(
-        localizedReason: 'Unlock SafeShell (Face ID, Fingerprint or PIN)',
+        localizedReason: 'Unlock SafeShell (Face Lock or PIN)',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: false, // Allows PIN fallback if biometrics fail
@@ -92,13 +95,21 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
         ),
       );
 
+      _lastAuthTime = DateTime.now();
+
+      // We use a local delay check if needed, but immediately clearing flags works best
       if (mounted) {
         setState(() {
-          _isLocked = !authenticated;
-          _isAuthenticating = false;
+          _isAuthenticating = false; // MUST clear this first before lock logic
+          if (authenticated) {
+            _isLocked = false;
+          } else {
+            _isLocked = true;
+          }
         });
       }
     } on PlatformException catch (e) {
+       _lastAuthTime = DateTime.now();
        debugPrint('Biometric Error: $e');
        if (mounted) {
          setState(() {
@@ -107,11 +118,11 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
 
          String errorMsg = 'Verification fail. Try again.';
          if (e.code == 'NotEnrolled') {
-           errorMsg = 'No Face/Fingerprint/PIN enrolled on this device.';
+           errorMsg = 'No Face Lock/PIN enrolled on this device.';
          } else if (e.code == 'LockedOut' || e.code == 'PermanentlyLockedOut') {
            errorMsg = 'Too many attempts. Locked out.';
          } else if (e.code == 'NotAvailable') {
-           errorMsg = 'Biometric sensor (Face/Fingerprint) not available.';
+           errorMsg = 'Face Lock sensor not available.';
          }
 
          ScaffoldMessenger.of(context).showSnackBar(
@@ -202,7 +213,7 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
                   Text('Vault Locked', style: AppTextStyles.display),
                   const SizedBox(height: 12),
                   Text(
-                    'Use Face ID or Fingerprint to unlock',
+                    'Use Face Lock to unlock',
                     style: AppTextStyles.body.copyWith(color: Colors.white54),
                   ),
                   const SizedBox(height: 32),

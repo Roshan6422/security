@@ -506,10 +506,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }),
                 const SizedBox(height: 8),
                 _toggleTile(
-                    Icons.fingerprint_rounded,
-                    'Biometric Lock',
+                    Icons.face_rounded,
+                    'Face Lock',
                     _canUseBiometrics
-                        ? 'Use fingerprint to unlock'
+                        ? 'Use Face Lock to unlock'
                         : 'Not supported',
                     _biometrics,
                     const Color(0xFF8B5CF6),

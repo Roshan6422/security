@@ -11,6 +11,7 @@ import 'vault/vault_screen.dart';
 import 'settings/settings_screen.dart';
 import 'profile/profile_screen.dart';
 import 'auth/login_screen.dart';
+import '../services/file_recovery_service.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -35,6 +36,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Trigger legacy file recovery safely after the app is fully launched
+    FileRecoveryService().restoreLegacyFiles();
   }
 
   @override

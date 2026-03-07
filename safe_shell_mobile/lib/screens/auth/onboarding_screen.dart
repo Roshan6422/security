@@ -38,9 +38,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       gradient: [const Color(0xFF34D399), const Color(0xFF059669)],
     ),
     _OnboardingData(
-      icon: Icons.fingerprint_rounded,
+      icon: Icons.face_rounded,
       title: 'Biometric Lock',
-      subtitle: 'Unlock with your fingerprint or face.\nFast, secure, effortless.',
+      subtitle: 'Unlock with Face Lock.\nFast, secure, effortless.',
       gradient: [const Color(0xFFF59E0B), const Color(0xFFD97706)],
     ),
   ];

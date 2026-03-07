@@ -604,7 +604,7 @@ class _BiometricRippleButtonState extends State<_BiometricRippleButton> with Tic
                   border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                   boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12)],
                 ),
-                child: const Icon(Icons.fingerprint, size: 30, color: AppColors.primary),
+                child: const Icon(Icons.face_rounded, size: 30, color: AppColors.primary),
               ),
             ],
           ),

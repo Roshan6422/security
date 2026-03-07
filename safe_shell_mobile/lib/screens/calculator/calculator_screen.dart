@@ -163,7 +163,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: color == Colors.grey[400] ? Colors.black : Colors.white,
+            color: color == Colors.grey[400] ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
             fontSize: 32,
             fontWeight: FontWeight.w500,
           ),

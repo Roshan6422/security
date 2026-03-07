@@ -143,10 +143,18 @@ class ApiService {
   dynamic _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
-      return jsonDecode(response.body);
+      try {
+        return jsonDecode(response.body);
+      } catch (e) {
+        throw Exception('Server returned invalid data format: ${response.statusCode}');
+      }
     } else {
-      final body = jsonDecode(response.body);
-      throw Exception(body['message'] ?? 'Something went wrong');
+      try {
+        final body = jsonDecode(response.body);
+        throw Exception(body['message'] ?? 'Something went wrong: ${response.statusCode}');
+      } catch (e) {
+        throw Exception('Server error: ${response.statusCode}. Please check connection.');
+      }
     }
   }
 }

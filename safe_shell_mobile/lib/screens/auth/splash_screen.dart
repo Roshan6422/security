@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         try {
           bool authenticated = await localAuth.authenticate(
             localizedReason: 'Unlock SafeShell Vault',
-            options: const AuthenticationOptions(stickyAuth: true, biometricOnly: false),
+            options: const AuthenticationOptions(stickyAuth: true, biometricOnly: false, sensitiveTransaction: false),
           );
           if (!authenticated) canNavigateToHome = false;
         } catch (e) {

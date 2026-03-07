@@ -21,16 +21,34 @@ class AppLockService : Service() {
         private var lockedPackages = mutableSetOf<String>()
         var isServiceRunning = false
             private set
+        
+        private var lastUnlockTime: Long = 0
 
         fun unlockPackage(packageName: String) {
             tempUnlockedPackages.add(packageName)
+            lastUnlockTime = System.currentTimeMillis()
         }
     }
+
+    private var screenReceiver: android.content.BroadcastReceiver? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        
+        screenReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                    if (tempUnlockedPackages.isNotEmpty()) {
+                        Log.d("AppLockService", "Screen turned off. Clearing temp unlocks.")
+                        tempUnlockedPackages.clear()
+                    }
+                }
+            }
+        }
+        val filter = android.content.IntentFilter(Intent.ACTION_SCREEN_OFF)
+        registerReceiver(screenReceiver, filter)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -66,6 +84,7 @@ class AppLockService : Service() {
         Log.d("AppLockService", "Service onDestroy called")
         isRunning = false
         isServiceRunning = false
+        screenReceiver?.let { unregisterReceiver(it) }
         super.onDestroy()
     }
 
@@ -82,6 +101,16 @@ class AppLockService : Service() {
                         interceptApp(foregroundApp)
                         // Sleep a bit more after interception to prevent flickering 
                         Thread.sleep(600)
+                    } else if (foregroundApp != packageName && !tempUnlockedPackages.contains(foregroundApp)) {
+                        // User switched to a different app (e.g. Home launcher or another app)
+                        // Ignore systemui to prevent locking just by pulling down notifications
+                        if (foregroundApp != "com.android.systemui") {
+                            val timeSinceUnlock = System.currentTimeMillis() - lastUnlockTime
+                            if (tempUnlockedPackages.isNotEmpty() && timeSinceUnlock > 2000) {
+                                Log.d("AppLockService", "Foreground changed to $foregroundApp, clearing temp unlocks")
+                                tempUnlockedPackages.clear()
+                            }
+                        }
                     }
                 }
                 Thread.sleep(400) // Polling interval

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class SectionCard extends StatefulWidget {
@@ -85,7 +85,7 @@ class _SectionCardState extends State<SectionCard> {
                 ),
                 child: Icon(widget.icon, size: 24, color: Colors.white),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
               Text(
                 widget.title,
                 style: const TextStyle(

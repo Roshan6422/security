@@ -182,7 +182,7 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
             child: Center(
               child: isDelete
                   ? Icon(Icons.backspace_rounded, color: Colors.white.withOpacity(0.4), size: 22)
-                  : Text(key, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600)),
+                  : Text(key, style: const TextStyle(color: Color(0xFFF1F5F9), fontSize: 28, fontWeight: FontWeight.w600)),
             ),
           );
         },

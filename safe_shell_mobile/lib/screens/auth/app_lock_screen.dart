@@ -60,18 +60,29 @@ class _AppLockScreenState extends State<AppLockScreen> {
       // Unlock package natively
       try {
         await _channel.invokeMethod('unlockPackage', {'packageName': widget.packageName});
+        
+        // IMPORTANT: Launch the intercepted app so the user goes straight to it!
+        await _channel.invokeMethod('launchApp', {'packageName': widget.packageName});
+        
       } catch (e) {
         debugPrint('Error unlocking package: $e');
       }
 
-      // Close the lock screen and allow access
-      if (mounted) Navigator.of(context).pop(true);
+      // Close the lock screen
+      if (mounted) {
+         // Because we might have intercepted this over the dashboard, we pop to hide the lock screen
+         if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+         }
+         // Move SafeShell back to the background so the launched app comes up
+         SystemNavigator.pop(); 
+      }
     } else {
       HapticFeedback.vibrate();
       setState(() {
         _pinController.clear();
       });
-      PremiumSnackbar.show(context, message: 'Incorrect PIN', emoji: '', color: Colors.redAccent);
+      PremiumSnackbar.show(context, message: 'Incorrect PIN', emoji: '❌', color: Colors.redAccent);
     }
   }
 
@@ -97,16 +108,16 @@ class _AppLockScreenState extends State<AppLockScreen> {
             const Text(
               'ACCESS RESTRICTED',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFFF1F5F9), // Use specific hex instead of Colors.white to dodge MIUI invert
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
+            const Text(
               'Protected by SafeShell Midnight',
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13), // Colors.slate-400
             ),
             const SizedBox(height: 48),
             
@@ -182,13 +193,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
         height: 80,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.03),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          color: const Color(0xFF1E293B), // slate-800, visible on black background without relying on 0.03 opacity
+          border: Border.all(color: const Color(0xFF334155)),
         ),
         child: Center(
           child: Text(
             number,
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Color(0xFFF1F5F9), fontSize: 26, fontWeight: FontWeight.bold),
           ),
         ),
       ),

@@ -14,6 +14,8 @@ import '../../core/theme.dart';
 import '../../services/api_service.dart';
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
+import 'package:local_auth/local_auth.dart';
 
 import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
@@ -84,7 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   // Security tips
   static const List<Map<String, dynamic>> _securityTips = [
-    {'icon': Icons.fingerprint, 'tip': 'Enable biometric lock for instant secure access', 'color': AppColors.primary},
+    {'icon': Icons.face_rounded, 'tip': 'Enable Face Lock for instant secure access', 'color': AppColors.primary},
     {'icon': Icons.vpn_lock_rounded, 'tip': 'Use Private Browser to leave zero digital footprint', 'color': Color(0xFF8B5CF6)},
     {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF34D399)},
     {'icon': Icons.grid_view_rounded, 'tip': 'Use Calculator disguise to hide your vault entrance', 'color': Color(0xFFF59E0B)},
@@ -215,15 +217,33 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
           boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
         ),
-        child: FloatingActionButton(
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            _showUploadOptions(context);
+        child: GestureDetector(
+          onLongPress: () async {
+            try {
+              final auth = LocalAuthentication();
+              final bios = await auth.getAvailableBiometrics();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  backgroundColor: Colors.blueAccent,
+                  behavior: SnackBarBehavior.floating,
+                  content: Text('Detected Hardware: $bios', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  duration: const Duration(seconds: 15),
+                ));
+              }
+            } catch (e) {
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bio Error: $e')));
+            }
           },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          child: FloatingActionButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _showUploadOptions(context);
+            },
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          ),
         ),
       ),
       body: Stack(
