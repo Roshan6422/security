@@ -23,6 +23,7 @@ import '../auth/login_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/sound_effects.dart';
+import '../../services/file_recovery_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -35,7 +36,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _batterySaver = false;
   bool _biometrics = false;
 
-  bool _localCloak = false;
   bool _discreetMode = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final _storage = const FlutterSecureStorage();
@@ -53,7 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadBiometricSetting();
-    _loadLocalCloakStatus();
     _loadDiscreetMode();
     _loadAutoLock();
   }
@@ -182,10 +181,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _setCalculatorPin();
   }
 
-  Future<void> _loadLocalCloakStatus() async {
-    final saved = await _storage.read(key: 'local_cloak_enabled');
-    if (mounted) setState(() => _localCloak = saved == 'true');
-  }
 
   Future<void> _loadBiometricSetting() async {
     try {
@@ -317,173 +312,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _toggleLocalCloak(bool value) async {
-    if (value) {
-      if (await Permission.storage.request().isDenied) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Storage permission required for Local Cloak')));
-        }
-        return;
-      }
-
-      if (await Permission.manageExternalStorage.isDenied) {
-        final status = await Permission.manageExternalStorage.request();
-        if (status.isDenied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text(
-                    'All Files Access is required to hide system Gallery folders. Please enable it in Settings.')));
-          }
-          return;
-        }
-      }
-    }
-
-    if (mounted) {
-      await Provider.of<SettingsProvider>(context, listen: false)
-          .toggleLocalCloak(value);
-    }
-
-    setState(() => _localCloak = value);
-
-    try {
-      final List<String> targetDirs = [
-        '/storage/emulated/0/DCIM/Camera',
-        '/storage/emulated/0/Pictures',
-        '/storage/emulated/0/Movies',
-        '/storage/emulated/0/Download',
-        '/storage/emulated/0/Documents',
-        '/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Images',
-        '/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Video',
-        '/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Documents',
-        '/storage/emulated/0/WhatsApp/Media/WhatsApp Images',
-        '/storage/emulated/0/WhatsApp/Media/WhatsApp Video',
-        '/storage/emulated/0/WhatsApp/Media/WhatsApp Documents',
-      ];
-
-      int successCount = 0;
-      int failCount = 0;
-
-      for (var dirPath in targetDirs) {
-        try {
-          final dir = Directory(dirPath);
-          if (await dir.exists()) {
-            final nomediaFile = File('${dir.path}/.nomedia');
-            if (value) {
-              if (!await nomediaFile.exists()) {
-                await nomediaFile.create();
-              }
-            } else {
-              if (await nomediaFile.exists()) {
-                await nomediaFile.delete();
-              }
-            }
-            successCount++;
-          }
-        } catch (e) {
-          failCount++;
-          debugPrint('Error for $dirPath: $e');
-        }
-      }
-
-      int restoredCount = 0;
-      if (!value) {
-        try {
-          final appDir = await getApplicationDocumentsDirectory();
-          final cloakDir =
-              Directory(p.join(appDir.path, '.SafeShellCloak'));
-
-          if (await cloakDir.exists()) {
-            Map<String, String> metadata = {};
-            final metaFile =
-                File(p.join(cloakDir.path, 'cloak_metadata.json'));
-            if (await metaFile.exists()) {
-              try {
-                final content = await metaFile.readAsString();
-                final decoded =
-                    jsonDecode(content) as Map<String, dynamic>;
-                metadata =
-                    decoded.map((k, v) => MapEntry(k, v.toString()));
-              } catch (_) {}
-            }
-
-            final entities = cloakDir.listSync();
-            for (var entity in entities) {
-              if (entity is File &&
-                  entity.path.endsWith('.safe_cloak')) {
-                try {
-                  final obfName = p.basename(entity.path);
-                  final originalPath = metadata[obfName];
-
-                  if (originalPath != null && originalPath.isNotEmpty) {
-                    final parentDir =
-                        Directory(p.dirname(originalPath));
-                    if (!await parentDir.exists()) {
-                      await parentDir.create(recursive: true);
-                    }
-                    await entity.copy(originalPath);
-                  } else {
-                    final encoded =
-                        obfName.replaceAll('.safe_cloak', '');
-                    String originalName;
-                    try {
-                      originalName =
-                          utf8.decode(base64Url.decode(encoded));
-                    } catch (_) {
-                      originalName = obfName;
-                    }
-                    final restoreDir = Directory(
-                        '/storage/emulated/0/SafeShell_Restored');
-                    if (!await restoreDir.exists()) {
-                      await restoreDir.create(recursive: true);
-                    }
-                    await entity.copy(
-                        p.join(restoreDir.path, originalName));
-                  }
-
-                  await entity.delete();
-                  restoredCount++;
-                } catch (e) {
-                  debugPrint('Error restoring file: $e');
-                }
-              }
-            }
-
-            if (await metaFile.exists()) {
-              await metaFile.delete();
-            }
-          }
-        } catch (e) {
-          debugPrint('Error restoring cloaked files: $e');
-        }
-      }
-
-      if (mounted) {
-        if (failCount > 0 && successCount == 0) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: const Text(
-                  'Operation failed. Please ensure All Files Access is granted.'),
-              backgroundColor: Colors.redAccent));
-        } else {
-          final msg = value
-              ? 'Local Cloak Active: Media hidden from Gallery'
-              : 'Local Cloak Disabled: Media restored to Gallery${restoredCount > 0 ? ' ($restoredCount files recovered)' : ''}';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(msg),
-              backgroundColor: value ? AppColors.primary : Colors.grey,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Critical Error: $e')));
-      }
-    }
-  }
 
   Future<void> _confirmClearAppData() async {
     final confirmed = await showDialog<bool>(
@@ -774,6 +602,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const PrivacyPolicyScreen()));
+                }),
+                const SizedBox(height: 8),
+                _actionTile(Icons.history_rounded, 'Restore Legacy Files',
+                    'Recover files from old hidden vault', const Color(0xFFF59E0B), () async {
+                  HapticFeedback.mediumImpact();
+                  // Show loading
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                  );
+                  
+                  await FileRecoveryService().restoreLegacyFiles(force: true);
+                  
+                  if (context.mounted) {
+                    Navigator.pop(context); // hide loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Recovery process finished! Check your Gallery.'),
+                        backgroundColor: Color(0xFF34D399),
+                      ),
+                    );
+                  }
                 }),
                 const SizedBox(height: 24),
 

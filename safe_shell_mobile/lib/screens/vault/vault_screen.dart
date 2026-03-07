@@ -18,12 +18,12 @@ import 'notes_list_screen.dart';
 import 'documents_list_screen.dart';
 import 'recycle_bin_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'local_cloak_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../../utils/sound_effects.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../main.dart';
-import 'cloak_list_screen.dart';
 import 'app_hider_screen.dart';
 import '../../utils/vault_encryption_helper.dart';
 
@@ -44,7 +44,6 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
   final List<_VaultCategory> _categories = [
     _VaultCategory(Icons.image_rounded, 'Photos', 'photo', AppColors.photos),
     _VaultCategory(Icons.videocam_rounded, 'Videos', 'video', AppColors.videos),
-    _VaultCategory(Icons.visibility_off_rounded, 'Invisible Files', 'local_cloak', AppColors.warning),
     _VaultCategory(Icons.audiotrack_rounded, 'Audio', 'audio', AppColors.accent),
     _VaultCategory(Icons.sticky_note_2_rounded, 'Notes', 'note', AppColors.notes),
     _VaultCategory(Icons.description_rounded, 'Documents', 'document', AppColors.documents),
@@ -122,7 +121,7 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
                         children: [
                           Container(width: 5, height: 5, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF34D399))),
                           const SizedBox(width: 6),
-                          Text('?? Encrypted & Cloaked', style: AppTextStyles.caption.copyWith(color: subColor, fontSize: 12)),
+                          Text('?? AES-256 Encrypted', style: AppTextStyles.caption.copyWith(color: subColor, fontSize: 12)),
                         ],
                       ),
                     ],
@@ -365,8 +364,6 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
           case 'note': screen = const NotesListScreen(); break;
           case 'document': screen = const DocumentsListScreen(); break;
           case 'app_hider': screen = const AppHiderScreen(); break;
-          case 'local_cloak': screen = const LocalCloakScreen(); break;
-          case 'cloud_cloak': screen = const CloakListScreen(); break;
           default: screen = const PhotosListScreen();
         }
         Navigator.push(context, MaterialPageRoute(builder: (_) => screen));

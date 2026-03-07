@@ -17,7 +17,7 @@ import '../../providers/auth_provider.dart';
 
 import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
-import '../vault/local_cloak_screen.dart';
+import '../vault/vault_screen.dart';
 import '../subscription/payment_screen.dart';
 import '../settings/support_screen.dart';
 import '../calculator/calculator_screen.dart';
@@ -89,7 +89,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF34D399)},
     {'icon': Icons.grid_view_rounded, 'tip': 'Use Calculator disguise to hide your vault entrance', 'color': Color(0xFFF59E0B)},
     {'icon': Icons.lock_outline_rounded, 'tip': 'Set a strong PIN  avoid birthdays and simple patterns', 'color': Color(0xFFEF4444)},
-    {'icon': Icons.visibility_off_rounded, 'tip': 'Cloak sensitive files to make them invisible on device', 'color': Color(0xFF8B5CF6)},
     {'icon': Icons.bolt_rounded, 'tip': 'Run Optimize weekly to clear cached data and save space', 'color': Color(0xFF34D399)},
   ];
 
@@ -603,7 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           _buildQuickDivider(),
           _buildQuickAction(Icons.photo_library_rounded, 'Upload', const Color(0xFFA855F7), _pickAndUploadImage, textColor),
           _buildQuickDivider(),
-          _buildQuickAction(Icons.lock_rounded, 'Cloak', const Color(0xFF8B5CF6), () => _navigate(const LocalCloakScreen()), textColor),
+          _buildQuickAction(Icons.description_rounded, 'Docs', const Color(0xFF0EA5E9), () => _navigate(const VaultScreen()), textColor),
           _buildQuickDivider(),
           _buildQuickAction(Icons.shield_rounded, 'Secure', const Color(0xFF34D399), () {
             PremiumSnackbar.show(

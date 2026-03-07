@@ -53,25 +53,14 @@ class VaultStatsService {
         if (kDebugMode) debugPrint('VaultStatsService: Cloud stats fetch failed: $e');
       }
 
-      // 2. Fetch Local Stats (Cloaked Files)
-      final localStats = await _getLocalStats();
-
-      // 3. Aggregate
-      final int cloudTotalSize = cloudStats['totalSize'] is int ? cloudStats['totalSize'] as int : 0;
-      final int cloudTotalCount = cloudStats['count'] is int ? cloudStats['count'] as int : 0;
-      final int cloudPhotoCount = cloudStats['photoCount'] is int ? cloudStats['photoCount'] as int : 0;
-      final int cloudVideoCount = cloudStats['videoCount'] is int ? cloudStats['videoCount'] as int : 0;
-      final int cloudDocCount = cloudStats['docCount'] is int ? cloudStats['docCount'] as int : 0;
-      final int cloudAudioCount = cloudStats['audioCount'] is int ? cloudStats['audioCount'] as int : 0;
-      final int cloudZipCount = cloudStats['zipCount'] is int ? cloudStats['zipCount'] as int : 0;
-
-      final int totalSizeBytes = cloudTotalSize + localStats['totalSize']!;
-      final int totalCount = cloudTotalCount + localStats['totalCount']!;
-      final int photoCount = cloudPhotoCount + localStats['photoCount']!;
-      final int videoCount = cloudVideoCount + localStats['videoCount']!;
-      final int docCount = cloudDocCount + localStats['docCount']!;
-      final int audioCount = cloudAudioCount + localStats['audioCount']!;
-      final int zipCount = cloudZipCount + localStats['zipCount']!;
+      // 2. Map Cloud Stats
+      final int totalSizeBytes = cloudStats['totalSize'] is int ? cloudStats['totalSize'] as int : 0;
+      final int totalCount = cloudStats['count'] is int ? cloudStats['count'] as int : 0;
+      final int photoCount = cloudStats['photoCount'] is int ? cloudStats['photoCount'] as int : 0;
+      final int videoCount = cloudStats['videoCount'] is int ? cloudStats['videoCount'] as int : 0;
+      final int docCount = cloudStats['docCount'] is int ? cloudStats['docCount'] as int : 0;
+      final int audioCount = cloudStats['audioCount'] is int ? cloudStats['audioCount'] as int : 0;
+      final int zipCount = cloudStats['zipCount'] is int ? cloudStats['zipCount'] as int : 0;
 
       return VaultStats(
         totalCount: totalCount,
@@ -89,82 +78,6 @@ class VaultStatsService {
     }
   }
 
-  Future<Map<String, int>> _getLocalStats() async {
-    int totalCount = 0;
-    int photoCount = 0;
-    int videoCount = 0;
-    int docCount = 0;
-    int audioCount = 0;
-    int zipCount = 0;
-    int totalSize = 0;
-
-    try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final cloakDir = Directory(p.join(appDir.path, 'vault_storage'));
-
-      if (await cloakDir.exists()) {
-        final entities = cloakDir.listSync(recursive: false);
-        for (var entity in entities) {
-          if (entity is File && entity.path.endsWith('.shell')) {
-            totalCount++;
-            final length = await entity.length();
-            totalSize += length;
-
-            final fileName = p.basename(entity.path).replaceAll('.shell', '').toLowerCase();
-            if (_isPhoto(fileName)) {
-              photoCount++;
-            } else if (_isVideo(fileName)) {
-              videoCount++;
-            } else if (_isAudio(fileName)) {
-              audioCount++;
-            } else if (_isZip(fileName)) {
-              zipCount++;
-            } else {
-              docCount++;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('VaultStatsService: Local stats scan failed: $e');
-    }
-
-    return {
-      'totalCount': totalCount,
-      'photoCount': photoCount,
-      'videoCount': videoCount,
-      'docCount': docCount,
-      'audioCount': audioCount,
-      'zipCount': zipCount,
-      'totalSize': totalSize,
-    };
-  }
-
-  bool _isPhoto(String name) {
-    return name.endsWith('.jpg') || name.endsWith('.jpeg') ||
-           name.endsWith('.png') || name.endsWith('.gif') ||
-           name.endsWith('.webp') || name.endsWith('.bmp') ||
-           name.endsWith('.tiff') || name.endsWith('.ico');
-  }
-
-  bool _isVideo(String name) {
-    return name.endsWith('.mp4') || name.endsWith('.mov') ||
-           name.endsWith('.avi') || name.endsWith('.mkv') ||
-           name.endsWith('.3gp') || name.endsWith('.webm') ||
-           name.endsWith('.flv') || name.endsWith('.wmv');
-  }
-
-  bool _isAudio(String name) {
-    return name.endsWith('.mp3') || name.endsWith('.wav') ||
-           name.endsWith('.aac') || name.endsWith('.flac') ||
-           name.endsWith('.m4a') || name.endsWith('.ogg');
-  }
-
-  bool _isZip(String name) {
-    return name.endsWith('.zip') || name.endsWith('.rar') ||
-           name.endsWith('.7z') || name.endsWith('.tar') ||
-           name.endsWith('.gz');
-  }
 
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
