@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
@@ -81,8 +81,8 @@ class _NotesListScreenState extends State<NotesListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Delete ${_selectedIds.length} Notes?', style: AppTextStyles.heading),
-        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body),
+        title: Text('Delete ${_selectedIds.length} Notes?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
+        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
@@ -104,8 +104,13 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white70;
+    final captionColor = isLight ? Colors.black45 : Colors.white30;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
       appBar: AppBar(
         leading: _isSelectionMode
             ? IconButton(
@@ -115,16 +120,16 @@ class _NotesListScreenState extends State<NotesListScreen> {
                   _selectedIds.clear();
                 }),
               )
-            : const BackButton(),
+            : BackButton(color: textColor),
         title: _isSelectionMode
-            ? Text('${_selectedIds.length} Selected', style: AppTextStyles.heading)
-            : Text('Notes', style: AppTextStyles.heading),
+            ? Text('${_selectedIds.length} Selected', style: AppTextStyles.heading.copyWith(color: textColor))
+            : Text('Notes', style: AppTextStyles.heading.copyWith(color: textColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
-              icon: Icon(_selectedIds.length == _items.length ? Icons.deselect : Icons.select_all),
+              icon: Icon(_selectedIds.length == _items.length ? Icons.deselect : Icons.select_all, color: textColor),
               onPressed: _selectAll,
             ),
              IconButton(
@@ -133,18 +138,18 @@ class _NotesListScreenState extends State<NotesListScreen> {
             ),
           ] else ...[
              IconButton(
-              icon: const Icon(Icons.checklist),
+              icon: Icon(Icons.checklist, color: textColor),
               tooltip: 'Select Items',
               onPressed: () => setState(() => _isSelectionMode = true),
             ),
-            IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchItems),
+            IconButton(icon: Icon(Icons.refresh, color: textColor), onPressed: _fetchItems),
           ],
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _items.isEmpty
-              ? Center(child: Text('No notes yet', style: AppTextStyles.body.copyWith(color: Colors.white54)))
+              ? Center(child: Text('No notes yet', style: AppTextStyles.body.copyWith(color: captionColor)))
               : GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -178,12 +183,12 @@ class _NotesListScreenState extends State<NotesListScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item['name'] ?? 'Untitled', style: AppTextStyles.subheading, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  Text(item['name'] ?? 'Untitled', style: AppTextStyles.subheading.copyWith(color: textColor), maxLines: 2, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 8),
                                   Expanded(
                                     child: Text(
                                       item['content'] ?? '',
-                                      style: AppTextStyles.caption.copyWith(color: Colors.white70),
+                                      style: AppTextStyles.caption.copyWith(color: subColor),
                                       maxLines: 5,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -191,7 +196,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     item['updatedAt'] != null ? 'Edited just now' : 'Just now', 
-                                    style: AppTextStyles.caption.copyWith(fontSize: 10, color: Colors.white30),
+                                    style: AppTextStyles.caption.copyWith(fontSize: 10, color: captionColor),
                                   ),
                                 ],
                               ),
@@ -201,10 +206,10 @@ class _NotesListScreenState extends State<NotesListScreen> {
                                 top: 8,
                                 right: 8,
                                 child: Container(
-                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.black54),
+                                  decoration: BoxDecoration(shape: BoxShape.circle, color: isLight ? Colors.white70 : Colors.black54),
                                   child: Icon(
                                     isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                    color: isSelected ? AppColors.primary : Colors.white70,
+                                    color: isSelected ? AppColors.primary : (isLight ? Colors.black54 : Colors.white70),
                                     size: 24,
                                   ),
                                 ),

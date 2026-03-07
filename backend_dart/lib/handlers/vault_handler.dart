@@ -21,7 +21,11 @@ String _formatSize(int bytes) {
 }
 
 String _detectType(String filename) {
-  final ext = filename.split('.').last.toLowerCase();
+  // Strip .shell encryption wrapper to get the real extension
+  final cleanName = filename.toLowerCase().endsWith('.shell')
+      ? filename.substring(0, filename.length - 6)
+      : filename;
+  final ext = cleanName.split('.').last.toLowerCase();
   const imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'tiff', 'ico'};
   const videoExts = {'mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm', '3gp', 'm4v'};
   const audioExts = {'mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a', 'wma'};
@@ -38,6 +42,26 @@ String _detectType(String filename) {
 
 Router vaultRouter() {
   final router = Router();
+
+  // TEMP: GET /debug-all — dump all vault items for debugging
+  router.get('/debug-all', (Request request) async {
+    try {
+      final items = await vaultItemRepo.find({});
+      final result = items.map((i) => {
+        'name': i.name,
+        'type': i.type,
+        'user': i.user,
+        'id': i.id,
+        'detectedType': _detectType(i.name),
+      }).toList();
+      return Response.ok(
+        jsonEncode({'total': items.length, 'items': result}),
+        headers: {'content-type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Error: $e'}));
+    }
+  });
 
   // GET /stats
   router.get('/stats', (Request request) async {
@@ -163,6 +187,7 @@ Router vaultRouter() {
       }
 
       String type = request.url.queryParameters['type'] ?? _detectType(filename);
+      print('[VAULT UPLOAD] filename=$filename, detectedType=$type');
       final item = await vaultItemRepo.create({
         'user': user.id!,
         'name': filename,
@@ -252,6 +277,44 @@ Router vaultRouter() {
       return Response.ok(jsonEncode({'message': 'Item restored'}), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(body: jsonEncode({'message': 'Server error'}));
+    }
+  });
+
+  // POST /fix-types — re-categorize existing items based on filename
+  router.post('/fix-types', (Request request) async {
+    try {
+      final user = getAuthUser(request);
+      final items = await vaultItemRepo.find({'user': user.id!});
+      int fixed = 0;
+      final debugInfo = <Map<String, String>>[];
+
+      for (final item in items) {
+        final correctType = _detectType(item.name);
+        debugInfo.add({
+          'name': item.name,
+          'currentType': item.type,
+          'detectedType': correctType,
+          'status': correctType != item.type ? 'FIXED' : 'OK',
+        });
+        print('[FIX-TYPES] name=${item.name}, current=${item.type}, detected=$correctType');
+        if (correctType != item.type) {
+          item.type = correctType;
+          await item.save();
+          fixed++;
+        }
+      }
+
+      return Response.ok(
+        jsonEncode({
+          'message': 'Fixed $fixed items out of ${items.length}',
+          'fixed': fixed,
+          'total': items.length,
+          'items': debugInfo,
+        }),
+        headers: {'content-type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error: $e'}));
     }
   });
 

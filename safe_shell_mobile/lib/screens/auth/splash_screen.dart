@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
+import '../../main.dart';
 import '../calculator/calculator_screen.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../main_shell.dart';
 import 'login_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
@@ -95,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (_, __, ___) => canNavigateToHome ? const MainShell() : const LoginScreen(),
+        pageBuilder: (_, __, ___) => const AppLockListenerWrapper(child: AuthWrapper()),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },

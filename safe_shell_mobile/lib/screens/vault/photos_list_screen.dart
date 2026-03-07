@@ -197,11 +197,11 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete $count photo${count > 1 ? 's' : ''}?',
-          style: AppTextStyles.heading,
+          style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary),
         ),
         content: Text(
           'Items will be moved to the Recycle Bin.',
-          style: AppTextStyles.body,
+          style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(

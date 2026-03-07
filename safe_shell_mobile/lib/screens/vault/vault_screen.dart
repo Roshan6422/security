@@ -58,6 +58,17 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     )..forward();
+    // One-time migration: fix items that were incorrectly categorized as 'document'
+    _fixTypes();
+  }
+
+  Future<void> _fixTypes() async {
+    try {
+      final result = await ApiService().post('/vault/fix-types', {});
+      debugPrint('Fix types result: $result');
+    } catch (e) {
+      debugPrint('Fix types error (non-critical): $e');
+    }
   }
 
   @override
@@ -96,55 +107,140 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
     final subColor = isLight ? AppColors.textSecondary : AppColors.darkTextSecondary;
 
     return Scaffold(
-      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
+      backgroundColor: isLight ? AppColors.background : const Color(0xFF0F172A), // Deep slate for real vault feel
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('SAFE VAULT', style: AppTextStyles.heading.copyWith(letterSpacing: 2, fontSize: 16, color: isLight ? AppColors.textPrimary : AppColors.primary)),
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.shield_rounded, color: isLight ? AppColors.textPrimary : const Color(0xFF94A3B8), size: 20),
+            const SizedBox(width: 8),
+            Text('SAFE VAULT', style: AppTextStyles.heading.copyWith(letterSpacing: 2, fontSize: 16, color: isLight ? AppColors.textPrimary : const Color(0xFFE2E8F0))),
+          ],
+        ),
       ),
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Premium Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('My Vault', style: AppTextStyles.heading.copyWith(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: textColor)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(width: 5, height: 5, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF34D399))),
-                          const SizedBox(width: 6),
-                          Text('?? AES-256 Encrypted', style: AppTextStyles.caption.copyWith(color: subColor, fontSize: 12)),
-                        ],
-                      ),
-                    ],
+            // Realistic Vault Door Dial / Header
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isLight 
+                      ? [Colors.white, const Color(0xFFF1F5F9)] 
+                      : [const Color(0xFF1E293B), const Color(0xFF0F172A)], // Slate metallic gradient
+                ),
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: isLight ? Colors.black.withOpacity(0.05) : Colors.black.withOpacity(0.4),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
                   ),
-                  _ScaleTapVault(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const RecycleBinScreen()));
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isLight ? AppColors.primary.withOpacity(0.08) : Colors.white.withOpacity(0.05),
-                        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.06)),
+                  BoxShadow(
+                    color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
+                    blurRadius: 1,
+                    offset: const Offset(0, -1), // Inner highlight for 3D metallic edge
+                  ),
+                ],
+                border: Border.all(
+                  color: isLight ? Colors.black12 : Colors.white.withOpacity(0.05),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Spinning Dial Icon Graphic
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: isLight 
+                            ? [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)]
+                            : [const Color(0xFF334155), const Color(0xFF1E293B)],
                       ),
-                      child: Icon(Icons.delete_outline_rounded, color: isLight ? AppColors.primary.withOpacity(0.7) : Colors.white.withOpacity(0.4), size: 20),
+                      border: Border.all(
+                        color: isLight ? Colors.black26 : Colors.white24,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isLight ? 0.1 : 0.5),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isLight ? Colors.white : const Color(0xFF0F172A),
+                          border: Border.all(color: isLight ? Colors.black12 : Colors.white12),
+                        ),
+                        child: Icon(Icons.enhanced_encryption_rounded, color: isLight ? AppColors.primary : const Color(0xFFA855F7), size: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Vault Storage', style: AppTextStyles.heading.copyWith(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: textColor)),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 12),
+                                  const SizedBox(width: 4),
+                                  Text('AES-256', style: AppTextStyles.caption.copyWith(color: const Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            _ScaleTapVault(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const RecycleBinScreen()));
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isLight ? Colors.black.withOpacity(0.04) : Colors.white.withOpacity(0.05),
+                                ),
+                                child: Icon(Icons.delete_outline_rounded, color: subColor, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
 
             // Staggered Category Grid
             Expanded(
@@ -352,9 +448,22 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
 
   Widget _buildCategoryCard(_VaultCategory category) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final textColor = isLight ? AppColors.textPrimary : const Color(0xFFE2E8F0);
+    
+    // Metallic panel look
+    final panelGradient = isLight 
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, const Color(0xFFF8FAFC)],
+          )
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [const Color(0xFF1E293B), const Color(0xFF121B2B)],
+          );
 
-    return GlassCard(
+    return _ScaleTapVault(
       onTap: () {
         Widget screen;
         switch (category.type) {
@@ -368,38 +477,58 @@ class _VaultScreenState extends State<VaultScreen> with RouteAware, TickerProvid
         }
         Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
       },
-      borderRadius: 24,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 54, height: 54,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [category.color.withOpacity(0.3), category.color.withOpacity(0.1)],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: category.color.withOpacity(0.2)),
-              boxShadow: [
-                BoxShadow(
-                  color: category.color.withOpacity(0.15),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: panelGradient,
+          border: Border.all(
+            color: isLight ? Colors.black.withOpacity(0.05) : Colors.white.withOpacity(0.08),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isLight ? Colors.black.withOpacity(0.04) : Colors.black.withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
-            child: Icon(category.icon, color: category.color, size: 26),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            category.label,
-            style: AppTextStyles.subheading.copyWith(fontSize: 14, fontWeight: FontWeight.w700, color: textColor, letterSpacing: -0.2),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            // Inner metallic bevel
+            BoxShadow(
+              color: isLight ? Colors.white : Colors.white.withOpacity(0.05),
+              blurRadius: 1,
+              offset: const Offset(0, 1),
+              blurStyle: BlurStyle.inner,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Realistic icon housing
+            Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+                border: Border.all(color: isLight ? Colors.black.withOpacity(0.06) : Colors.black.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(color: category.color.withOpacity(isLight ? 0.3 : 0.4), blurRadius: 16, spreadRadius: -2),
+                  BoxShadow(color: Colors.white.withOpacity(isLight ? 1.0 : 0.05), blurRadius: 4, offset: const Offset(-1, -1)), // Top left highlight
+                  BoxShadow(color: Colors.black.withOpacity(isLight ? 0.05 : 0.5), blurRadius: 4, offset: const Offset(2, 2)), // Bottom right shadow
+                ],
+              ),
+              child: Center(
+                child: Icon(category.icon, color: category.color, size: 24),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              category.label,
+              style: AppTextStyles.subheading.copyWith(fontSize: 14, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.2),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

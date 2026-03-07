@@ -58,15 +58,20 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final hintColor = isLight ? Colors.black38 : Colors.white54;
+    final contentHintColor = isLight ? Colors.black26 : Colors.white30;
+    final iconColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
       appBar: AppBar(
-        title: Text(widget.note != null ? 'Edit Note' : 'New Note', style: AppTextStyles.heading),
+        title: Text(widget.note != null ? 'Edit Note' : 'New Note', style: AppTextStyles.heading.copyWith(color: iconColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
-            icon: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.save),
+            icon: _isLoading ? CircularProgressIndicator(color: iconColor) : Icon(Icons.save, color: iconColor),
             onPressed: _isLoading ? null : _saveNote,
           ),
         ],
@@ -77,10 +82,10 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
           children: [
             TextField(
               controller: _titleController,
-              style: AppTextStyles.subheading.copyWith(fontSize: 20),
-              decoration: const InputDecoration(
+              style: AppTextStyles.subheading.copyWith(fontSize: 20, color: iconColor),
+              decoration: InputDecoration(
                 hintText: 'Title',
-                hintStyle: TextStyle(color: Colors.white54),
+                hintStyle: TextStyle(color: hintColor),
                 border: InputBorder.none,
               ),
             ),
@@ -88,12 +93,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
             Expanded(
               child: TextField(
                 controller: _contentController,
-                style: AppTextStyles.body,
+                style: AppTextStyles.body.copyWith(color: iconColor),
                 maxLines: null,
                 expands: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Type your note here...',
-                  hintStyle: TextStyle(color: Colors.white30),
+                  hintStyle: TextStyle(color: contentHintColor),
                   border: InputBorder.none,
                 ),
               ),

@@ -89,8 +89,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final backgroundColor = isLight ? AppColors.background : Colors.black;
+    final textColor = isLight ? AppColors.textPrimary : const Color(0xFFF1F5F9);
+    final subColor = isLight ? AppColors.textSecondary : const Color(0xFF94A3B8);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -105,19 +110,19 @@ class _AppLockScreenState extends State<AppLockScreen> {
               child: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 48),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'ACCESS RESTRICTED',
               style: TextStyle(
-                color: Color(0xFFF1F5F9), // Use specific hex instead of Colors.white to dodge MIUI invert
+                color: textColor,
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Protected by SafeShell Midnight',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13), // Colors.slate-400
+              style: TextStyle(color: subColor, fontSize: 13),
             ),
             const SizedBox(height: 48),
             
@@ -132,7 +137,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isFilled ? AppColors.primary : Colors.white.withOpacity(0.1),
+                    color: isFilled ? AppColors.primary : (isLight ? Colors.black.withOpacity(0.1) : Colors.white.withOpacity(0.1)),
                     boxShadow: isFilled ? [
                       BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, spreadRadius: 2)
                     ] : [],
@@ -162,7 +167,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
                         width: 80,
                         child: IconButton(
                           onPressed: _onDelete,
-                          icon: const Icon(Icons.backspace_outlined, color: Colors.white54),
+                          icon: Icon(Icons.backspace_outlined, color: isLight ? Colors.black54 : Colors.white54),
                         ),
                       ),
                     ],
@@ -185,6 +190,11 @@ class _AppLockScreenState extends State<AppLockScreen> {
   }
 
   Widget _buildKeypadButton(String number) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final btnBg = isLight ? AppColors.surface : const Color(0xFF1E293B);
+    final btnBorder = isLight ? Colors.black12 : const Color(0xFF334155);
+    final btnText = isLight ? AppColors.textPrimary : const Color(0xFFF1F5F9);
+
     return InkWell(
       onTap: () => _onNumberPressed(number),
       borderRadius: BorderRadius.circular(40),
@@ -193,13 +203,13 @@ class _AppLockScreenState extends State<AppLockScreen> {
         height: 80,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF1E293B), // slate-800, visible on black background without relying on 0.03 opacity
-          border: Border.all(color: const Color(0xFF334155)),
+          color: btnBg,
+          border: Border.all(color: btnBorder),
         ),
         child: Center(
           child: Text(
             number,
-            style: const TextStyle(color: Color(0xFFF1F5F9), fontSize: 26, fontWeight: FontWeight.bold),
+            style: TextStyle(color: btnText, fontSize: 26, fontWeight: FontWeight.bold),
           ),
         ),
       ),

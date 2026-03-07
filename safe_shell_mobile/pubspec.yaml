@@ -74,12 +74,16 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.0
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/calculator_icon.png"
+  # This configures it to replace the default launcher icon. 
+  # If we just want to replace the calculator one, we actually can't easily do it via the standard config without overwriting ic_launcher.
+  # So we will set this up, let the user place the image, and then I will use a command to copy it manually to all mipmap folders as ic_calculator.png.
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.dark,
-            home: const AppLockListenerWrapper(child: AuthWrapper()),
+            home: const SplashScreen(),
             navigatorObservers: [routeObserver],
           );
         },

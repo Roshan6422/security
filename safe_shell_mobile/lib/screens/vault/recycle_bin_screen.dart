@@ -81,8 +81,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Delete ${_selectedIds.length} Items?', style: AppTextStyles.heading),
-        content: Text('These items will be permanently removed. This cannot be undone.', style: AppTextStyles.body),
+        title: Text('Delete ${_selectedIds.length} Items?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
+        content: Text('These items will be permanently removed. This cannot be undone.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
@@ -108,8 +108,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Empty Recycle Bin?', style: AppTextStyles.heading),
-        content: Text('All items will be permanently deleted.', style: AppTextStyles.body),
+        title: Text('Empty Recycle Bin?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
+        content: Text('All items will be permanently deleted.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Empty', style: TextStyle(color: Colors.red))),
@@ -150,8 +150,13 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white30;
+    final iconColor = isLight ? Colors.black26 : Colors.white24;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
       body: Stack(
         children: [
           // Background Blobs
@@ -191,11 +196,11 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                        icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const SizedBox(width: 8),
-                      Text('Recycle Bin', style: AppTextStyles.display.copyWith(fontSize: 24)),
+                      Text('Recycle Bin', style: AppTextStyles.display.copyWith(fontSize: 24, color: textColor)),
                       const Spacer(),
                       if (_items.isNotEmpty)
                         IconButton(
@@ -209,10 +214,10 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                       : _items.isEmpty
-                          ? _buildEmptyState()
-                          : _buildItemList(),
+                          ? _buildEmptyState(isLight, textColor, subColor, iconColor)
+                          : _buildItemList(isLight, textColor, subColor),
                 ),
               ],
             ),
@@ -222,7 +227,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isLight, Color textColor, Color subColor, Color iconColor) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -231,20 +236,20 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.03),
+              color: isLight ? Colors.black.withOpacity(0.03) : Colors.white.withOpacity(0.03),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: isLight ? Colors.black.withOpacity(0.05) : Colors.white.withOpacity(0.08)),
             ),
-            child: const Icon(Icons.delete_outline, size: 48, color: Colors.white24),
+            child: Icon(Icons.delete_outline, size: 48, color: iconColor),
           ),
           const SizedBox(height: 24),
-          Text('Recycle Bin is Empty', style: AppTextStyles.display.copyWith(fontSize: 20)),
+          Text('Recycle Bin is Empty', style: AppTextStyles.display.copyWith(fontSize: 20, color: textColor)),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
               'Deleted items will appear here for 30 days before being permanently removed.',
-              style: AppTextStyles.body.copyWith(color: Colors.white30, fontSize: 13),
+              style: AppTextStyles.body.copyWith(color: subColor, fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ),
@@ -259,7 +264,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     );
   }
 
-  Widget _buildItemList() {
+  Widget _buildItemList(bool isLight, Color textColor, Color subColor) {
     return Column(
       children: [
         // Selection Toolbar
@@ -281,7 +286,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                       const SizedBox(width: 12),
                       Text(
                         _selectedIds.length == _items.length ? 'Deselect All' : 'Select All',
-                        style: AppTextStyles.body.copyWith(fontSize: 14, fontWeight: FontWeight.bold),
+                        style: AppTextStyles.body.copyWith(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
                       ),
                     ],
                   ),
@@ -332,7 +337,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                     ),
                     title: Text(
                       item['name'] ?? 'Unknown',
-                      style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                      style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, color: textColor),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -340,13 +345,13 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(
                         children: [
-                          Text(item['size'] ?? '0 KB', style: AppTextStyles.caption.copyWith(color: Colors.white38)),
+                          Text(item['size'] ?? '0 KB', style: AppTextStyles.caption.copyWith(color: subColor)),
                           const SizedBox(width: 8),
-                          Container(width: 3, height: 3, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white24)),
+                          Container(width: 3, height: 3, decoration: BoxDecoration(shape: BoxShape.circle, color: isLight ? Colors.black26 : Colors.white24)),
                           const SizedBox(width: 8),
                           Text(
                             'Deleted ${item['deletedAt'] != null ? item['deletedAt'].toString().substring(0, 10) : ''}',
-                            style: AppTextStyles.caption.copyWith(color: Colors.white38),
+                            style: AppTextStyles.caption.copyWith(color: subColor),
                           ),
                         ],
                       ),
@@ -355,7 +360,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                       duration: const Duration(milliseconds: 200),
                       child: isSelected
                           ? const Icon(Icons.check_circle, color: AppColors.primary)
-                          : Icon(Icons.circle_outlined, color: Colors.white.withOpacity(0.2)),
+                          : Icon(Icons.circle_outlined, color: isLight ? Colors.black26 : Colors.white.withOpacity(0.2)),
                     ),
                   ),
                 ),

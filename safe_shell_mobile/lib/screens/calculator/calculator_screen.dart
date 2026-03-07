@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
-import '../main_shell.dart';
-import '../auth/login_screen.dart';
+import '../../main.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({super.key});
@@ -61,16 +58,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   void _unlockVault() {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.isAuthenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const AppLockListenerWrapper(child: AuthWrapper())),
+    );
   }
 
   void _evaluate() {
@@ -104,7 +94,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             Expanded(
               child: Container(
                 alignment: Alignment.bottomRight,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                 child: Text(
                   _display,
                   style: const TextStyle(color: Colors.white, fontSize: 80, fontWeight: FontWeight.w300),
@@ -113,10 +103,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 ),
               ),
             ),
-            _buildButtonRow(['AC', '+/-', '%', ''], [Colors.grey[400]!, Colors.grey[400]!, Colors.grey[400]!, Colors.orange]),
-            _buildButtonRow(['7', '8', '9', ''], [Colors.grey[850]!, Colors.grey[850]!, Colors.grey[850]!, Colors.orange]),
-            _buildButtonRow(['4', '5', '6', '-'], [Colors.grey[850]!, Colors.grey[850]!, Colors.grey[850]!, Colors.orange]),
-            _buildButtonRow(['1', '2', '3', '+'], [Colors.grey[850]!, Colors.grey[850]!, Colors.grey[850]!, Colors.orange]),
+            _buildButtonRow(['AC', '+/-', '%', '÷'], [const Color(0xFFA5A5A5), const Color(0xFFA5A5A5), const Color(0xFFA5A5A5), const Color(0xFFFF9F0A)], isTopRow: true),
+            _buildButtonRow(['7', '8', '9', '×'], [const Color(0xFF333333), const Color(0xFF333333), const Color(0xFF333333), const Color(0xFFFF9F0A)]),
+            _buildButtonRow(['4', '5', '6', '-'], [const Color(0xFF333333), const Color(0xFF333333), const Color(0xFF333333), const Color(0xFFFF9F0A)]),
+            _buildButtonRow(['1', '2', '3', '+'], [const Color(0xFF333333), const Color(0xFF333333), const Color(0xFF333333), const Color(0xFFFF9F0A)]),
             _buildLastRow(),
           ],
         ),
@@ -124,12 +114,12 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  Widget _buildButtonRow(List<String> labels, List<Color> colors) {
+  Widget _buildButtonRow(List<String> labels, List<Color> colors, {bool isTopRow = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: List.generate(4, (i) => _buildButton(labels[i], colors[i])),
+        children: List.generate(4, (i) => _buildButton(labels[i], colors[i], isTopRow: isTopRow)),
       ),
     );
   }
@@ -140,32 +130,35 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildButton('0', Colors.grey[850]!, isWide: true),
-          _buildButton('.', Colors.grey[850]!),
-          _buildButton('=', Colors.orange),
+          _buildButton('0', const Color(0xFF333333), isWide: true),
+          _buildButton('.', const Color(0xFF333333)),
+          _buildButton('=', const Color(0xFFFF9F0A)),
         ],
       ),
     );
   }
 
-  Widget _buildButton(String label, Color color, {bool isWide = false}) {
-    double size = (MediaQuery.of(context).size.width - 60) / 4;
+  Widget _buildButton(String label, Color color, {bool isWide = false, bool isTopRow = false}) {
+    double size = (MediaQuery.of(context).size.width - 64) / 4;
+    Color textColor = isTopRow ? Colors.black : Colors.white;
+
     return GestureDetector(
       onTap: () => _onPressed(label),
       child: Container(
         height: size,
-        width: isWide ? (size * 2) + 12 : size,
+        width: isWide ? (size * 2) + 16 : size,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(size / 2),
         ),
-        alignment: Alignment.center,
+        alignment: isWide ? Alignment.centerLeft : Alignment.center,
+        padding: isWide ? const EdgeInsets.only(left: 32) : null,
         child: Text(
           label,
           style: TextStyle(
-            color: color == Colors.grey[400] ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-            fontSize: 32,
-            fontWeight: FontWeight.w500,
+            color: textColor,
+            fontSize: 34,
+            fontWeight: isTopRow ? FontWeight.w400 : FontWeight.w500,
           ),
         ),
       ),

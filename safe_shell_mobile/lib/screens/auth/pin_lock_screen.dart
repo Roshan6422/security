@@ -71,8 +71,13 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final backgroundColor = isLight ? AppColors.background : const Color(0xFF020010);
+    final textColor = isLight ? AppColors.textPrimary : Colors.white.withOpacity(0.7);
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF020010),
+      backgroundColor: backgroundColor,
       body: FadeTransition(
         opacity: CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
         child: SafeArea(
@@ -90,11 +95,11 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
                 child: const Icon(Icons.lock_rounded, color: Color(0xFFA855F7), size: 32),
               ),
               const SizedBox(height: 24),
-              Text('Enter PIN', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 18, fontWeight: FontWeight.w700)),
+              Text('Enter PIN', style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(
                 _isError ? 'Wrong PIN, try again' : 'Enter your 4-digit PIN',
-                style: TextStyle(color: _isError ? const Color(0xFFEF4444) : Colors.white.withOpacity(0.25), fontSize: 13),
+                style: TextStyle(color: _isError ? const Color(0xFFEF4444) : subColor, fontSize: 13),
               ),
               const SizedBox(height: 32),
               // PIN dots
@@ -121,7 +126,7 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
                             ? const Color(0xFFEF4444)
                             : filled
                                 ? const Color(0xFFA855F7)
-                                : Colors.white.withOpacity(0.08),
+                                : (isLight ? Colors.black.withOpacity(0.1) : Colors.white.withOpacity(0.08)),
                         boxShadow: filled && !_isError
                             ? [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.4), blurRadius: 8)]
                             : null,
@@ -166,6 +171,12 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
 
   Widget _buildKey(String key) {
     final isDelete = key == 'DEL';
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final btnBg = isLight ? AppColors.surface : const Color(0xFF0D1520);
+    final btnBorder = isLight ? Colors.black12 : Colors.white.withOpacity(0.04);
+    final btnText = isLight ? AppColors.textPrimary : const Color(0xFFF1F5F9);
+    final btnDeleteIcon = isLight ? Colors.black54 : Colors.white.withOpacity(0.4);
+
     return GestureDetector(
       onTap: isDelete ? _onDelete : () => _onKeyTap(key),
       child: TweenAnimationBuilder<double>(
@@ -176,13 +187,13 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
             width: 72, height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDelete ? Colors.transparent : const Color(0xFF0D1520),
-              border: Border.all(color: isDelete ? Colors.transparent : Colors.white.withOpacity(0.04)),
+              color: isDelete ? Colors.transparent : btnBg,
+              border: Border.all(color: isDelete ? Colors.transparent : btnBorder),
             ),
             child: Center(
               child: isDelete
-                  ? Icon(Icons.backspace_rounded, color: Colors.white.withOpacity(0.4), size: 22)
-                  : Text(key, style: const TextStyle(color: Color(0xFFF1F5F9), fontSize: 28, fontWeight: FontWeight.w600)),
+                  ? Icon(Icons.backspace_rounded, color: btnDeleteIcon, size: 22)
+                  : Text(key, style: TextStyle(color: btnText, fontSize: 28, fontWeight: FontWeight.w600)),
             ),
           );
         },

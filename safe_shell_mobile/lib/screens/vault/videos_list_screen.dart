@@ -152,8 +152,8 @@ class _VideosListScreenState extends State<VideosListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Delete ${_selectedIds.length} Videos?', style: AppTextStyles.heading),
-        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body),
+        title: Text('Delete ${_selectedIds.length} Videos?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
+        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(

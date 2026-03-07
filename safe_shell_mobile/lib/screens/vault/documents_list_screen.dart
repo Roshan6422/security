@@ -251,8 +251,16 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white54;
+    final dimColor = isLight ? AppColors.textTertiary : Colors.white24;
+    final bgColor = isLight ? AppColors.background : AppColors.darkBackground;
+    final cardColor = isLight ? AppColors.surfaceVariant.withOpacity(0.5) : Colors.white.withOpacity(0.04);
+    final borderColor = isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
         leading: _isSelectionMode
             ? IconButton(
@@ -264,8 +272,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
               )
             : const BackButton(),
         title: _isSelectionMode
-            ? Text('${_selectedIds.length} Selected', style: AppTextStyles.heading)
-            : Text('Documents', style: AppTextStyles.heading),
+            ? Text('${_selectedIds.length} Selected', style: AppTextStyles.heading.copyWith(color: textColor))
+            : Text('Documents', style: AppTextStyles.heading.copyWith(color: textColor)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -296,7 +304,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _items.isEmpty
-              ? Center(child: Text('No documents yet', style: AppTextStyles.body.copyWith(color: Colors.white54)))
+              ? Center(child: Text('No documents yet', style: AppTextStyles.body.copyWith(color: subColor)))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _items.length,
@@ -324,10 +332,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFA855F7).withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                          color: isSelected ? const Color(0xFFA855F7).withOpacity(0.15) : cardColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFFA855F7).withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                            color: isSelected ? const Color(0xFFA855F7).withOpacity(0.5) : borderColor,
                           ),
                         ),
                         child: Row(
@@ -337,7 +345,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                                 margin: const EdgeInsets.only(right: 14),
                                 child: Icon(
                                   isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                                  color: isSelected ? AppColors.primary : Colors.white30,
+                                  color: isSelected ? AppColors.primary : dimColor,
                                   size: 22,
                                 ),
                               ),
@@ -359,20 +367,20 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                                 children: [
                                   Text(
                                     item['name'] ?? 'Document', 
-                                    style: AppTextStyles.subheading.copyWith(fontSize: 15, fontWeight: FontWeight.w600), 
+                                    style: AppTextStyles.subheading.copyWith(fontSize: 15, fontWeight: FontWeight.w600, color: textColor), 
                                     maxLines: 1, 
                                     overflow: TextOverflow.ellipsis
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     item['size'] ?? '0 KB', 
-                                    style: AppTextStyles.caption.copyWith(color: Colors.white24)
+                                    style: AppTextStyles.caption.copyWith(color: dimColor)
                                   ),
                                 ],
                               ),
                             ),
                             if (!_isSelectionMode)
-                              const Icon(Icons.chevron_right_rounded, color: Colors.white12),
+                              Icon(Icons.chevron_right_rounded, color: dimColor),
                           ],
                         ),
                       ),

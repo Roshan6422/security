@@ -172,15 +172,20 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: Text('Server Configuration', style: AppTextStyles.heading),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Enter the backend URL (e.g., https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app)',
-                style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 12),
+        builder: (context, setState) {
+          final isLight = Theme.of(context).brightness == Brightness.light;
+          final textColor = isLight ? AppColors.textPrimary : Colors.white;
+          final subColor = isLight ? AppColors.textSecondary : Colors.white70;
+
+          return AlertDialog(
+            backgroundColor: isLight ? AppColors.surface : AppColors.darkSurface,
+            title: Text('Server Configuration', style: AppTextStyles.heading.copyWith(color: textColor)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enter the backend URL (e.g., https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app)',
+                  style: AppTextStyles.body.copyWith(color: subColor, fontSize: 12),
               ),
               const SizedBox(height: 16),
               CustomTextField(
@@ -197,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.wifi_tethering),
                   label: const Text('Test Connection'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.1),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
+                    foregroundColor: isLight ? AppColors.primary : Colors.white,
                   ),
                 ),
             ],
@@ -206,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: TextStyle(color: subColor)),
             ),
             TextButton(
               onPressed: () async {
@@ -217,7 +222,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Text('Save'),
             ),
           ],
-        ),
+        );
+        },
       ),
     );
   }
@@ -368,7 +374,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(width: 6),
                           Text(
                             'Node: ${ApiService.currentBaseUrl}',
-                            style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 10),
+                            style: AppTextStyles.caption.copyWith(
+                                color: Theme.of(context).brightness == Brightness.light ? Colors.black38 : Colors.white38, 
+                                fontSize: 10),
                           ),
                         ],
                       ),
