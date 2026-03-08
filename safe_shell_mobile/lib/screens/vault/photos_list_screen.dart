@@ -12,6 +12,7 @@ import '../../utils/sound_effects.dart';
 import '../../utils/vault_encryption_helper.dart';
 import '../../widgets/file_preview_card.dart';
 import '../../widgets/secure_network_viewer.dart';
+import '../../services/audit_logger.dart';
 import 'photo_viewer_screen.dart';
 
 class PhotosListScreen extends StatefulWidget {
@@ -157,6 +158,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
       if (successCount > 0) {
         SoundEffects.uploadSuccess();
+        AuditLogger.logFileUpload('$successCount photo(s)', 'photo');
         _showSuccess(
           '$successCount photo${successCount > 1 ? 's' : ''} encrypted & saved'
           '${failCount > 0 ? ' ($failCount failed)' : ''}',
@@ -224,7 +226,9 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       int failCount = 0;
       for (final id in _selectedIds.toList()) {
         try {
+          final item = _findItemById(id);
           await ApiService().delete('/vault/$id');
+          AuditLogger.logFileDelete(item?['name'] ?? 'photo', 'photo');
         } catch (e) {
           debugPrint('Delete $id failed: $e');
           failCount++;

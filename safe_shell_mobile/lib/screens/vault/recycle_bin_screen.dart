@@ -3,6 +3,7 @@ import 'package:safe_shell_mobile/core/theme.dart';
 import 'package:safe_shell_mobile/widgets/glass_card.dart';
 import 'package:safe_shell_mobile/widgets/primary_button.dart';
 import '../../services/api_service.dart';
+import '../../services/audit_logger.dart';
 
 class RecycleBinScreen extends StatefulWidget {
   const RecycleBinScreen({super.key});
@@ -65,7 +66,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     
     try {
       for (final id in _selectedIds) {
+        final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
         await ApiService().post('/vault/$id/restore', {});
+        AuditLogger.logFileRestore(item?['name'] ?? 'item', item?['type'] ?? 'file');
       }
       await _fetchDeletedItems();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_selectedIds.length} items restored')));
@@ -93,7 +96,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     if (confirmed == true) {
       try {
         for (final id in _selectedIds) {
+          final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
           await ApiService().delete('/vault/$id?permanent=true');
+          AuditLogger.logFilePermanentDelete(item?['name'] ?? 'item', item?['type'] ?? 'file');
         }
         await _fetchDeletedItems();
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Items deleted permanently')));
@@ -119,7 +124,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
     if (confirmed == true) {
       try {
+        final count = _items.length;
         await ApiService().delete('/vault/empty-bin');
+        AuditLogger.logEmptyBin(count);
         await _fetchDeletedItems();
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recycle Bin Emptied')));
       } catch (e) {

@@ -1,6 +1,10 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../utils/device_performance.dart';
 
+/// Glassmorphism card widget.
+/// On low-end devices, BackdropFilter blur is skipped entirely
+/// to avoid GPU-intensive compositing on every frame.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final double opacity;
@@ -26,7 +30,56 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final skipBlur = DevicePerformance.isLowEnd;
+
+    final innerDecoration = BoxDecoration(
+      color: gradient == null
+          ? (isDark ? Colors.white.withOpacity(skipBlur ? 0.06 : 0.03) : Colors.white.withOpacity(skipBlur ? 0.85 : 0.7))
+          : null,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: border ?? Border.all(
+        color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.4),
+        width: 1.0,
+      ),
+      gradient: gradient ?? (isDark ? LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(skipBlur ? 0.10 : 0.08),
+          Colors.white.withOpacity(skipBlur ? 0.04 : 0.02),
+        ],
+      ) : LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.white.withOpacity(skipBlur ? 0.9 : 0.8),
+          Colors.white.withOpacity(skipBlur ? 0.6 : 0.4),
+        ],
+      )),
+    );
+
+    final content = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Padding(
+          padding: padding,
+          child: child,
+        ),
+      ),
+    );
+
+    // Low-end: skip BackdropFilter + boxShadow entirely
+    if (skipBlur) {
+      return Container(
+        margin: margin,
+        decoration: innerDecoration,
+        child: content,
+      );
+    }
+
+    // Capable devices: full glassmorphism with blur
     return Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -45,47 +98,11 @@ class GlassCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            decoration: BoxDecoration(
-              color: gradient == null 
-                  ? (isDark ? Colors.white.withOpacity(0.03) : Colors.white.withOpacity(0.7)) 
-                  : null,
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: border ?? Border.all(
-                color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.4),
-                width: 1.0,
-              ),
-              gradient: gradient ?? (isDark ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.08),
-                  Colors.white.withOpacity(0.02),
-                ],
-              ) : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withOpacity(0.8),
-                  Colors.white.withOpacity(0.4),
-                ],
-              )), 
-            ),
-
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(borderRadius),
-                child: Padding(
-                  padding: padding,
-                  child: child,
-                ),
-              ),
-            ),
+            decoration: innerDecoration,
+            child: content,
           ),
         ),
       ),
     );
   }
 }
-

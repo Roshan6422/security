@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../utils/vault_encryption_helper.dart';
 import '../../utils/file_viewer.dart';
 import '../../services/encryption_service.dart';
+import '../../services/audit_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -116,6 +117,7 @@ class _AudioListScreenState extends State<AudioListScreen> {
         await _fetchItems();
 
            if (successCount > 0) {
+              AuditLogger.logFileUpload('$successCount audio file(s)', 'audio');
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Audio Files Encrypted & Saved to Vault')));
                 _deleteOriginalsSilently(uploadedPaths);
@@ -166,7 +168,9 @@ class _AudioListScreenState extends State<AudioListScreen> {
     if (confirmed == true) {
        try {
         for (final id in _selectedIds) {
+          final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
           await ApiService().delete('/vault/$id');
+          AuditLogger.logFileDelete(item?['name'] ?? 'audio', 'audio');
         }
         await _fetchItems();
       } catch (e) {

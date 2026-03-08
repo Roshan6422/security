@@ -9,6 +9,7 @@ import 'login_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'onboarding_screen.dart';
+import '../../utils/device_performance.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,26 +19,36 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _fadeController;
-  late AnimationController _particleController;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _fadeAnimation;
+  AnimationController? _pulseController;
+  AnimationController? _fadeController;
+  AnimationController? _particleController;
+  Animation<double>? _pulseAnimation;
+  Animation<double>? _fadeAnimation;
   bool _isDiscreetMode = false;
+  bool _isLowEnd = false;
 
   @override
   void initState() {
     super.initState();
-    // Pulsing shield
-    _pulseController = AnimationController(duration: const Duration(seconds: 2), vsync: this)..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _isLowEnd = DevicePerformance.isLowEnd;
 
-    // Fade in
-    _fadeController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)..forward();
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic));
+    if (_isLowEnd) {
+      // Minimal: only a quick fade-in, no particles/pulse
+      _fadeController = AnimationController(
+        duration: const Duration(milliseconds: 600),
+        vsync: this,
+      )..forward();
+      _fadeAnimation = CurvedAnimation(parent: _fadeController!, curve: Curves.easeOut);
+    } else {
+      // Full animations
+      _pulseController = AnimationController(duration: const Duration(seconds: 2), vsync: this)..repeat(reverse: true);
+      _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut));
 
-    // Particles
-    _particleController = AnimationController(duration: const Duration(seconds: 4), vsync: this)..repeat();
+      _fadeController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)..forward();
+      _fadeAnimation = CurvedAnimation(parent: _fadeController!, curve: Curves.easeOutCubic);
+
+      _particleController = AnimationController(duration: const Duration(seconds: 4), vsync: this)..repeat();
+    }
 
     _checkAuthAndNavigate();
   }
@@ -55,7 +66,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return;
     }
 
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // Shorter splash delay on low-end
+    await Future.delayed(Duration(milliseconds: _isLowEnd ? 1200 : 2500));
     if (!mounted) return;
 
     // Check if onboarding completed
@@ -72,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.checkAuth();
-    
+
     bool canNavigateToHome = auth.isAuthenticated;
 
     if (canNavigateToHome) {
@@ -90,11 +102,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         }
       }
     }
-    
+
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 600),
+        transitionDuration: Duration(milliseconds: _isLowEnd ? 300 : 600),
         pageBuilder: (_, __, ___) => const AppLockListenerWrapper(child: AuthWrapper()),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -105,9 +117,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _fadeController.dispose();
-    _particleController.dispose();
+    _pulseController?.dispose();
+    _fadeController?.dispose();
+    _particleController?.dispose();
     super.dispose();
   }
 
@@ -120,6 +132,61 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       );
     }
 
+    // ───── LOW-END: simple, clean, zero-lag splash ─────
+    if (_isLowEnd) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF020010),
+        body: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation!,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Simple shield icon — no pulse, no rings, no shadows
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFA855F7).withOpacity(0.12),
+                    border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.25)),
+                  ),
+                  child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFFA855F7)),
+                ),
+                const SizedBox(height: 36),
+                // App name — simple colored text, no ShaderMask
+                Text(
+                  'SafeShell',
+                  style: AppTextStyles.display.copyWith(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFFA855F7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Private vault. Stealth mode.',
+                  style: AppTextStyles.body.copyWith(
+                    color: Colors.white.withOpacity(0.25),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                // Simple spinner
+                const SizedBox(
+                  width: 24, height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFA855F7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ───── FULL: rich animations for capable devices ─────
     return Scaffold(
       backgroundColor: const Color(0xFF020010),
       body: Stack(
@@ -131,7 +198,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             top: -120,
             right: -120,
             child: FadeTransition(
-              opacity: _fadeAnimation,
+              opacity: _fadeAnimation!,
               child: Container(
                 width: 350, height: 350,
                 decoration: BoxDecoration(
@@ -145,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             bottom: -100,
             left: -80,
             child: FadeTransition(
-              opacity: _fadeAnimation,
+              opacity: _fadeAnimation!,
               child: Container(
                 width: 280, height: 280,
                 decoration: BoxDecoration(
@@ -158,7 +225,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           // Main content
           Center(
             child: FadeTransition(
-              opacity: _fadeAnimation,
+              opacity: _fadeAnimation!,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -170,15 +237,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       children: [
                         // Outer ring
                         AnimatedBuilder(
-                          animation: _pulseController,
+                          animation: _pulseController!,
                           builder: (context, child) {
                             return Container(
-                              width: 140 + (_pulseController.value * 20),
-                              height: 140 + (_pulseController.value * 20),
+                              width: 140 + (_pulseController!.value * 20),
+                              height: 140 + (_pulseController!.value * 20),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFFA855F7).withOpacity((1 - _pulseController.value) * 0.15),
+                                  color: const Color(0xFFA855F7).withOpacity((1 - _pulseController!.value) * 0.15),
                                   width: 1.5,
                                 ),
                               ),
@@ -187,11 +254,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                         // Middle ring
                         AnimatedBuilder(
-                          animation: _pulseController,
+                          animation: _pulseController!,
                           builder: (context, child) {
                             return Container(
-                              width: 110 + (_pulseController.value * 10),
-                              height: 110 + (_pulseController.value * 10),
+                              width: 110 + (_pulseController!.value * 10),
+                              height: 110 + (_pulseController!.value * 10),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
@@ -204,7 +271,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                         // Shield icon
                         ScaleTransition(
-                          scale: _pulseAnimation,
+                          scale: _pulseAnimation!,
                           child: Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -237,7 +304,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   // Custom loading dots
                   SizedBox(
                     width: 40,
-                    child: _LoadingDots(controller: _particleController),
+                    child: _LoadingDots(controller: _particleController!),
                   ),
                 ],
               ),
@@ -259,9 +326,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         left: left,
         top: top,
         child: AnimatedBuilder(
-          animation: _particleController,
+          animation: _particleController!,
           builder: (context, child) {
-            final t = ((_particleController.value + delay) % 1.0);
+            final t = ((_particleController!.value + delay) % 1.0);
             return Opacity(
               opacity: (math.sin(t * math.pi) * 0.4).clamp(0.0, 1.0),
               child: Transform.translate(

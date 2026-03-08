@@ -12,6 +12,7 @@ import 'screens/auth/key_setup_screen.dart';
 import 'screens/auth/app_lock_screen.dart';
 import 'screens/calculator/calculator_screen.dart';
 import 'security/key_manager.dart';
+import 'utils/device_performance.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -19,6 +20,7 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await DevicePerformance.init();
 
   runApp(const MyApp());
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
+import '../../services/audit_logger.dart';
 import 'note_editor_screen.dart';
 
 class NotesListScreen extends StatefulWidget {
@@ -93,7 +94,9 @@ class _NotesListScreenState extends State<NotesListScreen> {
     if (confirmed == true) {
        try {
         for (final id in _selectedIds) {
+          final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
           await ApiService().delete('/vault/$id');
+          AuditLogger.logNoteDelete(item?['name'] ?? 'note');
         }
         await _fetchItems();
       } catch (e) {

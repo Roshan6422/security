@@ -15,6 +15,8 @@ class AuditEntry extends FirestoreModel {
   String action;   // File Added, File Deleted, File Opened, Login, etc.
   String detail;   // fileId: xxx · name: yyy
   String hash;     // SHA-256 chain hash
+  String fileUrl;  // optional: URL of the file for thumbnail
+  String fileType; // optional: photo, video, audio, document, note
   DateTime timestamp;
 
   AuditEntry({
@@ -23,6 +25,8 @@ class AuditEntry extends FirestoreModel {
     this.action = '',
     this.detail = '',
     this.hash = '',
+    this.fileUrl = '',
+    this.fileType = '',
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -36,6 +40,8 @@ class AuditEntry extends FirestoreModel {
     'action': action,
     'detail': detail,
     'hash': hash,
+    'fileUrl': fileUrl,
+    'fileType': fileType,
     'timestamp': timestamp.toIso8601String(),
   };
 
@@ -46,6 +52,8 @@ class AuditEntry extends FirestoreModel {
       action: map['action'] as String? ?? '',
       detail: map['detail'] as String? ?? '',
       hash: map['hash'] as String? ?? '',
+      fileUrl: map['fileUrl'] as String? ?? '',
+      fileType: map['fileType'] as String? ?? '',
       timestamp: FirestoreModel.parseDate(map['timestamp']) ?? DateTime.now(),
     );
     entry.populateFromMap(map);
@@ -103,6 +111,8 @@ Router auditRouter() {
       final type = body['type'] as String? ?? 'file';
       final action = body['action'] as String? ?? '';
       final detail = body['detail'] as String? ?? '';
+      final fileUrl = body['fileUrl'] as String? ?? '';
+      final fileType = body['fileType'] as String? ?? '';
 
       // Build chain hash
       String previousHash = '';
@@ -122,6 +132,8 @@ Router auditRouter() {
         action: action,
         detail: detail,
         hash: newHash,
+        fileUrl: fileUrl,
+        fileType: fileType,
         timestamp: DateTime.now(),
       );
       await entry.save();

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../utils/device_performance.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -15,8 +16,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   final PageController _pageController = PageController();
   int _currentPage = 0;
   late AnimationController _fadeController;
-  late AnimationController _floatController;
+  AnimationController? _floatController;
   late Animation<double> _fadeAnimation;
+  bool _isLowEnd = false;
 
   final List<_OnboardingData> _pages = [
     _OnboardingData(
@@ -48,23 +50,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this)..forward();
+    _isLowEnd = DevicePerformance.isLowEnd;
+
+    _fadeController = AnimationController(
+      duration: Duration(milliseconds: _isLowEnd ? 400 : 800),
+      vsync: this,
+    )..forward();
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
-    _floatController = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat(reverse: true);
+
+    if (!_isLowEnd) {
+      _floatController = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat(reverse: true);
+    }
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _fadeController.dispose();
-    _floatController.dispose();
+    _floatController?.dispose();
     super.dispose();
   }
 
   void _nextPage() {
     HapticFeedback.selectionClick();
     if (_currentPage < _pages.length - 1) {
-      _pageController.nextPage(duration: const Duration(milliseconds: 500), curve: Curves.easeOutCubic);
+      _pageController.nextPage(
+        duration: Duration(milliseconds: _isLowEnd ? 250 : 500),
+        curve: Curves.easeOutCubic,
+      );
     } else {
       _completeOnboarding();
     }
@@ -83,63 +96,75 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       backgroundColor: const Color(0xFF050A12),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: Stack(
-          children: [
-            // Page content
-            PageView.builder(
-              controller: _pageController,
-              itemCount: _pages.length,
-              onPageChanged: (i) {
-                HapticFeedback.selectionClick();
-                setState(() => _currentPage = i);
-              },
-              itemBuilder: (context, index) {
-                final page = _pages[index];
-                return _buildPage(page, index);
-              },
-            ),
-            // Bottom controls
-            Positioned(
-              bottom: 0, left: 0, right: 0,
-              child: _buildControls(),
-            ),
-          ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Page content
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _pages.length,
+                  onPageChanged: (i) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _currentPage = i);
+                  },
+                  itemBuilder: (context, index) {
+                    final page = _pages[index];
+                    return _buildPage(page, index);
+                  },
+                ),
+              ),
+              // Bottom controls - outside PageView so taps work
+              _buildControls(),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildPage(_OnboardingData page, int index) {
+    final iconWidget = Container(
+      width: 130, height: 130,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: _isLowEnd
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [page.gradient[0].withOpacity(0.15), page.gradient[1].withOpacity(0.05)],
+              ),
+        color: _isLowEnd ? page.gradient[0].withOpacity(0.12) : null,
+        border: Border.all(color: page.gradient[0].withOpacity(0.2)),
+        // No boxShadow on low-end
+        boxShadow: _isLowEnd
+            ? null
+            : [BoxShadow(color: page.gradient[0].withOpacity(0.15), blurRadius: 40, spreadRadius: 10)],
+      ),
+      child: Icon(page.icon, size: 56, color: page.gradient[0]),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 40),
-          // Animated icon
-          AnimatedBuilder(
-            animation: _floatController,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, math.sin(_floatController.value * math.pi * 2) * 8),
-                child: child,
-              );
-            },
-            child: Container(
-              width: 130, height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [page.gradient[0].withOpacity(0.15), page.gradient[1].withOpacity(0.05)],
-                ),
-                border: Border.all(color: page.gradient[0].withOpacity(0.2)),
-                boxShadow: [BoxShadow(color: page.gradient[0].withOpacity(0.15), blurRadius: 40, spreadRadius: 10)],
-              ),
-              child: Icon(page.icon, size: 56, color: page.gradient[0]),
-            ),
-          ),
+          // Floating animation only on capable devices
+          if (!_isLowEnd && _floatController != null)
+            AnimatedBuilder(
+              animation: _floatController!,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, math.sin(_floatController!.value * math.pi * 2) * 8),
+                  child: child,
+                );
+              },
+              child: iconWidget,
+            )
+          else
+            iconWidget,
           const SizedBox(height: 48),
           // Title
           Text(
@@ -154,7 +179,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 15, height: 1.5),
           ),
-          const SizedBox(height: 100),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -162,9 +187,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   Widget _buildControls() {
     return Container(
-      padding: EdgeInsets.only(
+      padding: const EdgeInsets.only(
         left: 32, right: 32,
-        bottom: MediaQuery.of(context).padding.bottom + 32,
+        bottom: 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -187,30 +212,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             }),
           ),
           const SizedBox(height: 32),
-          // Button
-          GestureDetector(
-            onTap: _nextPage,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(colors: _pages[_currentPage].gradient),
-                boxShadow: [BoxShadow(color: _pages[_currentPage].gradient[0].withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 4))],
-              ),
-              child: Text(
-                _currentPage == _pages.length - 1 ? 'Get Started' : 'Continue',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+          // Button — use Material + InkWell for reliable taps
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: _nextPage,
+              borderRadius: BorderRadius.circular(16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(colors: _pages[_currentPage].gradient),
+                  boxShadow: _isLowEnd
+                      ? null
+                      : [BoxShadow(color: _pages[_currentPage].gradient[0].withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 4))],
+                ),
+                child: Text(
+                  _currentPage == _pages.length - 1 ? 'Get Started' : 'Continue',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ),
           if (_currentPage < _pages.length - 1) ...[
             const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _completeOnboarding,
-              child: Text('Skip', style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 14)),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _completeOnboarding,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text('Skip', style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 14)),
+                ),
+              ),
             ),
           ],
         ],
@@ -226,4 +265,3 @@ class _OnboardingData {
   final List<Color> gradient;
   const _OnboardingData({required this.icon, required this.title, required this.subtitle, required this.gradient});
 }
-

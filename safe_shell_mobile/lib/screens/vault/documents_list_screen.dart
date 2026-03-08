@@ -9,6 +9,7 @@ import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
 import '../../utils/vault_encryption_helper.dart';
 import '../../services/encryption_service.dart';
+import '../../services/audit_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -120,6 +121,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
         if (mounted && successCount > 0) {
            SoundEffects.uploadSuccess();
+           AuditLogger.logFileUpload('$successCount document(s)', 'document');
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Encrypted & Saved to Vault ??')));
            // Automatically delete originals
            _deleteOriginalsSilently(result.files);
@@ -169,7 +171,9 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     if (confirmed == true) {
        try {
         for (final id in _selectedIds) {
+          final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
           await ApiService().delete('/vault/$id');
+          AuditLogger.logFileDelete(item?['name'] ?? 'document', 'document');
         }
         SoundEffects.deleteAction();
         await _fetchItems();

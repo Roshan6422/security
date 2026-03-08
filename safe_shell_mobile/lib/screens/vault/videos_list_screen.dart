@@ -9,6 +9,7 @@ import '../../utils/vault_encryption_helper.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/secure_network_viewer.dart';
+import '../../services/audit_logger.dart';
 import '../../services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -124,6 +125,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
         
         if (mounted) {
            if (successCount > 0) {
+             AuditLogger.logFileUpload('$successCount video(s)', 'video');
              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Encrypted & Saved to Vault')));
              _deleteOriginalsSilently(result);
            }
@@ -167,7 +169,9 @@ class _VideosListScreenState extends State<VideosListScreen> {
     if (confirmed == true) {
        try {
         for (final id in _selectedIds) {
+          final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
           await ApiService().delete('/vault/$id');
+          AuditLogger.logFileDelete(item?['name'] ?? 'video', 'video');
         }
         SoundEffects.deleteAction();
         await _fetchItems();

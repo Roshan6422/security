@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme.dart';
 import '../../services/api_service.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/secure_network_viewer.dart';
+import 'dart:io';
 
 class SecurityLogsScreen extends StatefulWidget {
   const SecurityLogsScreen({super.key});
@@ -20,7 +21,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
   String _activeFilter = 'all';
   String _searchQuery = '';
 
-  final List<String> _filters = ['Security', 'Files', 'Keys', 'Backup', 'Settings'];
+  final List<String> _filters = ['All', 'Security', 'Files', 'Keys', 'Backup', 'Settings'];
 
   @override
   void initState() {
@@ -80,7 +81,8 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
   Color _getEventColor(String action) {
     final lower = action.toLowerCase();
     if (lower.contains('delete')) return Colors.redAccent;
-    if (lower.contains('add') || lower.contains('create')) return Colors.greenAccent;
+    if (lower.contains('upload') || lower.contains('add') || lower.contains('create')) return const Color(0xFF34D399);
+    if (lower.contains('restore')) return Colors.amber;
     if (lower.contains('open') || lower.contains('view')) return AppColors.primary;
     if (lower.contains('login') || lower.contains('auth')) return Colors.amber;
     if (lower.contains('backup')) return Colors.purpleAccent;
@@ -91,18 +93,37 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
   IconData _getEventIcon(String action) {
     final lower = action.toLowerCase();
     if (lower.contains('delete')) return Icons.delete_outline;
-    if (lower.contains('add') || lower.contains('create')) return Icons.add_circle_outline;
-    if (lower.contains('open') || lower.contains('view')) return Icons.open_in_new;
+    if (lower.contains('upload') || lower.contains('add') || lower.contains('create')) return Icons.cloud_upload_outlined;
+    if (lower.contains('restore')) return Icons.restore;
+    if (lower.contains('open') || lower.contains('view')) return Icons.visibility_outlined;
     if (lower.contains('login') || lower.contains('auth')) return Icons.lock_open;
     if (lower.contains('backup')) return Icons.backup;
     if (lower.contains('setting')) return Icons.settings;
     return Icons.event_note;
   }
 
+  String _getFileTypeIcon(String? fileType) {
+    switch (fileType?.toLowerCase()) {
+      case 'photo': return '📷';
+      case 'video': return '🎥';
+      case 'audio': return '🎵';
+      case 'document': return '📄';
+      case 'note': return '📝';
+      default: return '📁';
+    }
+  }
+
   String _formatTimestamp(String? ts) {
     if (ts == null) return '';
     try {
       final dt = DateTime.parse(ts);
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+
+      if (diff.inMinutes < 1) return 'Just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
       return DateFormat('MMM d, HH:mm').format(dt);
     } catch (_) {
       return ts;
@@ -114,7 +135,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
     final filtered = _filteredLogs;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.darkBackground,
       body: Stack(
         children: [
           // Background gradient
@@ -125,7 +146,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.purpleAccent.withOpacity(0.1), Colors.transparent],
+                  colors: [Colors.purpleAccent.withOpacity(0.08), Colors.transparent],
                 ),
               ),
             ),
@@ -143,17 +164,12 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF9C27B0), Color(0xFF42A5F5)],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'Security Logs',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        'Security Logs',
+                        style: TextStyle(
+                          color: AppColors.primaryLight,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const Spacer(),
@@ -242,8 +258,13 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                             const SizedBox(height: 20),
 
                             // Chain Verification Banner
-                            GlassCard(
+                            Container(
                               padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.04),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              ),
                               child: Row(
                                 children: [
                                   Container(
@@ -263,7 +284,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _chainVerified ? 'Chain Verified ' : 'Chain Compromised ',
+                                        _chainVerified ? 'Chain Verified ✓' : 'Chain Compromised ✗',
                                         style: TextStyle(
                                           color: _chainVerified ? Colors.green : Colors.red,
                                           fontWeight: FontWeight.bold,
@@ -272,7 +293,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                       ),
                                       Text(
                                         'All $_totalEvents events verified',
-                                        style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 12),
+                                        style: const TextStyle(color: Colors.white38, fontSize: 12),
                                       ),
                                     ],
                                   ),
@@ -287,13 +308,13 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                               children: [
                                 Text(
                                   'Showing ${filtered.length} of $_totalEvents events',
-                                  style: AppTextStyles.caption.copyWith(color: Colors.white30, fontSize: 12),
+                                  style: const TextStyle(color: Colors.white30, fontSize: 12),
                                 ),
                                 Text(
                                   filtered.isNotEmpty
                                       ? 'Latest: ${_formatTimestamp(filtered.first['timestamp'])}'
                                       : '',
-                                  style: AppTextStyles.caption.copyWith(color: Colors.white30, fontSize: 12),
+                                  style: const TextStyle(color: Colors.white30, fontSize: 12),
                                 ),
                               ],
                             ),
@@ -308,9 +329,9 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                     children: [
                                       Icon(Icons.event_note, size: 48, color: Colors.white.withOpacity(0.1)),
                                       const SizedBox(height: 12),
-                                      Text(
+                                      const Text(
                                         'No events found',
-                                        style: AppTextStyles.body.copyWith(color: Colors.white30),
+                                        style: TextStyle(color: Colors.white30, fontSize: 15),
                                       ),
                                     ],
                                   ),
@@ -335,16 +356,23 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
     final action = log['action'] ?? '';
     final detail = log['detail'] ?? '';
     final timestamp = log['timestamp'] ?? '';
+    final fileUrl = log['fileUrl'] as String?;
+    final fileType = log['fileType'] as String?;
     final color = _getEventColor(action);
     final icon = _getEventIcon(action);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: GlassCard(
-        padding: const EdgeInsets.all(14),
-        child: Row(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Event icon
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -354,35 +382,126 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 14),
+            // Text content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     action,
-                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600, fontSize: 14),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     _formatTimestamp(timestamp),
-                    style: AppTextStyles.caption.copyWith(color: Colors.white30, fontSize: 11),
+                    style: const TextStyle(color: Colors.white30, fontSize: 11),
                   ),
                   if (detail.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(
-                      detail,
-                      style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 12),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        if (fileType != null) ...[
+                          Text(
+                            _getFileTypeIcon(fileType),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            detail,
+                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
               ),
             ),
+            // File thumbnail preview
+            if (fileUrl != null && fileUrl.isNotEmpty && fileType != null)
+              _buildThumbnail(fileUrl, fileType),
           ],
         ),
+    );
+  }
+
+  Widget _buildThumbnail(String fileUrl, String fileType) {
+    final type = fileType.toLowerCase();
+
+    // Only show image thumbnails for photos
+    if (type == 'photo') {
+      return Container(
+        width: 48,
+        height: 48,
+        margin: const EdgeInsets.only(left: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.white.withOpacity(0.05),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SecureNetworkViewer(
+          relativeUrl: fileUrl,
+          builder: (context, localPath) => Image.file(
+            File(localPath),
+            fit: BoxFit.cover,
+            width: 48,
+            height: 48,
+          ),
+          loadingWidget: const Center(
+            child: SizedBox(
+              width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
+            ),
+          ),
+          errorBuilder: (context, error) => const Icon(
+            Icons.image_outlined,
+            color: Colors.white24,
+            size: 20,
+          ),
+        ),
+      );
+    }
+
+    // For video/audio/document, show an icon thumbnail
+    IconData thumbIcon;
+    Color thumbColor;
+
+    switch (type) {
+      case 'video':
+        thumbIcon = Icons.videocam_rounded;
+        thumbColor = AppColors.videos;
+        break;
+      case 'audio':
+        thumbIcon = Icons.audiotrack_rounded;
+        thumbColor = const Color(0xFFFB7185);
+        break;
+      case 'document':
+        thumbIcon = Icons.description_outlined;
+        thumbColor = AppColors.documents;
+        break;
+      default:
+        thumbIcon = Icons.insert_drive_file;
+        thumbColor = AppColors.primary;
+    }
+
+    return Container(
+      width: 48,
+      height: 48,
+      margin: const EdgeInsets.only(left: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: thumbColor.withOpacity(0.1),
+        border: Border.all(color: thumbColor.withOpacity(0.2)),
       ),
+      child: Icon(thumbIcon, color: thumbColor, size: 22),
     );
   }
 }
-
