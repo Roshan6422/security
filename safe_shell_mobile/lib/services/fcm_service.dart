@@ -1,8 +1,8 @@
 
-import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'api_service.dart';
 
 class FCMService {
@@ -54,7 +54,9 @@ class FCMService {
         }
 
         // Handle Commands
-        if (message.data['type'] == 'COMMAND') {
+        if (message.data.containsKey('command')) {
+          _handleCommand(message.data);
+        } else if (message.data['type'] == 'COMMAND') {
           _handleCommand(message.data);
         }
       });
@@ -97,20 +99,34 @@ class FCMService {
     );
   }
 
-  static void _handleCommand(Map<String, dynamic> data) {
-    String command = data['command'];
+  static void _handleCommand(Map<String, dynamic> data) async {
+    String command = data['command'] ?? '';
     if (kDebugMode) print('Executing Command: $command');
 
-    switch (command) {
+    switch (command.toUpperCase()) {
+      case 'LOCK_DEVICE':
       case 'LOCK':
-        // Implement Lock Screen logic (or navigate to a lock screen)
-        // For now, note that we need a Navigator key or similar to affect UI
+        // Try to trigger the native app lock to overlay the screen
+        try {
+          const platform = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
+          await platform.invokeMethod('showAppLock', {'packageName': 'com.safeshell.safe_shell_mobile'});
+          if (kDebugMode) print('Triggered native AppLock screen');
+        } catch (e) {
+          if (kDebugMode) print('Failed to trigger native lock: $e');
+        }
         break;
+      case 'SOUND_ALARM':
       case 'ALARM':
-        // Play sound
+        // TODO: Play sound natively or via audioplayers package
+        if (kDebugMode) print('Would play loud alarm now!');
         break;
+      case 'GET_LOCATION':
       case 'LOCATION':
-        // Get location and send back
+        // TODO: Get location and send back
+        if (kDebugMode) print('Would fetch and upload location now!');
+        break;
+      case 'WIPE_DATA':
+        if (kDebugMode) print('Would wipe local data now!');
         break;
     }
   }

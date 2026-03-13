@@ -19,7 +19,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _storage = const FlutterSecureStorage();
@@ -27,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Map<String, dynamic>? _userData;
 
   // Staggered entrance
-  late AnimationController _staggerController;
+
 
   // Analytics data
   int _totalFiles = 0;
@@ -40,32 +40,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _staggerController = AnimationController(duration: const Duration(milliseconds: 1400), vsync: this)..forward();
     _fetchProfile();
     _fetchAnalytics();
   }
 
   @override
   void dispose() {
-    _staggerController.dispose();
     super.dispose();
   }
 
-  Widget _anim(int index, Widget child) {
-    final start = (index * 0.08).clamp(0.0, 1.0);
-    final end = (start + 0.25).clamp(0.0, 1.0);
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-          CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-        ),
-        child: child,
-      ),
-    );
-  }
+
 
   Future<void> _fetchProfile() async {
     try {
@@ -109,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       });
       if (mounted) {
         HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('? Profile updated'), backgroundColor: Color(0xFF34D399)));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('? Profile updated'), backgroundColor: Color(0xFF10B981)));
         _fetchProfile();
       }
     } catch (e) {
@@ -164,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     HapticFeedback.lightImpact();
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFFA855F7)),
+      SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
     );
   }
 
@@ -181,17 +165,19 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 child: Column(
                   children: [
-                    _anim(0, _buildProfileHeader()),
+                    _buildProfileHeader(),
                     const SizedBox(height: 20),
-                    _anim(1, _buildAnalyticsGrid()),
+                    _buildPremiumUpgradeCard(),
                     const SizedBox(height: 16),
-                    _anim(2, _buildStorageChart()),
+                    _buildAnalyticsGrid(),
                     const SizedBox(height: 16),
-                    _anim(3, _buildRecoveryKey()),
+                    _buildStorageChart(),
                     const SizedBox(height: 16),
-                    _anim(4, _buildEditForm()),
+                    _buildRecoveryKey(),
+                    const SizedBox(height: 16),
+                    _buildEditForm(),
                     const SizedBox(height: 24),
-                    _anim(5, _buildActions()),
+                    _buildActions(),
                   ],
                 ),
               ),
@@ -235,21 +221,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _shimmerBox(double height, double width, {bool isCircle = false}) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.3, end: 0.6),
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.easeInOut,
-      builder: (context, value, child) {
-        return Container(
-          height: height,
-          width: width,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(value * 0.04),
-            borderRadius: isCircle ? null : BorderRadius.circular(16),
-            shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
-          ),
-        );
-      },
+    return Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: isCircle ? null : BorderRadius.circular(16),
+        shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+      ),
     );
   }
 
@@ -261,7 +240,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     final email = _userData?['email'] ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final secondaryColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3);
+    final secondaryColor = isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3);
 
     return Column(
       children: [
@@ -273,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFA855F7), Color(0xFF8B5CF6), Color(0xFF34D399)],
+              colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6), Color(0xFF10B981)],
             ),
           ),
           child: CircleAvatar(
@@ -291,9 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildBadge('?? AES-256', const Color(0xFFA855F7)),
+            _buildBadge('?? AES-256', const Color(0xFF4DA3FF)),
             const SizedBox(width: 8),
-            _buildBadge('$_daysActive days', const Color(0xFF34D399)),
+            _buildBadge('$_daysActive days', const Color(0xFF10B981)),
             const SizedBox(width: 8),
             _buildBadge('$_totalFiles files', const Color(0xFF8B5CF6)),
           ],
@@ -306,11 +285,112 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
-      child: Text(text, style: TextStyle(color: color.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w700)),
+      child: Text(text, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  // -----------------------------------------------
+  //  PREMIUM UPGRADE CARD
+  // -----------------------------------------------
+  Widget _buildPremiumUpgradeCard() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isPremium = _userData?['subscriptionStatus'] == 'pro';
+    
+    if (isPremium) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4DA3FF).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Decorative background patterns
+            Positioned(
+              right: -20,
+              top: -20,
+              child: Icon(Icons.star_rounded, size: 120, color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'GO PRO',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'SafeShell Premium',
+                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Unlock Cloud Backup, Unlimited Video Storage & Advanced Stealth.',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showSubscriptionDialog();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF8B5CF6),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Upgrade Now', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSubscriptionDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _SubscriptionSheet(),
     );
   }
 
@@ -320,11 +400,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget _buildAnalyticsGrid() {
     return Row(
       children: [
-        _buildAnalyticCard('??', _totalPhotos, 'Photos', const Color(0xFFA855F7)),
+        _buildAnalyticCard('??', _totalPhotos, 'Photos', const Color(0xFF4DA3FF)),
         const SizedBox(width: 10),
         _buildAnalyticCard('??', _totalVideos, 'Videos', const Color(0xFF8B5CF6)),
         const SizedBox(width: 10),
-        _buildAnalyticCard('??', _totalDocs, 'Docs', const Color(0xFF34D399)),
+        _buildAnalyticCard('??', _totalDocs, 'Docs', const Color(0xFF10B981)),
       ],
     );
   }
@@ -337,23 +417,16 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           color: isLight ? Colors.white : AppColors.darkSurface,
-          border: Border.all(color: color.withOpacity(isLight ? 0.2 : 0.08)),
-          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+          border: Border.all(color: color.withValues(alpha: isLight ? 0.2 : 0.08)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
         ),
         child: Column(
           children: [
             Text(emoji, style: const TextStyle(fontSize: 20)),
             const SizedBox(height: 6),
-            TweenAnimationBuilder<int>(
-              tween: IntTween(begin: 0, end: count),
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return Text('$value', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900));
-              },
-            ),
+            Text('$count', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 11)),
+            Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3), fontSize: 11)),
           ],
         ),
       ),
@@ -375,8 +448,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.04)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,39 +458,29 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Storage Breakdown', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-              Text(_storageUsed, style: TextStyle(color: const Color(0xFFA855F7).withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
+              Text(_storageUsed, style: TextStyle(color: const Color(0xFF4DA3FF).withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 14),
           // Stacked bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 8,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 1500),
-                curve: Curves.easeOutCubic,
-                builder: (context, animValue, child) {
-                  return Row(
-                    children: [
-                      Expanded(flex: (photoPercent * 100 * animValue).toInt().clamp(1, 100), child: Container(color: const Color(0xFFA855F7))),
-                      Expanded(flex: (videoPercent * 100 * animValue).toInt().clamp(1, 100), child: Container(color: const Color(0xFF8B5CF6))),
-                      Expanded(flex: (docPercent * 100 * animValue).toInt().clamp(1, 100), child: Container(color: const Color(0xFF34D399))),
-                    ],
-                  );
-                },
-              ),
+            child: Row(
+              children: [
+                Expanded(flex: (photoPercent * 100).toInt().clamp(1, 100), child: Container(color: const Color(0xFF4DA3FF))),
+                Expanded(flex: (videoPercent * 100).toInt().clamp(1, 100), child: Container(color: const Color(0xFF8B5CF6))),
+                Expanded(flex: (docPercent * 100).toInt().clamp(1, 100), child: Container(color: const Color(0xFF10B981))),
+              ],
             ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _legendDot('Photos', const Color(0xFFA855F7)),
+              _legendDot('Photos', const Color(0xFF4DA3FF)),
               const SizedBox(width: 16),
               _legendDot('Videos', const Color(0xFF8B5CF6)),
               const SizedBox(width: 16),
-              _legendDot('Docs', const Color(0xFF34D399)),
+              _legendDot('Docs', const Color(0xFF10B981)),
             ],
           ),
         ],
@@ -431,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 11)),
+        Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3), fontSize: 11)),
       ],
     );
   }
@@ -445,8 +508,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(colors: [const Color(0xFFA855F7).withOpacity(0.08), const Color(0xFFA855F7).withOpacity(0.02)]),
-        border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.1)),
+        gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.08), const Color(0xFF4DA3FF).withValues(alpha: 0.02)]),
+        border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.1)),
       ),
       child: GestureDetector(
         onTap: () => _copyToClipboard('Recovery Key', _userData?['recoveryKey'] ?? 'N/A'),
@@ -455,23 +518,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [const Color(0xFFA855F7).withOpacity(0.2), const Color(0xFFA855F7).withOpacity(0.06)]),
+                gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.2), const Color(0xFF4DA3FF).withValues(alpha: 0.06)]),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.vpn_key_rounded, color: Color(0xFFA855F7), size: 18),
+              child: const Icon(Icons.vpn_key_rounded, color: Color(0xFF4DA3FF), size: 18),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Recovery Key', style: TextStyle(color: isLight ? AppColors.primary.withOpacity(0.7) : Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text('Recovery Key', style: TextStyle(color: isLight ? AppColors.primary.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.4), fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
                   Text(_userData?['recoveryKey'] ?? 'N/A', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1)),
                 ],
               ),
             ),
-            Icon(Icons.copy_rounded, color: const Color(0xFFA855F7).withOpacity(0.4), size: 18),
+            Icon(Icons.copy_rounded, color: const Color(0xFF4DA3FF).withValues(alpha: 0.4), size: 18),
           ],
         ),
       ),
@@ -488,8 +551,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.04)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -526,15 +589,15 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: color.withOpacity(0.06),
-          border: Border.all(color: color.withOpacity(0.1)),
+          color: color.withValues(alpha: 0.06),
+          border: Border.all(color: color.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.06)]),
+                gradient: LinearGradient(colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.06)]),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -545,13 +608,142 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
-                  Text(subtitle, style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white.withOpacity(0.2), fontSize: 11)),
+                  Text(subtitle, style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.2), fontSize: 11)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.3), size: 20),
+            Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.3), size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return Container(
+      decoration: BoxDecoration(
+        color: isLight ? Colors.white : const Color(0xFF0F172A),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 40)],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 40, height: 4, decoration: BoxDecoration(color: isLight ? Colors.black12 : Colors.white12, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 24),
+          const Text('Choose Your Protection', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+          const SizedBox(height: 8),
+          Text('Join 50,000+ users protecting their privacy.', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14)),
+          const SizedBox(height: 32),
+          _SubscriptionPlan(
+            title: 'Monthly Pass',
+            price: '\$4.99 / mo',
+            description: 'Full access to all features.',
+            icon: Icons.flash_on_rounded,
+            color: const Color(0xFF4DA3FF),
+          ),
+          const SizedBox(height: 12),
+          _SubscriptionPlan(
+            title: 'Yearly Shield',
+            price: '\$39.99 / yr',
+            description: 'Save 33% • Best Value Plan',
+            icon: Icons.shield_rounded,
+            color: const Color(0xFF8B5CF6),
+            isPopular: true,
+          ),
+          const SizedBox(height: 12),
+          _SubscriptionPlan(
+            title: 'Lifetime Guard',
+            price: '\$99.99',
+            description: 'One-time payment • Pay once, own forever.',
+            icon: Icons.all_inclusive_rounded,
+            color: const Color(0xFF10B981),
+          ),
+          const SizedBox(height: 32),
+          PrimaryButton(
+            text: 'Continue with Google Pay',
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('?? Contacting payment gateway...'), backgroundColor: Color(0xFF4DA3FF)),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Text('No commitment. Cancel anytime.', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 10)),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _SubscriptionPlan extends StatelessWidget {
+  final String title;
+  final String price;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final bool isPopular;
+
+  const _SubscriptionPlan({
+    required this.title,
+    required this.price,
+    required this.description,
+    required this.icon,
+    required this.color,
+    this.isPopular = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: isPopular ? 0.3 : 0.1), width: isPopular ? 2 : 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                    if (isPopular) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
+                        child: const Text('BEST VALUE', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900)),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 11)),
+              ],
+            ),
+          ),
+          Text(price, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+        ],
       ),
     );
   }

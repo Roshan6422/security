@@ -1,16 +1,11 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
-import 'package:photo_manager/photo_manager.dart';
-import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
 import '../../utils/vault_encryption_helper.dart';
-import '../../widgets/file_preview_card.dart';
 import '../../widgets/secure_network_viewer.dart';
 import '../../services/audit_logger.dart';
 import 'photo_viewer_screen.dart';
@@ -469,7 +464,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           Icon(
             Icons.photo_library_outlined,
             size: 64,
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -526,21 +521,13 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
                 File(localPath),
                 fit: BoxFit.cover,
               ),
-              loadingWidget: Container(
-                color: Colors.white.withOpacity(0.05),
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              ),
-              errorBuilder: (context, error) => Container(
-                color: Colors.white.withOpacity(0.05),
-                child: const Icon(Icons.broken_image_rounded, color: Colors.white24),
-              ),
             ),
           ),
 
           // Selection Overlay
           if (isSelected)
             Container(
-              color: AppColors.primary.withOpacity(0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               child: const Center(
                 child: Icon(Icons.check_circle_rounded, color: Colors.white, size: 32),
               ),
@@ -556,7 +543,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                     Colors.transparent,
                   ],
                 ),
@@ -573,7 +560,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           // Lock Indicator
           Positioned(
             top: 4, left: 4,
-            child: Icon(Icons.lock_rounded, color: Colors.white.withOpacity(0.5), size: 10),
+            child: Icon(Icons.lock_rounded, color: Colors.white.withValues(alpha: 0.5), size: 10),
           ),
 
           // Select Circle (Visible only in selection mode when not selected)

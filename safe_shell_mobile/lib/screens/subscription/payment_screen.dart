@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../widgets/glass_card.dart';
@@ -132,9 +131,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -220,8 +219,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: 500, height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFA855F7).withOpacity(0.1),
-                boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.1), blurRadius: 120)],
+                color: const Color(0xFF4DA3FF).withValues(alpha: 0.1),
+                boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.1), blurRadius: 120)],
               ),
             ),
           ),
@@ -232,8 +231,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: 460, height: 460,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF0A2A4F).withOpacity(0.3),
-                boxShadow: [BoxShadow(color: const Color(0xFF0A2A4F).withOpacity(0.3), blurRadius: 110)],
+                color: const Color(0xFF0A2A4F).withValues(alpha: 0.3),
+                boxShadow: [BoxShadow(color: const Color(0xFF0A2A4F).withValues(alpha: 0.3), blurRadius: 110)],
               ),
             ),
           ),
@@ -274,8 +273,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         width: 48, height: 48,
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(16),
-                                          gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]),
-                                          boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.4), blurRadius: 24)],
+                                          gradient: const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFFA1B3CC)]),
+                                          boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.4), blurRadius: 24)],
                                         ),
                                         child: const Icon(Icons.star, color: Colors.white, size: 24),
                                       ),
@@ -284,7 +283,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text('SafeShell Pro', style: AppTextStyles.heading.copyWith(fontSize: 16)),
-                                          Text('Premium vault experience', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.6))),
+                                          Text('Premium vault experience', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withValues(alpha: 0.6))),
                                         ],
                                       ),
                                     ],
@@ -292,9 +291,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.05),
+                                      color: Colors.white.withValues(alpha: 0.05),
                                       borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                                     ),
                                     child: Text('Most Popular', style: AppTextStyles.caption.copyWith(fontSize: 10, fontWeight: FontWeight.bold)),
                                   ),
@@ -306,9 +305,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                                 ),
                                 child: Row(
                                   children: [
@@ -335,7 +334,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                 children: [
                                   const Icon(Icons.calendar_today, size: 14, color: AppColors.primary),
                                   const SizedBox(width: 6),
-                                  Text(selectedPlan['note'], style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.6))),
+                                  Text(selectedPlan['note'], style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withValues(alpha: 0.6))),
                                 ],
                               ),
                             ],
@@ -352,9 +351,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         // Payment Methods
                         Row(
                           children: [
-                            Expanded(child: _buildMethodCard('PayHere', 'payhere', Icons.credit_card, const Color(0xFFA855F7))),
+                            Expanded(child: _buildMethodCard('PayHere', 'payhere', Icons.credit_card, const Color(0xFF4DA3FF))),
                             const SizedBox(width: 12),
-                            Expanded(child: _buildMethodCard('Bank', 'bank', Icons.account_balance, const Color(0xFF34D399))),
+                            Expanded(child: _buildMethodCard('Bank', 'bank', Icons.account_balance, const Color(0xFF10B981))),
                           ],
                         ),
 
@@ -365,8 +364,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        _buildFeatureCard(Icons.cloud_queue, '8GB Storage', 'Store files, media, docs & more', const Color(0xFFA855F7)),
-                        _buildFeatureCard(Icons.security, 'Advanced Security', 'Strong encryption + vault hardening', const Color(0xFF34D399)),
+                        _buildFeatureCard(Icons.cloud_queue, '8GB Storage', 'Store files, media, docs & more', const Color(0xFF4DA3FF)),
+                        _buildFeatureCard(Icons.security, 'Advanced Security', 'Strong encryption + vault hardening', const Color(0xFF10B981)),
                         _buildFeatureCard(Icons.flash_on, 'Priority Support', 'Faster replies, dedicated help', const Color(0xFFF59E0B)),
 
                         const SizedBox(height: 24),
@@ -416,9 +415,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFA855F7) : Colors.transparent,
+            color: isSelected ? const Color(0xFF4DA3FF) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            gradient: isSelected ? const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF7C3AED)]) : null,
+            gradient: isSelected ? const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFFA1B3CC)]) : null,
           ),
           alignment: Alignment.center,
           child: Row(
@@ -429,7 +428,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 const SizedBox(width: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
                   child: Text('Save 17%', style: TextStyle(color: AppColors.primary, fontSize: 8, fontWeight: FontWeight.bold)),
                 ),
               ],
@@ -446,12 +445,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
       onTap: () => setState(() => _paymentMethod = method),
       child: GlassCard(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        border: isSelected ? Border.all(color: color.withOpacity(0.5), width: 2) : Border.all(color: Colors.white.withOpacity(0.1)),
+        border: isSelected ? Border.all(color: color.withValues(alpha: 0.5), width: 2) : Border.all(color: Colors.white.withValues(alpha: 0.1)),
         child: Column(
           children: [
             Container(
               width: 40, height: 40,
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
@@ -471,7 +470,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             Container(
               width: 44, height: 44,
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(width: 16),
@@ -480,11 +479,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: AppTextStyles.subheading.copyWith(fontSize: 14)),
-                  Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11)),
+                  Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withValues(alpha: 0.6), fontSize: 11)),
                 ],
               ),
             ),
-            const Icon(Icons.check_circle, size: 16, color: Color(0xFF34D399)),
+            const Icon(Icons.check_circle, size: 16, color: Color(0xFF10B981)),
           ],
         ),
       ),

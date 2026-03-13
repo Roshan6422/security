@@ -15,7 +15,7 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,18 +25,16 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   String _strengthLabel = '';
   Color _strengthColor = Colors.transparent;
 
-  late AnimationController _staggerController;
+
 
   @override
   void initState() {
     super.initState();
-    _staggerController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)..forward();
     _passwordController.addListener(_calculateStrength);
   }
 
   @override
   void dispose() {
-    _staggerController.dispose();
     _passwordController.removeListener(_calculateStrength);
     super.dispose();
   }
@@ -55,8 +53,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     Color color;
     if (strength <= 0.25) { label = 'Weak'; color = const Color(0xFFEF4444); }
     else if (strength <= 0.5) { label = 'Fair'; color = const Color(0xFFF59E0B); }
-    else if (strength <= 0.75) { label = 'Good'; color = const Color(0xFFA855F7); }
-    else { label = 'Strong ??'; color = const Color(0xFF34D399); }
+    else if (strength <= 0.75) { label = 'Good'; color = const Color(0xFF4DA3FF); }
+    else { label = 'Strong ??'; color = const Color(0xFF10B981); }
 
     setState(() {
       _passwordStrength = strength.clamp(0.0, 1.0);
@@ -65,21 +63,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     });
   }
 
-  Widget _anim(int index, Widget child) {
-    final start = (index * 0.1).clamp(0.0, 1.0);
-    final end = (start + 0.3).clamp(0.0, 1.0);
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
-          CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-        ),
-        child: child,
-      ),
-    );
-  }
+
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
@@ -108,9 +92,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                     width: 64, height: 64,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [const Color(0xFF34D399).withOpacity(0.2), const Color(0xFF34D399).withOpacity(0.05)]),
+                      gradient: LinearGradient(colors: [const Color(0xFF10B981).withValues(alpha: 0.2), const Color(0xFF10B981).withValues(alpha: 0.05)]),
                     ),
-                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 36),
+                    child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
                   ),
                   const SizedBox(height: 12),
                   const Text('Account Created! ??', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
@@ -119,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Save these keys securely!', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+                  Text('Save these keys securely!', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13)),
                   const SizedBox(height: 20),
                   _keyDisplay('Your User Key', userKey, Icons.tag_rounded),
                   const SizedBox(height: 12),
@@ -128,15 +112,15 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withOpacity(0.08),
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.15)),
+                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.15)),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.warning_amber_rounded, color: Color(0xFFF59E0B), size: 18),
                         const SizedBox(width: 8),
-                        Expanded(child: Text('You need these to recover your account!', style: TextStyle(color: const Color(0xFFF59E0B).withOpacity(0.7), fontSize: 12))),
+                        Expanded(child: Text('You need these to recover your account!', style: TextStyle(color: const Color(0xFFF59E0B).withValues(alpha: 0.7), fontSize: 12))),
                       ],
                     ),
                   ),
@@ -147,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA855F7),
+                      backgroundColor: const Color(0xFF4DA3FF),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -176,19 +160,19 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFFA855F7), size: 18),
+          Icon(icon, color: const Color(0xFF4DA3FF), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11)),
                 const SizedBox(height: 2),
                 Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
               ],
@@ -199,10 +183,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               HapticFeedback.selectionClick();
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFFA855F7)),
+                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
               );
             },
-            child: Icon(Icons.copy_rounded, color: Colors.white.withOpacity(0.3), size: 18),
+            child: Icon(Icons.copy_rounded, color: Colors.white.withValues(alpha: 0.3), size: 18),
           ),
         ],
       ),
@@ -223,7 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               width: 320, height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [const Color(0xFFA855F7).withOpacity(0.04), Colors.transparent]),
+                gradient: RadialGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.04), Colors.transparent]),
               ),
             ),
           ),
@@ -234,7 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               width: 250, height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withOpacity(0.03), Colors.transparent]),
+                gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.03), Colors.transparent]),
               ),
             ),
           ),
@@ -245,21 +229,21 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _anim(0, Column(
+                  Column(
                     children: [
                       Text('Create Account', style: AppTextStyles.display.copyWith(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
                       const SizedBox(height: 6),
-                      Text('Join SafeShell today.', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14)),
+                      Text('Join SafeShell today.', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14)),
                     ],
-                  )),
+                  ),
                   const SizedBox(height: 40),
                   
-                  _anim(1, Container(
+                  Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
                       color: const Color(0xFF0D1520),
-                      border: Border.all(color: Colors.white.withOpacity(0.04)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
                     ),
                     child: Form(
                       key: _formKey,
@@ -297,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('Password Strength', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                                    Text('Password Strength', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11)),
                                     Text(_strengthLabel, style: TextStyle(color: _strengthColor, fontSize: 11, fontWeight: FontWeight.w700)),
                                   ],
                                 ),
@@ -306,26 +290,19 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                   borderRadius: BorderRadius.circular(4),
                                   child: SizedBox(
                                     height: 5,
-                                    child: TweenAnimationBuilder<double>(
-                                      tween: Tween(begin: 0.0, end: _passwordStrength),
-                                      duration: const Duration(milliseconds: 400),
-                                      curve: Curves.easeOutCubic,
-                                      builder: (context, value, child) {
-                                        return Stack(
-                                          children: [
-                                            Container(color: Colors.white.withOpacity(0.05)),
-                                            FractionallySizedBox(
-                                              widthFactor: value,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(colors: [_strengthColor.withOpacity(0.6), _strengthColor]),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                ),
-                                              ),
+                                    child: Stack(
+                                      children: [
+                                        Container(color: Colors.white.withValues(alpha: 0.05)),
+                                        FractionallySizedBox(
+                                          widthFactor: _passwordStrength,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(colors: [_strengthColor.withValues(alpha: 0.6), _strengthColor]),
+                                              borderRadius: BorderRadius.circular(4),
                                             ),
-                                          ],
-                                        );
-                                      },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -345,9 +322,9 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                         ],
                       ),
                     ),
-                  )),
+                  ),
                   const SizedBox(height: 24),
-                  _anim(2, Column(
+                  Column(
                     children: [
                       TextButton(
                         onPressed: () { HapticFeedback.selectionClick(); Navigator.of(context).pop(); },
@@ -355,8 +332,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                           text: TextSpan(
                             style: AppTextStyles.body,
                             children: [
-                              TextSpan(text: "Already have an account? ", style: TextStyle(color: Colors.white.withOpacity(0.4))),
-                              TextSpan(text: 'Login', style: TextStyle(color: const Color(0xFFA855F7), fontWeight: FontWeight.w700)),
+                              TextSpan(text: "Already have an account? ", style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
+                              TextSpan(text: 'Login', style: TextStyle(color: const Color(0xFF4DA3FF), fontWeight: FontWeight.w700)),
                             ],
                           ),
                         ),
@@ -364,10 +341,10 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                       const SizedBox(height: 8),
                       GestureDetector(
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                        child: Text('Privacy Policy', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12, decoration: TextDecoration.underline)),
+                        child: Text('Privacy Policy', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 12, decoration: TextDecoration.underline)),
                       ),
                     ],
-                  )),
+                  ),
                 ],
               ),
             ),

@@ -32,63 +32,152 @@ bool _checkPassword(String password, String hash) {
 Router authRouter() {
   final router = Router();
 
-  // POST /register
-  router.post('/register', (Request request) async {
+  // Removed old /register and /login - Now using /firebase-register and /firebase-login
+
+  // POST /firebase-login
+  router.post('/firebase-login', (Request request) async {
     try {
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final email = body['email'] as String?;
-      final password = body['password'] as String?;
+      final idToken = body['idToken'] as String?;
+
+      if (idToken == null) {
+        return Response(400, body: jsonEncode({'message': 'ID Token is required'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (FirebaseConfig.auth == null) {
+        return Response(503, body: jsonEncode({'message': 'Firebase Auth not configured'}), headers: {'content-type': 'application/json'});
+      }
+
+      final decodedToken = await FirebaseConfig.auth!.verifyIdToken(idToken);
+      final email = decodedToken.email;
+
+      if (email == null) {
+        return Response(400, body: jsonEncode({'message': 'Email not found in Token'}), headers: {'content-type': 'application/json'});
+      }
+
+      var user = await userRepo.findOne({'email': email});
+      if (user == null) {
+        return Response(404, body: jsonEncode({'message': 'User not found in system'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (user.isSuspended) {
+        return Response(403, body: jsonEncode({'message': 'Account suspended'}), headers: {'content-type': 'application/json'});
+      }
+
+      return Response.ok(jsonEncode({
+        '_id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'token': _generateToken(user.id!),
+        'role': user.role,
+        'subscriptionStatus': user.subscriptionStatus,
+      }), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // POST /firebase-register
+  router.post('/firebase-register', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final idToken = body['idToken'] as String?;
       final name = body['name'] as String? ?? 'User';
-      final adminSecret = body['adminSecret'] as String?;
 
-      if (email == null || password == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Email and password are required'}),
-            headers: {'content-type': 'application/json'});
+      if (idToken == null) {
+        return Response(400, body: jsonEncode({'message': 'ID Token is required'}), headers: {'content-type': 'application/json'});
       }
 
-      final existing = await userRepo.findOne({'email': email});
+      final decodedToken = await FirebaseConfig.auth!.verifyIdToken(idToken);
+      final email = decodedToken.email;
+
+      if (email == null) {
+        return Response(400, body: jsonEncode({'message': 'Email not found in Token'}), headers: {'content-type': 'application/json'});
+      }
+
+      var existing = await userRepo.findOne({'email': email});
       if (existing != null) {
-        return Response(400,
-            body: jsonEncode({'message': 'User already exists'}),
-            headers: {'content-type': 'application/json'});
+        return Response.ok(jsonEncode({
+          '_id': existing.id,
+          'name': existing.name,
+          'email': existing.email,
+          'token': _generateToken(existing.id!),
+          'role': existing.role,
+        }), headers: {'content-type': 'application/json'});
       }
-
-      final hashedPassword = _hashPassword(password);
-      final role = (adminSecret == Env.adminSecret ||
-              adminSecret == 'admin-secret-123')
-          ? 'admin'
-          : 'user';
 
       final user = await userRepo.create({
         'name': name,
         'email': email,
-        'password': hashedPassword,
-        'role': role,
+        'role': 'user',
         'subscriptionStatus': 'free',
         'isSuspended': false,
       });
 
-      return Response(201,
-          body: jsonEncode({
-            '_id': user.id,
-            'name': user.name,
-            'email': user.email,
-            'token': _generateToken(user.id!),
-            'role': user.role,
-            'subscriptionStatus': user.subscriptionStatus,
-            'subscriptionExpiry': user.subscriptionExpiry?.toIso8601String(),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response(201, body: jsonEncode({
+        '_id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'token': _generateToken(user.id!),
+        'role': user.role,
+      }), headers: {'content-type': 'application/json'});
     } catch (e) {
-      print('Register error: $e');
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
     }
   });
 
-  // POST /login
+  // POST /google (Handles Firebase Google Sign-in Tokens)
+  router.post('/google', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final idToken = body['idToken'] as String?;
+
+      if (idToken == null) {
+        return Response(400, body: jsonEncode({'message': 'ID Token is required'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (FirebaseConfig.auth == null) {
+        return Response(503, body: jsonEncode({'message': 'Firebase Auth not configured'}), headers: {'content-type': 'application/json'});
+      }
+
+      final decodedToken = await FirebaseConfig.auth!.verifyIdToken(idToken);
+      final email = decodedToken.email;
+
+      if (email == null) {
+        return Response(400, body: jsonEncode({'message': 'Email not found in Token'}), headers: {'content-type': 'application/json'});
+      }
+
+      var user = await userRepo.findOne({'email': email});
+      
+      // Auto-register if not found (Google accounts are pre-verified)
+      if (user == null) {
+          user = await userRepo.create({
+            'name': decodedToken.name ?? 'Google User',
+            'email': email,
+            'role': 'user',
+            'subscriptionStatus': 'free',
+            'isSuspended': false,
+          });
+      }
+
+      if (user.isSuspended) {
+        return Response(403, body: jsonEncode({'message': 'Account suspended'}), headers: {'content-type': 'application/json'});
+      }
+
+      return Response.ok(jsonEncode({
+        '_id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'token': _generateToken(user.id!),
+        'role': user.role,
+        'subscriptionStatus': user.subscriptionStatus,
+      }), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // Legacy /login (For migration/fallback)
   router.post('/login', (Request request) async {
     try {
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
@@ -96,125 +185,24 @@ Router authRouter() {
       final password = body['password'] as String?;
 
       if (email == null || password == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'Email and password are required'}),
-            headers: {'content-type': 'application/json'});
+        return Response(400, body: jsonEncode({'message': 'Email and password required'}), headers: {'content-type': 'application/json'});
       }
 
       final user = await userRepo.findOne({'email': email});
-      if (user == null || user.password == null) {
-        return Response(401,
-            body: jsonEncode({'message': 'Invalid email or password'}),
-            headers: {'content-type': 'application/json'});
+      if (user == null || user.password == null || !_checkPassword(password, user.password!)) {
+        return Response(401, body: jsonEncode({'message': 'Invalid credentials'}), headers: {'content-type': 'application/json'});
       }
 
-      if (!_checkPassword(password, user.password!)) {
-        return Response(401,
-            body: jsonEncode({'message': 'Invalid email or password'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      if (user.isSuspended) {
-        return Response(403,
-            body: jsonEncode(
-                {'message': 'Account suspended. Please contact support.'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      return Response.ok(
-          jsonEncode({
-            '_id': user.id,
-            'name': user.name,
-            'email': user.email,
-            'token': _generateToken(user.id!),
-            'role': user.role,
-            'subscriptionStatus': user.subscriptionStatus,
-            'subscriptionExpiry': user.subscriptionExpiry?.toIso8601String(),
-          }),
-          headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode({
+        '_id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'token': _generateToken(user.id!),
+        'role': user.role,
+        'subscriptionStatus': user.subscriptionStatus,
+      }), headers: {'content-type': 'application/json'});
     } catch (e) {
-      print('Login error: $e');
-      return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
-          headers: {'content-type': 'application/json'});
-    }
-  });
-
-  // POST /google
-  router.post('/google', (Request request) async {
-    try {
-      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
-      final idToken = body['idToken'] as String?;
-
-      if (idToken == null) {
-        return Response(400,
-            body: jsonEncode({'message': 'ID Token is required'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      // 1. Verify Google ID Token
-      if (FirebaseConfig.auth == null) {
-         return Response(503,
-            body: jsonEncode({'message': 'Firebase Auth not configured'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      final decodedToken = await FirebaseConfig.auth!.verifyIdToken(idToken);
-      final email = decodedToken.email;
-      final name = (decodedToken as Map<String, dynamic>)['name'] as String? ?? 'Google User';
-      final uid = decodedToken.uid;
-
-      if (email == null) {
-         return Response(400,
-            body: jsonEncode({'message': 'Email not found in Google Token'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      // 2. Check if user exists
-      var user = await userRepo.findOne({'email': email});
-
-      if (user == null) {
-        // 3. Create new user if not exists
-        // Note: Password is null for Google users, or we generate a random complex one
-        // Let's generate a random password so they can't login via standard auth unless they reset it
-        final randomPassword = _hashPassword(DateTime.now().toIso8601String() + _random.nextInt(100000).toString());
-
-        user = await userRepo.create({
-          'name': name,
-          'email': email,
-          'password': randomPassword, // Or handle null password in login logic
-          'role': 'user',
-          'subscriptionStatus': 'free',
-          'isSuspended': false,
-          'googleUid': uid, // Optional: store Google UID if schema supports it
-        });
-      }
-
-      if (user.isSuspended) {
-        return Response(403,
-            body: jsonEncode(
-                {'message': 'Account suspended. Please contact support.'}),
-            headers: {'content-type': 'application/json'});
-      }
-
-      // 4. Generate Session Token
-      return Response.ok(
-          jsonEncode({
-            '_id': user.id,
-            'name': user.name,
-            'email': user.email,
-            'token': _generateToken(user.id!),
-            'role': user.role,
-            'subscriptionStatus': user.subscriptionStatus,
-            'subscriptionExpiry': user.subscriptionExpiry?.toIso8601String(),
-          }),
-          headers: {'content-type': 'application/json'});
-
-    } catch (e) {
-      print('Google Login error: $e');
-      return Response(500,
-          body: jsonEncode({'message': 'Invalid Token or Server Error'}),
-          headers: {'content-type': 'application/json'});
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
     }
   });
 

@@ -54,25 +54,25 @@ class _TextFieldM3State extends State<TextFieldM3> {
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: cs.surface.withOpacity(0.72),
+        color: cs.surface.withValues(alpha: 0.72),
         border: Border.all(
           color: _focused
-              ? cs.primary.withOpacity(0.55)
-              : cs.onSurface.withOpacity(0.12),
+              ? cs.primary.withValues(alpha: 0.55)
+              : cs.onSurface.withValues(alpha: 0.12),
         ),
         boxShadow: _focused
             ? [
                 BoxShadow(
                   blurRadius: 22,
                   spreadRadius: 1,
-                  color: cs.primary.withOpacity(0.16),
+                  color: cs.primary.withValues(alpha: 0.16),
                 ),
               ]
             : [
                 BoxShadow(
                   blurRadius: 16,
                   spreadRadius: 1,
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                 ),
               ],
       ),
@@ -90,7 +90,7 @@ class _TextFieldM3State extends State<TextFieldM3> {
           labelText: widget.label,
           labelStyle: TextStyle(
             fontWeight: FontWeight.w600,
-            color: _focused ? cs.primary : cs.onSurface.withOpacity(0.72),
+            color: _focused ? cs.primary : cs.onSurface.withValues(alpha: 0.72),
           ),
           floatingLabelStyle: TextStyle(
             color: cs.primary,
@@ -98,7 +98,7 @@ class _TextFieldM3State extends State<TextFieldM3> {
           ),
           prefixIcon: Icon(
             widget.icon,
-            color: _focused ? cs.primary : cs.onSurface.withOpacity(0.78),
+            color: _focused ? cs.primary : cs.onSurface.withValues(alpha: 0.78),
           ),
           suffixIcon: widget.obscure
               ? IconButton(
@@ -106,7 +106,7 @@ class _TextFieldM3State extends State<TextFieldM3> {
                     _obscureNow
                         ? Icons.visibility_off_rounded
                         : Icons.visibility_rounded,
-                    color: cs.onSurface.withOpacity(0.78),
+                    color: cs.onSurface.withValues(alpha: 0.78),
                   ),
                   onPressed: () {
                     setState(() => _obscureNow = !_obscureNow);

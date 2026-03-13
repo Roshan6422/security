@@ -7,7 +7,7 @@ environment:
   sdk: ^3.0.0
 
 dependencies:
-  shelf: any
+  shelf: ^1.4.1
   shelf_router: ^1.1.4
   shelf_static: ^1.1.2
   dart_firebase_admin: any

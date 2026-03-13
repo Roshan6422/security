@@ -105,7 +105,7 @@ class _AppLockScreenState extends State<AppLockScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
               ),
               child: const Icon(Icons.lock_outline_rounded, color: AppColors.primary, size: 48),
             ),
@@ -137,9 +137,9 @@ class _AppLockScreenState extends State<AppLockScreen> {
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isFilled ? AppColors.primary : (isLight ? Colors.black.withOpacity(0.1) : Colors.white.withOpacity(0.1)),
+                    color: isFilled ? AppColors.primary : (isLight ? Colors.black.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.1)),
                     boxShadow: isFilled ? [
-                      BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, spreadRadius: 2)
+                      BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, spreadRadius: 2)
                     ] : [],
                   ),
                 );

@@ -64,9 +64,9 @@ class _SupportScreenState extends State<SupportScreen> {
               height: 520,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.12),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 120),
+                  BoxShadow(color: AppColors.primary.withValues(alpha: 0.12), blurRadius: 120),
                 ],
               ),
             ),
@@ -88,7 +88,7 @@ class _SupportScreenState extends State<SupportScreen> {
                           Text('Support', style: AppTextStyles.display.copyWith(fontSize: 28)),
                           Text(
                             "We're here to help.",
-                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary.withOpacity(0.55)),
+                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary.withValues(alpha: 0.55)),
                           ),
                         ],
                       ),
@@ -101,7 +101,7 @@ class _SupportScreenState extends State<SupportScreen> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
-                              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 12),
+                              BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12),
                             ],
                           ),
                           child: const Icon(Icons.add, color: Colors.white),
@@ -154,7 +154,7 @@ class _SupportScreenState extends State<SupportScreen> {
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
               ),
               child: const Icon(Icons.message, color: Colors.white24, size: 32),
             ),
@@ -213,16 +213,16 @@ class _SupportScreenState extends State<SupportScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isOpen ? const Color(0xFF34D399).withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                    color: isOpen ? const Color(0xFF10B981).withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
                     border: Border.all(
-                      color: isOpen ? const Color(0xFF34D399).withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                      color: isOpen ? const Color(0xFF10B981).withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     status.toString().toUpperCase(),
                     style: TextStyle(
-                      color: isOpen ? const Color(0xFF34D399) : Colors.white38,
+                      color: isOpen ? const Color(0xFF10B981) : Colors.white38,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -350,9 +350,9 @@ class _NewTicketDialogState extends State<NewTicketDialog> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: TextField(
@@ -362,7 +362,7 @@ class _NewTicketDialogState extends State<NewTicketDialog> {
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
             ),
           ),
         ),

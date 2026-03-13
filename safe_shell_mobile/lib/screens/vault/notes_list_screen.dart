@@ -221,7 +221,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
                               Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.3),
+                                    color: AppColors.primary.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(26), // Match GlassCard radius
                                     border: Border.all(color: AppColors.primary, width: 2),
                                   ),

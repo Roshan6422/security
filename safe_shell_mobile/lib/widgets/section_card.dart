@@ -42,17 +42,17 @@ class _SectionCardState extends State<SectionCard> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            color: Colors.white.withOpacity(0.04),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            color: Colors.white.withValues(alpha: 0.04),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             boxShadow: [
               BoxShadow(
                 blurRadius: 40,
                 spreadRadius: -8,
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withValues(alpha: 0.5),
               ),
               // Inner glow
               BoxShadow(
-                color: cs.primary.withOpacity(0.05),
+                color: cs.primary.withValues(alpha: 0.05),
                 blurRadius: 20,
                 spreadRadius: -10,
               ),
@@ -70,7 +70,7 @@ class _SectionCardState extends State<SectionCard> {
                   gradient: LinearGradient(
                     colors: [
                       cs.primary,
-                      cs.secondary.withOpacity(0.6),
+                      cs.secondary.withValues(alpha: 0.6),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -79,7 +79,7 @@ class _SectionCardState extends State<SectionCard> {
                     BoxShadow(
                       blurRadius: 18,
                       spreadRadius: -2,
-                      color: cs.primary.withOpacity(0.4),
+                      color: cs.primary.withValues(alpha: 0.4),
                     ),
                   ],
                 ),
@@ -99,7 +99,7 @@ class _SectionCardState extends State<SectionCard> {
               Text(
                 widget.subtitle,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),

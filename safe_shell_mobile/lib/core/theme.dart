@@ -5,47 +5,47 @@ class AppColors {
   AppColors._();
 
   // =====================================================
-  // MIDNIGHT AMETHYST - Premium Security Palette
+  // CYBERSECURITY - Glassmorphism UI Identity
   // =====================================================
 
-  // Primary palette (Vivid Violet / Electric Purple)
-  static const Color primary = Color(0xFFA855F7);       // Vivid Amethyst
-  static const Color primaryLight = Color(0xFFC084FC);   // Soft Lavender
-  static const Color secondary = Color(0xFF2DD4BF);      // Aurora Teal
-  static const Color accent = Color(0xFF00F5D4);         // Neon Mint Glow
+  // Primary palette
+  static const Color primary = Color(0xFF4DA3FF);       
+  static const Color primaryLight = Color(0xFF8AC1FF);   
+  static const Color secondary = Color(0xFF0A2A4F);      
+  static const Color accent = Color(0xFF8B5CF6);         
 
   // Backgrounds & Surfaces (Light Mode)
-  static const Color background = Color(0xFFF5F3FF);     // Ghostly Lavender
+  static const Color background = Color(0xFFF8FAFF);     
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFEDE9FE); // Soft Violet Wash
+  static const Color surfaceVariant = Color(0xFFEAF2FF); 
 
   // Text Colors (Light Mode)
-  static const Color textPrimary = Color(0xFF1E1B4B);    // Deep Indigo
-  static const Color textSecondary = Color(0xFF4C1D95);  // Royal Purple
-  static const Color textTertiary = Color(0xFF8B5CF6);   // Medium Violet
+  static const Color textPrimary = Color(0xFF0A2A4F);    
+  static const Color textSecondary = Color(0xFF1D5499);  
+  static const Color textTertiary = Color(0xFF8B5CF6);   
 
   // Backgrounds & Surfaces (Dark Mode)
-  static const Color darkBackground = Color(0xFF030014);  // Cosmic Black-Violet
-  static const Color darkSurface = Color(0xFF0A0620);     // Deep Nebula
-  static const Color darkSurfaceVariant = Color(0xFF150D30); // Midnight Plum
+  static const Color darkBackground = Color(0xFF0B0F14); 
+  static const Color darkSurface = Color(0xFF131A22);    
+  static const Color darkSurfaceVariant = Color(0xFF1C2532);
   
   // Text Colors (Dark Mode)
-  static const Color darkTextPrimary = Color(0xFFF5F3FF);   // Porcelain White
-  static const Color darkTextSecondary = Color(0xFFC4B5FD); // Lavender Mist
-  static const Color darkTextTertiary = Color(0xFF7C3AED);  // Dim Violet
+  static const Color darkTextPrimary = Color(0xFFFFFFFF);   
+  static const Color darkTextSecondary = Color(0xFFEAF2FF); 
+  static const Color darkTextTertiary = Color(0xFFA1B3CC);  
 
   // Status Colors (Jewel-Tone)
-  static const Color success = Color(0xFF34D399);  // Emerald Glow
-  static const Color error = Color(0xFFFF6B8A);    // Rose Neon
-  static const Color warning = Color(0xFFFBBF24);  // Gold Spark
-  static const Color divider = Color(0xFF1E1B4B);
+  static const Color success = Color(0xFF10B981);  
+  static const Color error = Color(0xFFF43F5E);    
+  static const Color warning = Color(0xFFF59E0B);  
+  static const Color divider = Color(0xFF1C2532);
 
-  // Category Colors (Gemstone Palette)
-  static const Color photos = Color(0xFF38BDF8);   // Sapphire Sky
-  static const Color videos = Color(0xFFA78BFA);   // Amethyst Glow
-  static const Color documents = Color(0xFF2DD4BF); // Emerald Sea
-  static const Color zip = Color(0xFFFBBF24);       // Gold Amber
-  static const Color notes = Color(0xFFFB7185);     // Rose Quartz
+  // Category Colors
+  static const Color photos = Color(0xFF4DA3FF);   
+  static const Color videos = Color(0xFF8B5CF6);   
+  static const Color documents = Color(0xFF10B981); 
+  static const Color zip = Color(0xFFF59E0B);       
+  static const Color notes = Color(0xFFFB7185);     
 
   static Color categoryColor(String category) {
     switch (category.toLowerCase()) {
@@ -114,7 +114,7 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      dividerColor: AppColors.divider.withOpacity(0.1),
+      dividerColor: AppColors.divider.withValues(alpha: 0.1),
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -149,25 +149,25 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           elevation: 6,
-          shadowColor: AppColors.primary.withOpacity(0.4),
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
         ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 8,
-        shadowColor: Colors.black.withOpacity(0.06),
+        shadowColor: Colors.black.withValues(alpha: 0.06),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceVariant.withOpacity(0.5),
+        fillColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+          borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -185,7 +185,7 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
       primaryColor: AppColors.primary,
-      dividerColor: Colors.white.withOpacity(0.05),
+      dividerColor: Colors.white.withValues(alpha: 0.05),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -220,7 +220,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           elevation: 8,
-          shadowColor: AppColors.primary.withOpacity(0.6),
+          shadowColor: AppColors.primary.withValues(alpha: 0.6),
         ),
       ),
       cardTheme: CardThemeData(
@@ -228,7 +228,7 @@ class AppTheme {
         elevation: 0, 
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.white.withOpacity(0.06)),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -240,7 +240,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

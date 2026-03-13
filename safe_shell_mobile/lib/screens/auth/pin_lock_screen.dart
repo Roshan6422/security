@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/theme.dart';
 
 class PinLockScreen extends StatefulWidget {
   final VoidCallback onSuccess;
@@ -73,8 +74,8 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final backgroundColor = isLight ? AppColors.background : const Color(0xFF020010);
-    final textColor = isLight ? AppColors.textPrimary : Colors.white.withOpacity(0.7);
-    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25);
+    final textColor = isLight ? AppColors.textPrimary : Colors.white.withValues(alpha: 0.7);
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.25);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -89,10 +90,10 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [const Color(0xFFA855F7).withOpacity(0.12), const Color(0xFF8B5CF6).withOpacity(0.05)]),
-                  border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.15)),
+                  gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.12), const Color(0xFF8B5CF6).withValues(alpha: 0.05)]),
+                  border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.15)),
                 ),
-                child: const Icon(Icons.lock_rounded, color: Color(0xFFA855F7), size: 32),
+                child: const Icon(Icons.lock_rounded, color: Color(0xFF4DA3FF), size: 32),
               ),
               const SizedBox(height: 24),
               Text('Enter PIN', style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w700)),
@@ -125,10 +126,10 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
                         color: _isError
                             ? const Color(0xFFEF4444)
                             : filled
-                                ? const Color(0xFFA855F7)
-                                : (isLight ? Colors.black.withOpacity(0.1) : Colors.white.withOpacity(0.08)),
+                                ? const Color(0xFF4DA3FF)
+                                : (isLight ? Colors.black.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08)),
                         boxShadow: filled && !_isError
-                            ? [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.4), blurRadius: 8)]
+                            ? [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.4), blurRadius: 8)]
                             : null,
                       ),
                     );
@@ -173,9 +174,9 @@ class _PinLockScreenState extends State<PinLockScreen> with TickerProviderStateM
     final isDelete = key == 'DEL';
     final isLight = Theme.of(context).brightness == Brightness.light;
     final btnBg = isLight ? AppColors.surface : const Color(0xFF0D1520);
-    final btnBorder = isLight ? Colors.black12 : Colors.white.withOpacity(0.04);
+    final btnBorder = isLight ? Colors.black12 : Colors.white.withValues(alpha: 0.04);
     final btnText = isLight ? AppColors.textPrimary : const Color(0xFFF1F5F9);
-    final btnDeleteIcon = isLight ? Colors.black54 : Colors.white.withOpacity(0.4);
+    final btnDeleteIcon = isLight ? Colors.black54 : Colors.white.withValues(alpha: 0.4);
 
     return GestureDetector(
       onTap: isDelete ? _onDelete : () => _onKeyTap(key),

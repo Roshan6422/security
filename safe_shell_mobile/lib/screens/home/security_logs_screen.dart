@@ -81,7 +81,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
   Color _getEventColor(String action) {
     final lower = action.toLowerCase();
     if (lower.contains('delete')) return Colors.redAccent;
-    if (lower.contains('upload') || lower.contains('add') || lower.contains('create')) return const Color(0xFF34D399);
+    if (lower.contains('upload') || lower.contains('add') || lower.contains('create')) return const Color(0xFF10B981);
     if (lower.contains('restore')) return Colors.amber;
     if (lower.contains('open') || lower.contains('view')) return AppColors.primary;
     if (lower.contains('login') || lower.contains('auth')) return Colors.amber;
@@ -146,7 +146,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.purpleAccent.withOpacity(0.08), Colors.transparent],
+                  colors: [Colors.purpleAccent.withValues(alpha: 0.08), Colors.transparent],
                 ),
               ),
             ),
@@ -203,17 +203,17 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: Colors.white.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                               ),
                               child: TextField(
                                 onChanged: (v) => setState(() => _searchQuery = v),
                                 style: const TextStyle(color: Colors.white, fontSize: 14),
                                 decoration: InputDecoration(
-                                  icon: Icon(Icons.search, color: Colors.white.withOpacity(0.3)),
+                                  icon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.3)),
                                   hintText: 'Search logs...',
-                                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+                                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
                                   border: InputBorder.none,
                                 ),
                               ),
@@ -233,13 +233,13 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                       decoration: BoxDecoration(
                                         color: isActive
-                                            ? AppColors.primary.withOpacity(0.15)
-                                            : Colors.white.withOpacity(0.04),
+                                            ? AppColors.primary.withValues(alpha: 0.15)
+                                            : Colors.white.withValues(alpha: 0.04),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
                                           color: isActive
-                                              ? AppColors.primary.withOpacity(0.4)
-                                              : Colors.white.withOpacity(0.08),
+                                              ? AppColors.primary.withValues(alpha: 0.4)
+                                              : Colors.white.withValues(alpha: 0.08),
                                         ),
                                       ),
                                       child: Text(
@@ -261,16 +261,16 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.04),
+                                color: Colors.white.withValues(alpha: 0.04),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: (_chainVerified ? Colors.green : Colors.red).withOpacity(0.1),
+                                      color: (_chainVerified ? Colors.green : Colors.red).withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -327,7 +327,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
                                 child: Center(
                                   child: Column(
                                     children: [
-                                      Icon(Icons.event_note, size: 48, color: Colors.white.withOpacity(0.1)),
+                                      Icon(Icons.event_note, size: 48, color: Colors.white.withValues(alpha: 0.1)),
                                       const SizedBox(height: 12),
                                       const Text(
                                         'No events found',
@@ -365,9 +365,9 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +376,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -444,7 +444,7 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
         margin: const EdgeInsets.only(left: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
         ),
         clipBehavior: Clip.antiAlias,
         child: SecureNetworkViewer(
@@ -454,17 +454,6 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
             fit: BoxFit.cover,
             width: 48,
             height: 48,
-          ),
-          loadingWidget: const Center(
-            child: SizedBox(
-              width: 16, height: 16,
-              child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
-            ),
-          ),
-          errorBuilder: (context, error) => const Icon(
-            Icons.image_outlined,
-            color: Colors.white24,
-            size: 20,
           ),
         ),
       );
@@ -498,8 +487,8 @@ class _SecurityLogsScreenState extends State<SecurityLogsScreen> {
       margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: thumbColor.withOpacity(0.1),
-        border: Border.all(color: thumbColor.withOpacity(0.2)),
+        color: thumbColor.withValues(alpha: 0.1),
+        border: Border.all(color: thumbColor.withValues(alpha: 0.2)),
       ),
       child: Icon(thumbIcon, color: thumbColor, size: 22),
     );

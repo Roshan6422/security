@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -11,11 +12,14 @@ class ApiService {
 
   static Future<void> _ensureBaseUrlLoaded() async {
     if (_baseUrlLoaded) return;
+    // Temporarily disabled to force AppConstants.baseUrl
+    /*
     const storage = FlutterSecureStorage();
     final savedUrl = await storage.read(key: 'custom_base_url');
     if (savedUrl != null && savedUrl.isNotEmpty) {
       _baseUrl = savedUrl;
     }
+    */
     _baseUrlLoaded = true;
   }
 
@@ -59,11 +63,37 @@ class ApiService {
     };
   }
 
+  Uri _buildUrl(String endpoint) {
+    String cleanBase = _baseUrl.endsWith('/') ? _baseUrl.substring(0, _baseUrl.length - 1) : _baseUrl;
+    String cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    
+    // ENSURE trailing slash for root-level service routes (e.g., /vault? -> /vault/?)
+    // This resolves shelf_router prefix matching issues.
+    if (cleanEndpoint.contains('?')) {
+        final pathPart = cleanEndpoint.split('?')[0];
+        if (!pathPart.contains('/', 1)) { // e.g., /vault 
+             cleanEndpoint = cleanEndpoint.replaceFirst(pathPart, '$pathPart/');
+        }
+    } else if (!cleanEndpoint.contains('/', 1)) {
+         // e.g., /vault -> /vault/
+         cleanEndpoint = '$cleanEndpoint/';
+    }
+
+    final fullUrl = '$cleanBase$cleanEndpoint'.replaceAll(RegExp(r'\s+'), '');
+    if (kDebugMode) {
+      debugPrint('ApiService DEBUG: BASE="$_baseUrl" END="$endpoint"');
+      debugPrint('ApiService FINAL: [$fullUrl]');
+      debugPrint('ApiService CODES: ${fullUrl.runes.toList()}');
+    }
+    return Uri.parse(fullUrl);
+  }
+
   Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     await _ensureBaseUrlLoaded();
-    final url = Uri.parse('$_baseUrl$endpoint');
+    final url = _buildUrl(endpoint);
     final headers = await _getHeaders();
 
+    if (kDebugMode) debugPrint('ApiService POST: [$url]');
     final response = await http.post(
       url,
       headers: headers,
@@ -75,11 +105,14 @@ class ApiService {
 
   Future<dynamic> get(String endpoint) async {
     await _ensureBaseUrlLoaded();
-    final url = Uri.parse('$_baseUrl$endpoint');
+    final url = _buildUrl(endpoint);
     final headers = await _getHeaders();
     
     try {
-      if (kDebugMode) debugPrint('ApiService: GET request to $url');
+      if (kDebugMode) {
+        final token = headers['Authorization']?.substring(0, 15);
+        debugPrint('ApiService GET: [$url] (Token: $token...)');
+      }
       final response = await http.get(url, headers: headers).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
@@ -96,9 +129,10 @@ class ApiService {
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> body) async {
     await _ensureBaseUrlLoaded();
-    final url = Uri.parse('$_baseUrl$endpoint');
+    final url = _buildUrl(endpoint);
     final headers = await _getHeaders();
 
+    if (kDebugMode) debugPrint('ApiService PUT: [$url]');
     final response = await http.put(
       url,
       headers: headers,
@@ -110,17 +144,29 @@ class ApiService {
 
   Future<dynamic> delete(String endpoint) async {
     await _ensureBaseUrlLoaded();
-    final url = Uri.parse('$_baseUrl$endpoint');
+    final url = _buildUrl(endpoint);
     final headers = await _getHeaders();
 
+    if (kDebugMode) debugPrint('ApiService DELETE: [$url]');
     final response = await http.delete(url, headers: headers);
 
     return _handleResponse(response);
   }
 
+  /// Max upload file size: 50MB
+  static const int _maxUploadBytes = 50 * 1024 * 1024;
+
   Future<dynamic> uploadMultipart(String endpoint, String filePath) async {
     await _ensureBaseUrlLoaded();
-    final url = Uri.parse('$_baseUrl$endpoint');
+
+    // Check file size before uploading
+    final file = await File(filePath).stat();
+    if (file.size > _maxUploadBytes) {
+      final sizeMB = (file.size / (1024 * 1024)).toStringAsFixed(1);
+      throw Exception('File too large ($sizeMB MB). Maximum upload size is 50 MB.');
+    }
+
+    final url = _buildUrl(endpoint);
     final request = http.MultipartRequest('POST', url);
     final token = await _storage.read(key: AppConstants.keyToken);
     
@@ -128,6 +174,7 @@ class ApiService {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
+    if (kDebugMode) debugPrint('ApiService UPLOAD: [$url]');
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
 
     try {
@@ -149,11 +196,17 @@ class ApiService {
         throw Exception('Server returned invalid data format: ${response.statusCode}');
       }
     } else {
+      if (kDebugMode) {
+        debugPrint('ApiService ERROR: ${response.statusCode}');
+        debugPrint('ApiService HEADERS: ${response.headers}');
+        debugPrint('ApiService BODY: ${response.body}');
+      }
       try {
         final body = jsonDecode(response.body);
         throw Exception(body['message'] ?? 'Something went wrong: ${response.statusCode}');
       } catch (e) {
-        throw Exception('Server error: ${response.statusCode}. Please check connection.');
+        // Include the body in the exception so it shows up in the Dashboard error log
+        throw Exception('Server error: ${response.statusCode}. Body: ${response.body}');
       }
     }
   }

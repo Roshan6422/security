@@ -145,9 +145,89 @@ class MainActivity: FlutterFragmentActivity() {
                         result.success(true)
                     }
                 }
+                // --- NEW SECURITY HANDLERS ---
+                "hwEncrypt" -> {
+                    val data = call.argument<ByteArray>("data")
+                    if (data != null) {
+                        try {
+                            result.success(EncryptionModule.encrypt(data))
+                        } catch (e: Exception) {
+                            result.error("ENCRYPTION_FAILED", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Data is null", null)
+                    }
+                }
+                "hwDecrypt" -> {
+                    val ciphertext = call.argument<String>("ciphertext")
+                    val iv = call.argument<String>("iv")
+                    if (ciphertext != null && iv != null) {
+                        try {
+                            result.success(EncryptionModule.decrypt(ciphertext, iv))
+                        } catch (e: Exception) {
+                            result.error("DECRYPTION_FAILED", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Ciphertext or IV is null", null)
+                    }
+                }
+                "isDeviceAdmin" -> {
+                    val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
+                    result.success(dpm.isAdminActive(componentName))
+                }
+                "requestDeviceAdmin" -> {
+                    val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
+                    intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+                    intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "SafeShell requires Device Admin to prevent unauthorized uninstallation.")
+                    startActivity(intent)
+                    result.success(true)
+                }
+                "getUsbStatus" -> {
+                    val usbManager = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
+                    val deviceList = usbManager.deviceList
+                    result.success(deviceList.isNotEmpty())
+                }
+                "toggleStealthMode" -> {
+                    val enable = call.argument<Boolean>("enable") ?: false
+                    toggleStealthMode(enable)
+                    result.success(true)
+                }
+                "toggleScreenshot" -> {
+                    val allow = call.argument<Boolean>("allow") ?: false
+                    if (allow) {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    } else {
+                        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    }
+                    result.success(true)
+                }
 
                 else -> result.notImplemented()
             }
+        }
+    }
+
+    private var usbReceiver: UsbBroadcastReceiver? = null
+
+    override fun onStart() {
+        super.onStart()
+        val engine = flutterEngine ?: return
+        val channel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
+        usbReceiver = UsbBroadcastReceiver(channel)
+        val filter = android.content.IntentFilter().apply {
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED)
+            addAction("android.hardware.usb.action.USB_STATE")
+        }
+        registerReceiver(usbReceiver, filter)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        usbReceiver?.let {
+            unregisterReceiver(it)
         }
     }
 

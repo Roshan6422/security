@@ -42,6 +42,8 @@ class User extends FirestoreModel {
         'calculatorPassword': calculatorPassword,
         'isSuspended': isSuspended,
         'deviceToken': deviceToken,
+        'resetOtp': resetOtp,
+        'resetOtpExpire': resetOtpExpire?.toIso8601String(),
       };
 
   /// Creates a [User] from a Firestore document map.
@@ -56,6 +58,8 @@ class User extends FirestoreModel {
       calculatorPassword: map['calculatorPassword'] as String?,
       isSuspended: map['isSuspended'] as bool? ?? false,
       deviceToken: map['deviceToken'] as String?,
+      resetOtp: map['resetOtp'] as String?,
+      resetOtpExpire: FirestoreModel.parseDate(map['resetOtpExpire']),
     );
     user.populateFromMap(map);
     return user;

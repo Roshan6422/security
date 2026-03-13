@@ -76,6 +76,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => OnboardingScreen(onComplete: () {
+          if (!mounted) return;
           Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
         })),
       );
@@ -107,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: Duration(milliseconds: _isLowEnd ? 300 : 600),
-        pageBuilder: (_, __, ___) => const AppLockListenerWrapper(child: AuthWrapper()),
+        pageBuilder: (_, __, ___) => const AuthWrapper(),
         transitionsBuilder: (_, animation, __, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -147,10 +148,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFA855F7).withOpacity(0.12),
-                    border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.25)),
+                    color: const Color(0xFF4DA3FF).withValues(alpha: 0.12),
+                    border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.25)),
                   ),
-                  child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFFA855F7)),
+                  child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF4DA3FF)),
                 ),
                 const SizedBox(height: 36),
                 // App name — simple colored text, no ShaderMask
@@ -159,14 +160,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   style: AppTextStyles.display.copyWith(
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
-                    color: const Color(0xFFA855F7),
+                    color: const Color(0xFF4DA3FF),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Private vault. Stealth mode.',
                   style: AppTextStyles.body.copyWith(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     fontSize: 14,
                   ),
                 ),
@@ -176,7 +177,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   width: 24, height: 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFFA855F7),
+                    color: Color(0xFF4DA3FF),
                   ),
                 ),
               ],
@@ -203,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 width: 350, height: 350,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [const Color(0xFFA855F7).withOpacity(0.15), Colors.transparent]),
+                  gradient: RadialGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.15), Colors.transparent]),
                 ),
               ),
             ),
@@ -217,7 +218,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 width: 280, height: 280,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withOpacity(0.1), Colors.transparent]),
+                  gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.1), Colors.transparent]),
                 ),
               ),
             ),
@@ -245,7 +246,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFFA855F7).withOpacity((1 - _pulseController!.value) * 0.15),
+                                  color: const Color(0xFF4DA3FF).withValues(alpha: (1 - _pulseController!.value) * 0.15),
                                   width: 1.5,
                                 ),
                               ),
@@ -262,7 +263,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFFA855F7).withOpacity(0.08),
+                                  color: const Color(0xFF4DA3FF).withValues(alpha: 0.08),
                                   width: 1,
                                 ),
                               ),
@@ -279,12 +280,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [const Color(0xFFA855F7).withOpacity(0.15), const Color(0xFF8B5CF6).withOpacity(0.08)],
+                                colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.15), const Color(0xFF8B5CF6).withValues(alpha: 0.08)],
                               ),
-                              border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.25)),
-                              boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.2), blurRadius: 30, spreadRadius: 5)],
+                              border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.25)),
+                              boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)],
                             ),
-                            child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFFA855F7)),
+                            child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF4DA3FF)),
                           ),
                         ),
                       ],
@@ -294,12 +295,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   // App name with gradient
                   ShaderMask(
                     shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFFA855F7), Color(0xFF8B5CF6), Color(0xFF34D399)],
+                      colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6), Color(0xFF10B981)],
                     ).createShader(bounds),
                     child: Text('SafeShell', style: AppTextStyles.display.copyWith(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
                   const SizedBox(height: 8),
-                  Text('Private vault. Stealth mode.', style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.25), fontSize: 14)),
+                  Text('Private vault. Stealth mode.', style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.25), fontSize: 14)),
                   const SizedBox(height: 60),
                   // Custom loading dots
                   SizedBox(
@@ -337,7 +338,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   width: size, height: size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: i % 3 == 0 ? const Color(0xFFA855F7) : i % 3 == 1 ? const Color(0xFF8B5CF6) : const Color(0xFF34D399),
+                    color: i % 3 == 0 ? const Color(0xFF4DA3FF) : i % 3 == 1 ? const Color(0xFF8B5CF6) : const Color(0xFF10B981),
                   ),
                 ),
               ),
@@ -368,7 +369,7 @@ class _LoadingDots extends StatelessWidget {
               width: 6, height: 6,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFA855F7).withOpacity(opacity),
+                color: const Color(0xFF4DA3FF).withValues(alpha: opacity),
               ),
             );
           }),

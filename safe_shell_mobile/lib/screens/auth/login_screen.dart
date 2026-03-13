@@ -202,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.wifi_tethering),
                   label: const Text('Test Connection'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
+                    backgroundColor: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.1),
                     foregroundColor: isLight ? AppColors.primary : Colors.white,
                   ),
                 ),
@@ -235,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           // 1. Animated Background Blobs
-          _buildAnimatedBlobs(),
+          _buildStaticBlobs(),
 
           // 2. Main Content
           Center(
@@ -338,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 54),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              side: BorderSide(color: Colors.white.withOpacity(0.1)),
+                              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                               foregroundColor: Colors.white,
                             ),
                           ),
@@ -363,9 +363,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -391,38 +391,28 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildAnimatedBlobs() {
+  Widget _buildStaticBlobs() {
     return Stack(
       children: [
-        // Primary Blue Blob
+        // Primary Blue Blob (Static)
         Positioned(
           top: -150,
           right: -100,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
-            duration: const Duration(seconds: 8),
-            builder: (context, value, child) {
-              final move = math.sin(value * 2 * math.pi);
-              return Transform.translate(
-                offset: Offset(move * 40, move * 50),
-                child: Container(
-                  width: 450,
-                  height: 450,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.primary.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: Container(
+            width: 450,
+            height: 450,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.1),
+                  AppColors.primary.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
           ),
         ),
-        // Secondary Indigo Blob
+        // Secondary Indigo Blob (Static)
         Positioned(
           bottom: -100,
           left: -150,
@@ -433,8 +423,8 @@ class _LoginScreenState extends State<LoginScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.secondary.withOpacity(0.08),
-                  AppColors.secondary.withOpacity(0.0),
+                  AppColors.secondary.withValues(alpha: 0.08),
+                  AppColors.secondary.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -445,33 +435,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGlowingLogo() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.8, end: 1.0),
-      duration: const Duration(seconds: 2),
-      curve: Curves.easeInOutSine,
-      builder: (context, value, child) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.01 * value),
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary.withOpacity(0.05 * value), width: 1.0),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.02 * value),
-                blurRadius: 50 * value,
-                spreadRadius: 1 * value,
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.01),
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.05), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.02),
+            blurRadius: 50,
+            spreadRadius: 1,
           ),
-          child: Icon(
-            Icons.shield_outlined,
-            size: 56,
-            color: Colors.white.withOpacity(0.9 * value),
-          ),
-        );
-      },
-      onEnd: () => setState(() {}), // Trigger micro-rebuild for continuous pulse loop if needed, but builder handles it
+        ],
+      ),
+      child: const Icon(
+        Icons.shield_outlined,
+        size: 56,
+        color: Colors.white,
+      ),
     );
   }
 
@@ -500,7 +482,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
           child: Text(
             'Recover Account',
-            style: AppTextStyles.caption.copyWith(color: AppColors.primary.withOpacity(0.8), fontWeight: FontWeight.bold),
+            style: AppTextStyles.caption.copyWith(color: AppColors.primary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
           ),
         ),
         const SizedBox(height: 16),
@@ -516,107 +498,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Animated pulsing ripple effect around biometric fingerprint button
-class _BiometricRippleButton extends StatefulWidget {
+class _BiometricRippleButton extends StatelessWidget {
   final VoidCallback onTap;
   const _BiometricRippleButton({required this.onTap});
 
   @override
-  State<_BiometricRippleButton> createState() => _BiometricRippleButtonState();
-}
-
-class _BiometricRippleButtonState extends State<_BiometricRippleButton> with TickerProviderStateMixin {
-  late AnimationController _ripple1;
-  late AnimationController _ripple2;
-  late AnimationController _scaleCtrl;
-  late Animation<double> _scaleAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ripple1 = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this)..repeat();
-    _ripple2 = AnimationController(duration: const Duration(milliseconds: 2000), vsync: this);
-    // Start second ripple with delay
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) _ripple2.repeat();
-    });
-    _scaleCtrl = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _ripple1.dispose();
-    _ripple2.dispose();
-    _scaleCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => _scaleCtrl.forward(),
-      onTapUp: (_) {
-        _scaleCtrl.reverse();
+      onTap: () {
         HapticFeedback.mediumImpact();
-        widget.onTap();
+        onTap();
       },
-      onTapCancel: () => _scaleCtrl.reverse(),
-      child: ScaleTransition(
-        scale: _scaleAnim,
-        child: SizedBox(
-          width: 80, height: 80,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Ripple 1
-              AnimatedBuilder(
-                animation: _ripple1,
-                builder: (context, child) {
-                  return Container(
-                    width: 50 + (_ripple1.value * 30),
-                    height: 50 + (_ripple1.value * 30),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity((1 - _ripple1.value) * 0.4),
-                        width: 2,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Ripple 2
-              AnimatedBuilder(
-                animation: _ripple2,
-                builder: (context, child) {
-                  return Container(
-                    width: 50 + (_ripple2.value * 30),
-                    height: 50 + (_ripple2.value * 30),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity((1 - _ripple2.value) * 0.25),
-                        width: 1.5,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Core icon
-              Container(
-                width: 52, height: 52,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.15), AppColors.primary.withOpacity(0.05)]),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12)],
-                ),
-                child: const Icon(Icons.face_rounded, size: 30, color: AppColors.primary),
-              ),
-            ],
-          ),
+      child: Container(
+        width: 52, height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.primary.withValues(alpha: 0.05)]),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 12)],
         ),
+        child: const Icon(Icons.face_rounded, size: 30, color: AppColors.primary),
       ),
     );
   }

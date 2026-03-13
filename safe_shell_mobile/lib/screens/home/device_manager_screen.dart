@@ -148,9 +148,9 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: const Icon(Icons.phone_android, color: Colors.white70, size: 28),
                 ),
@@ -161,7 +161,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                     style: AppTextStyles.subheading.copyWith(fontSize: 18),
                   ),
                 ),
-                Icon(Icons.edit, color: Colors.white.withOpacity(0.3), size: 20),
+                Icon(Icons.edit, color: Colors.white.withValues(alpha: 0.3), size: 20),
               ],
             ),
             const SizedBox(height: 24),
@@ -189,7 +189,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: (isTrusted ? Colors.orange : Colors.green).withOpacity(0.1),
+                  backgroundColor: (isTrusted ? Colors.orange : Colors.green).withValues(alpha: 0.1),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
@@ -234,7 +234,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.primary.withOpacity(0.15), Colors.transparent],
+                  colors: [AppColors.primary.withValues(alpha: 0.15), Colors.transparent],
                 ),
               ),
             ),
@@ -281,7 +281,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(Icons.devices, color: AppColors.primary, size: 24),
@@ -339,9 +339,9 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                                       Container(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                         decoration: BoxDecoration(
-                                                          color: AppColors.primary.withOpacity(0.15),
+                                                          color: AppColors.primary.withValues(alpha: 0.15),
                                                           borderRadius: BorderRadius.circular(8),
-                                                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                                                         ),
                                                         child: Text(
                                                           'This device',
@@ -399,7 +399,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.05),
+                                            color: Colors.white.withValues(alpha: 0.05),
                                             borderRadius: BorderRadius.circular(10),
                                           ),
                                           child: Text(
@@ -423,7 +423,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                               padding: const EdgeInsets.all(16),
                               child: Row(
                                 children: [
-                                  Icon(Icons.info_outline, color: Colors.white.withOpacity(0.3), size: 20),
+                                  Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.3), size: 20),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(

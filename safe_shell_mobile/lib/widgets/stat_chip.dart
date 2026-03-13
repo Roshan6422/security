@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class StatChip extends StatelessWidget {
   final String label;
@@ -18,13 +18,13 @@ class StatChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: cs.surface.withOpacity(0.72),
-        border: Border.all(color: cs.onSurface.withOpacity(0.10)),
+        color: cs.surface.withValues(alpha: 0.72),
+        border: Border.all(color: cs.onSurface.withValues(alpha: 0.10)),
         boxShadow: [
           BoxShadow(
             blurRadius: 18,
             spreadRadius: 1,
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
           ),
         ],
       ),
@@ -46,7 +46,7 @@ class StatChip extends StatelessWidget {
                 BoxShadow(
                   blurRadius: 15,
                   spreadRadius: 1,
-                  color: cs.primary.withOpacity(0.35),
+                  color: cs.primary.withValues(alpha: 0.35),
                 ),
               ],
             ),

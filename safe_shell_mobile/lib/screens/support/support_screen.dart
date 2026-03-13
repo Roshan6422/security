@@ -58,7 +58,7 @@ class _SupportScreenState extends State<SupportScreen>
               colors: [
                   AppColors.darkBackground,
                   AppColors.darkSurface,
-                  AppColors.darkSurface.withOpacity(0.8),
+                  AppColors.darkSurface.withValues(alpha: 0.8),
                   AppColors.darkBackground,
                 ],
                 begin: Alignment.topLeft,
@@ -70,17 +70,17 @@ class _SupportScreenState extends State<SupportScreen>
           Positioned(
             top: -70,
             left: -45,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.16), size: 220),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.16), size: 220),
           ),
           Positioned(
             bottom: -90,
             right: -50,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.10), size: 260),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.10), size: 260),
           ),
           Positioned(
             top: 200,
             right: -20,
-            child: _GlowBlob(color: cs.secondary.withOpacity(0.06), size: 160),
+            child: _GlowBlob(color: cs.secondary.withValues(alpha: 0.06), size: 160),
           ),
 
           SafeArea(
@@ -166,15 +166,15 @@ class _SupportTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             gradient: LinearGradient(
               colors: [
-                cs.primary.withOpacity(0.92),
-                cs.primary.withOpacity(0.62),
+                cs.primary.withValues(alpha: 0.92),
+                cs.primary.withValues(alpha: 0.62),
               ],
             ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 18,
                 spreadRadius: 1,
-                color: cs.primary.withOpacity(0.12),
+                color: cs.primary.withValues(alpha: 0.12),
               ),
             ],
           ),
@@ -186,7 +186,7 @@ class _SupportTile extends StatelessWidget {
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(color: cs.onSurface.withOpacity(0.7)),
+          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
         ),
       ),
     );
@@ -213,13 +213,13 @@ class _GlassCard extends StatelessWidget {
           padding: padding,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(26),
-            color: cs.surface.withOpacity(0.78),
-            border: Border.all(color: cs.onSurface.withOpacity(0.10)),
+            color: cs.surface.withValues(alpha: 0.78),
+            border: Border.all(color: cs.onSurface.withValues(alpha: 0.10)),
             boxShadow: [
               BoxShadow(
                 blurRadius: 30,
                 spreadRadius: 2,
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withValues(alpha: 0.10),
               ),
             ],
           ),

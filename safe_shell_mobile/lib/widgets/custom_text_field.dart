@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -9,6 +9,7 @@ class CustomTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final VoidCallback? onToggleVisibility;
+  final int? maxLength;
 
   const CustomTextField({
     super.key,
@@ -19,19 +20,21 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.onToggleVisibility,
+    this.maxLength,
   });
 
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final textColor = isLight ? AppColors.textPrimary : Colors.white;
-    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.6);
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.6);
 
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       validator: validator,
       keyboardType: keyboardType,
+      maxLength: maxLength,
       style: AppTextStyles.body.copyWith(color: textColor),
       decoration: InputDecoration(
         labelText: label,
@@ -51,17 +54,17 @@ class CustomTextField extends StatelessWidget {
               )
             : null,
         filled: true,
-        fillColor: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05),
+        fillColor: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
+            color: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(
-            color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.1),
+            color: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.1),
           ),
         ),
         focusedBorder: OutlineInputBorder(

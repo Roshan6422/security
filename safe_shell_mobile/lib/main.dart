@@ -10,9 +10,9 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth/key_setup_screen.dart';
 import 'screens/auth/app_lock_screen.dart';
-import 'screens/calculator/calculator_screen.dart';
 import 'security/key_manager.dart';
 import 'utils/device_performance.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -22,7 +22,24 @@ void main() async {
   await Firebase.initializeApp();
   await DevicePerformance.init();
 
+  // Restore stealth mode on app restart (survives phone reboot)
+  _restoreStealthMode();
+
   runApp(const MyApp());
+}
+
+Future<void> _restoreStealthMode() async {
+  try {
+    const storage = FlutterSecureStorage();
+    final stealthEnabled = await storage.read(key: 'discreet_mode');
+    if (stealthEnabled == 'true') {
+      const channel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
+      await channel.invokeMethod('toggleStealthMode', {'enable': true});
+      debugPrint('Stealth mode restored on startup');
+    }
+  } catch (e) {
+    debugPrint('Stealth restore error (non-critical): $e');
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -43,7 +60,7 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.dark,
-            home: const SplashScreen(),
+            home: const AppLockListenerWrapper(child: SplashScreen()),
             navigatorObservers: [routeObserver],
           );
         },
@@ -67,14 +84,127 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
   @override
   void initState() {
     super.initState();
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'showAppLock') {
-        final String packageName = call.arguments['packageName'];
-        _showLockScreen(packageName);
-      }
-    });
+    _channel.setMethodCallHandler(_handleMethodCall);
     // Signal native that Flutter is ready  flushes any pending lock target
     _signalReady();
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'showAppLock':
+        final String packageName = call.arguments['packageName'];
+        _showLockScreen(packageName);
+        break;
+      case 'onUsbStatusChanged':
+        final bool connected = call.arguments['connected'] ?? false;
+        _handleUsbEvent(connected);
+        break;
+    }
+  }
+
+  Future<void> _handleUsbEvent(bool connected) async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    if (!settings.usbDetectionEnabled) return;
+
+    if (connected) {
+      if (!settings.usbAppsLocked) {
+        await settings.onUsbConnected();
+        if (mounted) _showUsbProtectionDialog(context);
+      }
+    } else {
+      if (settings.usbAppsLocked) {
+        await settings.onUsbDisconnected();
+        _showUsbDisconnectedSnackbar(context);
+      }
+    }
+  }
+
+  void _showUsbProtectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        icon: const Icon(Icons.shield_rounded, color: Colors.redAccent, size: 48),
+        title: const Text(
+          '🔒 USB Protection Active',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Gallery, File Manager & Video Player are now LOCKED to protect your files.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.tips_and_updates_rounded, color: Colors.amber, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Pull down notification bar & switch USB to "Charging Only" for maximum protection.',
+                      style: TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'To unlock apps, go to Settings → USB Protection → OFF',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Got It', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUsbDisconnectedSnackbar(BuildContext context) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.usb_off, color: Colors.white70),
+            SizedBox(width: 12),
+            Text('USB Device Disconnected', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        backgroundColor: Colors.blueGrey,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _signalReady() async {
@@ -108,12 +238,14 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   late Future<void> _authFuture;
+  late Future<bool> _keyFuture;
   final _km = KeyManager();
 
   @override
   void initState() {
     super.initState();
     _authFuture = Provider.of<AuthProvider>(context, listen: false).checkAuth();
+    _keyFuture = _km.hasKey();
   }
 
   @override
@@ -138,7 +270,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 }
 
                 return FutureBuilder<bool>(
-                  future: _km.hasKey(),
+                  future: _keyFuture,
                   builder: (context, keySnapshot) {
                     if (keySnapshot.connectionState == ConnectionState.waiting) {
                       return const Scaffold(

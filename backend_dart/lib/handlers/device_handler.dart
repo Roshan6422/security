@@ -1,9 +1,11 @@
 import 'dart:convert';
 
-import 'package:shelf/shelf.dart';
-import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf/shelf.dart' as s;
+import 'package:shelf_router/shelf_router.dart' as sr;
 import 'package:uuid/uuid.dart';
+import 'package:dart_firebase_admin/messaging.dart' as fcm;
 
+import '../config/firebase.dart';
 import '../middleware/auth_middleware.dart';
 import '../models/firestore_model.dart';
 import '../models/user.dart';
@@ -71,11 +73,11 @@ class DeviceEntry extends FirestoreModel {
 final _deviceRepo = ModelRepository<DeviceEntry>('devices', DeviceEntry.fromMap);
 
 /// Builds the `/api/device` router.
-Router deviceRouter() {
-  final router = Router();
+sr.Router deviceRouter() {
+  final router = sr.Router();
 
   // POST /register — register or update a device
-  router.post('/register', (Request request) async {
+  router.post('/register', (s.Request request) async {
     try {
       final user = getAuthUser(request);
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
@@ -123,7 +125,7 @@ Router deviceRouter() {
         await freshUser.save();
       }
 
-      return Response.ok(
+      return s.Response.ok(
         jsonEncode({
           'message': 'Device registered',
           'deviceId': device.id,
@@ -132,7 +134,7 @@ Router deviceRouter() {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response(500,
+      return s.Response(500,
         body: jsonEncode({'message': 'Server error: $e'}),
         headers: {'content-type': 'application/json'},
       );
@@ -140,7 +142,7 @@ Router deviceRouter() {
   });
 
   // GET /list — list all devices for user
-  router.get('/list', (Request request) async {
+  router.get('/list', (s.Request request) async {
     try {
       final user = getAuthUser(request);
       final allDevices = await _deviceRepo.find();
@@ -155,7 +157,7 @@ Router deviceRouter() {
         'id': d.id,
       }).toList();
 
-      return Response.ok(
+      return s.Response.ok(
         jsonEncode({
           'devices': result,
           'total': result.length,
@@ -165,7 +167,7 @@ Router deviceRouter() {
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response(500,
+      return s.Response(500,
         body: jsonEncode({'message': 'Server error: $e'}),
         headers: {'content-type': 'application/json'},
       );
@@ -173,7 +175,7 @@ Router deviceRouter() {
   });
 
   // PUT /<id>/trust — toggle device trust
-  router.put('/<deviceId>/trust', (Request request, String deviceId) async {
+  router.put('/<deviceId>/trust', (s.Request request, String deviceId) async {
     try {
       final user = getAuthUser(request);
       final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
@@ -181,7 +183,7 @@ Router deviceRouter() {
 
       final device = await _deviceRepo.findById(deviceId);
       if (device == null || device.userId != user.id) {
-        return Response(404,
+        return s.Response(404,
           body: jsonEncode({'message': 'Device not found'}),
           headers: {'content-type': 'application/json'},
         );
@@ -190,12 +192,12 @@ Router deviceRouter() {
       device.isTrusted = trusted;
       await device.save();
 
-      return Response.ok(
+      return s.Response.ok(
         jsonEncode({'message': 'Device ${trusted ? "trusted" : "untrusted"}', 'device': {...device.toMap(), 'id': device.id}}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response(500,
+      return s.Response(500,
         body: jsonEncode({'message': 'Server error: $e'}),
         headers: {'content-type': 'application/json'},
       );
@@ -203,12 +205,12 @@ Router deviceRouter() {
   });
 
   // DELETE /<id> — remove device
-  router.delete('/<deviceId>', (Request request, String deviceId) async {
+  router.delete('/<deviceId>', (s.Request request, String deviceId) async {
     try {
       final user = getAuthUser(request);
       final device = await _deviceRepo.findById(deviceId);
       if (device == null || device.userId != user.id) {
-        return Response(404,
+        return s.Response(404,
           body: jsonEncode({'message': 'Device not found'}),
           headers: {'content-type': 'application/json'},
         );
@@ -216,12 +218,12 @@ Router deviceRouter() {
 
       await device.deleteOne();
 
-      return Response.ok(
+      return s.Response.ok(
         jsonEncode({'message': 'Device removed'}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response(500,
+      return s.Response(500,
         body: jsonEncode({'message': 'Server error: $e'}),
         headers: {'content-type': 'application/json'},
       );
@@ -229,11 +231,11 @@ Router deviceRouter() {
   });
 
   // POST /command (admin-only) — kept for backward compat
-  router.post('/command', (Request request) async {
+  router.post('/command', (s.Request request) async {
     try {
       final user = getAuthUser(request);
       if (user.role != 'admin') {
-        return Response(403,
+        return s.Response(403,
           body: jsonEncode({'message': 'Not authorized as admin'}),
           headers: {'content-type': 'application/json'},
         );
@@ -244,7 +246,7 @@ Router deviceRouter() {
       final command = body['command'] as String?;
 
       if (userId == null || command == null) {
-        return Response(400,
+        return s.Response(400,
           body: jsonEncode({'message': 'userId and command required'}),
           headers: {'content-type': 'application/json'},
         );
@@ -252,14 +254,14 @@ Router deviceRouter() {
 
       final targetUser = await userRepo.findById(userId);
       if (targetUser == null) {
-        return Response(404,
+        return s.Response(404,
           body: jsonEncode({'message': 'User not found'}),
           headers: {'content-type': 'application/json'},
         );
       }
 
       if (targetUser.deviceToken == null || targetUser.deviceToken!.isEmpty) {
-        return Response(400,
+        return s.Response(400,
           body: jsonEncode({'message': 'No device token registered for this user'}),
           headers: {'content-type': 'application/json'},
         );
@@ -267,12 +269,52 @@ Router deviceRouter() {
 
       print('[FCM] Sending command "$command" to token: ${targetUser.deviceToken}');
 
-      return Response.ok(
+      final messaging = FirebaseConfig.messaging;
+      if (messaging != null) {
+        try {
+          // Determine command action
+          String action;
+          switch (command.toUpperCase()) {
+            case 'LOCK':
+              action = 'LOCK_DEVICE';
+              break;
+            case 'ALARM':
+              action = 'SOUND_ALARM';
+              break;
+            case 'LOCATION':
+              action = 'GET_LOCATION';
+              break;
+            case 'WIPE':
+              action = 'WIPE_DATA';
+              break;
+            default:
+              return s.Response(400, body: jsonEncode({'message': 'Invalid command type'}));
+          }
+
+          final message = fcm.TokenMessage(
+            token: targetUser.deviceToken!,
+            data: {
+              'command': action,
+              'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+            },
+          );
+          
+          final response = await messaging.send(message);
+          print('[FCM] Successfully sent message: $response');
+        } catch (e) {
+          print('[FCM] Failed to send message: $e');
+          return s.Response(500, body: jsonEncode({'message': 'Failed to send push notification: $e'}));
+        }
+      } else {
+        print('[FCM] WARNING: Firebase Messaging is not initialized (In-Memory Fallback)');
+      }
+
+      return s.Response.ok(
         jsonEncode({'message': 'Command sent successfully', 'command': command}),
         headers: {'content-type': 'application/json'},
       );
     } catch (e) {
-      return Response(500,
+      return s.Response(500,
         body: jsonEncode({'message': 'Server error'}),
         headers: {'content-type': 'application/json'},
       );
@@ -282,9 +324,9 @@ Router deviceRouter() {
   return router;
 }
 
-/// Creates a [Handler] for device routes.
-Handler deviceHandler() {
-  return const Pipeline()
+/// Creates a [s.Handler] for device routes.
+s.Handler deviceHandler() {
+  return const s.Pipeline()
       .addMiddleware(authMiddleware())
       .addHandler(deviceRouter().call);
 }

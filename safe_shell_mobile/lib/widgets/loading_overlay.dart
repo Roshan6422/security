@@ -51,11 +51,11 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
       width: 180,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1520).withOpacity(skipBlur ? 0.95 : 0.7),
+        color: const Color(0xFF0D1520).withValues(alpha: skipBlur ? 0.95 : 0.7),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: skipBlur ? null : [
-          BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.08), blurRadius: 40, spreadRadius: 5),
+          BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.08), blurRadius: 40, spreadRadius: 5),
         ],
       ),
       child: Column(
@@ -71,12 +71,12 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
                   width: 56, height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.06), width: 2.5),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.06), width: 2.5),
                   ),
                   child: CustomPaint(painter: _ArcPainter()),
                 ),
               ),
-              const Icon(Icons.shield_rounded, color: Color(0xFFA855F7), size: 24),
+              const Icon(Icons.shield_rounded, color: Color(0xFF4DA3FF), size: 24),
             ],
           ),
           const SizedBox(height: 20),
@@ -92,7 +92,7 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
     return Material(
       color: Colors.transparent,
       child: Container(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         child: Center(
           child: skipBlur
               ? card
@@ -113,7 +113,7 @@ class _ArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..shader = const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF8B5CF6)]).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..shader = const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6)]).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;

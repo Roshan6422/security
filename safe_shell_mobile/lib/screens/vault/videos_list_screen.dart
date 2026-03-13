@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
-import 'package:photo_manager/photo_manager.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../../utils/vault_encryption_helper.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/secure_network_viewer.dart';
 import '../../services/audit_logger.dart';
 import '../../services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -311,10 +309,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.white.withOpacity(0.04),
+                          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                            color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
                         padding: const EdgeInsets.all(14),
@@ -334,10 +332,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
                               height: 56,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.purple.withOpacity(0.2), Colors.purple.withOpacity(0.05)],
+                                  colors: [Colors.purple.withValues(alpha: 0.2), Colors.purple.withValues(alpha: 0.05)],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.purple.withOpacity(0.1)),
+                                border: Border.all(color: Colors.purple.withValues(alpha: 0.1)),
                               ),
                               child: const Icon(Icons.play_circle_fill_rounded, color: Colors.purple, size: 28),
                             ),

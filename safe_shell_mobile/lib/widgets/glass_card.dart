@@ -34,26 +34,26 @@ class GlassCard extends StatelessWidget {
 
     final innerDecoration = BoxDecoration(
       color: gradient == null
-          ? (isDark ? Colors.white.withOpacity(skipBlur ? 0.06 : 0.03) : Colors.white.withOpacity(skipBlur ? 0.85 : 0.7))
+          ? (isDark ? Colors.white.withValues(alpha: skipBlur ? 0.06 : 0.03) : Colors.white.withValues(alpha: skipBlur ? 0.85 : 0.7))
           : null,
       borderRadius: BorderRadius.circular(borderRadius),
       border: border ?? Border.all(
-        color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.4),
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.4),
         width: 1.0,
       ),
       gradient: gradient ?? (isDark ? LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withOpacity(skipBlur ? 0.10 : 0.08),
-          Colors.white.withOpacity(skipBlur ? 0.04 : 0.02),
+          Colors.white.withValues(alpha: skipBlur ? 0.10 : 0.08),
+          Colors.white.withValues(alpha: skipBlur ? 0.04 : 0.02),
         ],
       ) : LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withOpacity(skipBlur ? 0.9 : 0.8),
-          Colors.white.withOpacity(skipBlur ? 0.6 : 0.4),
+          Colors.white.withValues(alpha: skipBlur ? 0.9 : 0.8),
+          Colors.white.withValues(alpha: skipBlur ? 0.6 : 0.4),
         ],
       )),
     );
@@ -86,7 +86,7 @@ class GlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 30,
             offset: const Offset(0, 10),
             spreadRadius: -5,
@@ -96,7 +96,7 @@ class GlassCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: Container(
             decoration: innerDecoration,
             child: content,

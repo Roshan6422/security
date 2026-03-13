@@ -73,9 +73,9 @@ class _Particle {
         speed = 0.5 + rng.nextDouble() * 1.5,
         size = 4 + rng.nextDouble() * 6,
         color = [
-          const Color(0xFFA855F7),
+          const Color(0xFF4DA3FF),
           const Color(0xFF8B5CF6),
-          const Color(0xFF34D399),
+          const Color(0xFF10B981),
           const Color(0xFFF59E0B),
           const Color(0xFFE11D48),
           const Color(0xFFFCD34D),
@@ -96,7 +96,7 @@ class _ConfettiPainter extends CustomPainter {
       final y = -50 + (progress * size.height * p.speed * 1.2);
       final x = p.x * size.width + math.sin(progress * math.pi * 4 * p.wobble) * 20;
       final opacity = (1.0 - progress).clamp(0.0, 1.0);
-      final paint = Paint()..color = p.color.withOpacity(opacity * 0.8);
+      final paint = Paint()..color = p.color.withValues(alpha: opacity * 0.8);
       
       canvas.save();
       canvas.translate(x, y);

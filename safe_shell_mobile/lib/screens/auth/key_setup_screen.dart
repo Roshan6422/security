@@ -99,7 +99,7 @@ class _KeySetupScreenState extends State<KeySetupScreen>
                 colors: [
                   AppColors.darkBackground,
                   AppColors.darkSurface,
-                  AppColors.darkSurface.withOpacity(0.8),
+                  AppColors.darkSurface.withValues(alpha: 0.8),
                   AppColors.darkBackground,
                 ],
                 begin: Alignment.topLeft,
@@ -111,17 +111,17 @@ class _KeySetupScreenState extends State<KeySetupScreen>
           Positioned(
             top: -70,
             left: -45,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.16), size: 220),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.16), size: 220),
           ),
           Positioned(
             bottom: -90,
             right: -50,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.10), size: 260),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.10), size: 260),
           ),
           Positioned(
             top: 210,
             right: -20,
-            child: _GlowBlob(color: cs.secondary.withOpacity(0.06), size: 160),
+            child: _GlowBlob(color: cs.secondary.withValues(alpha: 0.06), size: 160),
           ),
 
           SafeArea(
@@ -148,7 +148,7 @@ class _KeySetupScreenState extends State<KeySetupScreen>
                         const SizedBox(height: 6),
                         Text(
                           'This protects your vault. Keep it safe and never share it.',
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.72)),
+                          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.72)),
                         ),
                         const SizedBox(height: 16),
 
@@ -214,7 +214,7 @@ class _KeySetupScreenState extends State<KeySetupScreen>
                               const SizedBox(height: 6),
                               Text(
                                 'Tip: Auto key is recommended for most users.',
-                                style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+                                style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)),
                               ),
                             ],
                           ),
@@ -265,13 +265,13 @@ class _GlassCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            color: cs.surface.withOpacity(0.78),
-            border: Border.all(color: cs.onSurface.withOpacity(0.10)),
+            color: cs.surface.withValues(alpha: 0.78),
+            border: Border.all(color: cs.onSurface.withValues(alpha: 0.10)),
             boxShadow: [
               BoxShadow(
                 blurRadius: 30,
                 spreadRadius: 2,
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withValues(alpha: 0.10),
               ),
             ],
           ),
@@ -293,8 +293,8 @@ class _GlassInput extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: cs.surface.withOpacity(0.66),
-        border: Border.all(color: cs.onSurface.withOpacity(0.12)),
+        color: cs.surface.withValues(alpha: 0.66),
+        border: Border.all(color: cs.onSurface.withValues(alpha: 0.12)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: child,

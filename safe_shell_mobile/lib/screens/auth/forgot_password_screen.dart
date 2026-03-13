@@ -1,11 +1,10 @@
-﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../services/api_service.dart';
+import '../../providers/auth_provider.dart';
 import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -16,188 +15,67 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // Step: 0 = verify identity, 1 = new password
+  // Step: 0 = Enter Email, 1 = Enter OTP & New Password
   int _step = 0;
   final _emailController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _recoveryKeyController = TextEditingController();
+  final _otpController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _storage = const FlutterSecureStorage();
-  bool _loading = false;
-  String _error = '';
-  String _success = '';
+  
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-  Timer? _debounce;
-  bool _fetchingKey = false;
+  String _error = '';
+  String _success = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedInfo();
-    _emailController.addListener(_onInputChanged);
-    _nameController.addListener(_onInputChanged);
-  }
-
-  void _onInputChanged() {
-    if (_step != 0) return;
-    
-    // Clear key if either field is cleared (optional but clean)
-    if (_emailController.text.isEmpty || _nameController.text.isEmpty) {
-      if (_recoveryKeyController.text.isNotEmpty) {
-        setState(() => _recoveryKeyController.clear());
-      }
-      return;
-    }
-
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 1000), () {
-      if (mounted) _fetchKeyInBackground();
-    });
-  }
-
-  Future<void> _fetchKeyInBackground() async {
+  Future<void> _sendResetCode() async {
+    setState(() => _error = '');
     final email = _emailController.text.trim();
-    final name = _nameController.text.trim();
+    
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _error = 'Please enter a valid email address');
+      return;
+    }
 
-    // Only fetch if both are reasonably present (avoid spamming)
-    if (email.length < 5 || name.length < 2) return;
-    if (_recoveryKeyController.text.isNotEmpty) return; // Already have a key
-
-    setState(() => _fetchingKey = true);
     try {
-      final res = await ApiService().post('/auth/get-recovery-key', {
-        'email': email,
-        'name': name,
-      });
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.forgotPassword(email);
+      
       if (mounted) {
         setState(() {
-          _recoveryKeyController.text = res['recoveryKey'] ?? '';
-          _fetchingKey = false;
-          _error = ''; // Clear previous errors if this succeeds
+          _step = 1;
+          _success = 'Reset code sent to your email!';
+          _error = '';
+        });
+        
+        // Clear success message after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _success = '');
         });
       }
-    } catch (_) {
-      // Background failure is silent to avoid annoying the user
-      if (mounted) setState(() => _fetchingKey = false);
-    }
-  }
-
-  Future<void> _loadSavedInfo() async {
-    final email = await _storage.read(key: 'saved_email');
-    final name = await _storage.read(key: 'saved_name');
-    final recoveryKey = await _storage.read(key: 'saved_recovery_key');
-    if (mounted) {
-      setState(() {
-        if (email != null) _emailController.text = email;
-        if (name != null) _nameController.text = name;
-        if (recoveryKey != null) _recoveryKeyController.text = recoveryKey;
-      });
-    }
-  }
-
-  Future<void> _verifyAndProceed() async {
-    setState(() => _error = '');
-    if (_emailController.text.isEmpty) {
-      setState(() => _error = 'Please enter your email');
-      return;
-    }
-    if (_nameController.text.isEmpty) {
-      setState(() => _error = 'Please enter your name');
-      return;
-    }
-
-    // Stage 1: Auto-fill Recovery Key if empty
-    if (_recoveryKeyController.text.isEmpty) {
-      setState(() => _loading = true);
-      try {
-        final res = await ApiService().post('/auth/get-recovery-key', {
-          'email': _emailController.text.trim(),
-          'name': _nameController.text.trim(),
-        });
-        if (mounted) {
-          setState(() {
-            _recoveryKeyController.text = res['recoveryKey'] ?? '';
-            _loading = false;
-          });
-        }
-        return;
-      } catch (e) {
-        setState(() {
-          _error = 'Could not retrieve recovery key. Please check your info.';
-          _loading = false;
-        });
-        return;
-      }
-    }
-
-    // Stage 2: Verify and Proceed to New Password
-    setState(() => _loading = true);
-    try {
-      await ApiService().post('/auth/verify-recovery-key', {
-        'email': _emailController.text.trim(),
-        'name': _nameController.text.trim(),
-        'recoveryKey': _recoveryKeyController.text.trim(),
-      });
-      if (mounted) setState(() { _step = 1; _loading = false; });
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString().replaceAll('Exception: ', '');
-          _loading = false;
+          _error = 'Failed to send reset code. Please check your internet connection.';
         });
       }
     }
   }
 
-  Future<void> _resetPassword() async {
-    setState(() => _error = '');
-    if (_newPasswordController.text.isEmpty) {
-      setState(() => _error = 'Please enter a new password');
-      return;
-    }
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      setState(() => _error = 'Passwords do not match');
-      return;
-    }
-
-    setState(() => _loading = true);
-    try {
-      await ApiService().post('/auth/reset-password-via-key', {
-        'email': _emailController.text.trim(),
-        'name': _nameController.text.trim(),
-        'recoveryKey': _recoveryKeyController.text.trim(),
-        'newPassword': _newPasswordController.text,
-      });
-      setState(() { _success = 'Password reset successfully!'; _loading = false; });
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _loading = false;
-      });
-    }
-  }
+  // _resetPassword removed - Firebase handles reset via email link.
 
   @override
   void dispose() {
     _emailController.dispose();
-    _nameController.dispose();
-    _recoveryKeyController.dispose();
+    _otpController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
-    _debounce?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: Stack(
@@ -211,8 +89,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.04),
-                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.02), blurRadius: 150)],
+                color: AppColors.primary.withValues(alpha: 0.04),
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.02), blurRadius: 150)],
               ),
             ),
           ),
@@ -224,8 +102,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF8B5CF6).withOpacity(0.03),
-                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.02), blurRadius: 180)],
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.03),
+                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.02), blurRadius: 180)],
               ),
             ),
           ),
@@ -243,8 +121,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     height: 64,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: AppColors.primary.withOpacity(0.15),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                     ),
                     child: const Icon(Icons.lock_reset, color: AppColors.primary, size: 32),
                   ),
@@ -253,9 +131,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _step == 0
-                        ? 'Enter your Email, Name & Recovery Key'
-                        : 'Create a new strong password for your vault',
-                    style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.5), fontSize: 14),
+                        ? 'Enter your email to receive a reset code'
+                        : 'Enter the 6-digit code and your new password',
+                    style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
@@ -272,52 +150,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                           ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            label: 'Name (as registered)',
-                            prefixIcon: Icons.person,
-                            controller: _nameController,
+                          const SizedBox(height: 24),
+                          PrimaryButton(
+                            text: 'Send Reset Link',
+                            isLoading: isLoading,
+                            onPressed: _sendResetCode,
                           ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            label: 'Recovery Key',
-                            prefixIcon: Icons.vpn_key,
-                            controller: _recoveryKeyController,
+                        ] else ...[
+                          const Icon(Icons.mark_email_read_rounded, color: Colors.greenAccent, size: 64),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Check Your Inbox',
+                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'e.g. SAFE-XXXX-XXXX (shown during registration)',
-                            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                            'We have sent a secure password reset link to ${_emailController.text}. Please follow the instructions in the email.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13, height: 1.5),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 32),
                           PrimaryButton(
-                            text: _recoveryKeyController.text.isEmpty 
-                                ? (_fetchingKey ? 'Checking...' : 'Check Identity') 
-                                : 'Verify & Proceed',
-                            isLoading: _loading,
-                            onPressed: () => _verifyAndProceed(),
-                          ),
-                        ] else ...[
-                          CustomTextField(
-                            label: 'New Password',
-                            prefixIcon: Icons.lock,
-                            controller: _newPasswordController,
-                            obscureText: _obscureNew,
-                            onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            label: 'Confirm New Password',
-                            prefixIcon: Icons.lock,
-                            controller: _confirmPasswordController,
-                            obscureText: _obscureConfirm,
-                            onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                          ),
-                          const SizedBox(height: 24),
-                          PrimaryButton(
-                            text: 'Reset Password',
-                            isLoading: _loading,
-                            onPressed: _resetPassword,
+                            text: 'Back to Login',
+                            onPressed: () => Navigator.pop(context),
                           ),
                         ],
 
@@ -327,9 +182,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             margin: const EdgeInsets.only(top: 16),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.withOpacity(0.2)),
+                              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                             ),
                             child: Row(
                               children: [
@@ -346,9 +201,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             margin: const EdgeInsets.only(top: 16),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.withOpacity(0.2)),
+                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                             ),
                             child: Row(
                               children: [
@@ -365,13 +220,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                   // Back to Sign In
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      if (_step == 1) {
+                        setState(() {
+                          _step = 0;
+                          _error = '';
+                          _success = '';
+                        });
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chevron_left, color: Colors.white.withOpacity(0.4), size: 18),
+                        Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.4), size: 18),
                         const SizedBox(width: 4),
-                        Text('Back to Sign In', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text('Back to Sign In', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ),

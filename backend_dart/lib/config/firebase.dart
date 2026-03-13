@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dart_firebase_admin/auth.dart';
 import 'package:dart_firebase_admin/dart_firebase_admin.dart';
 import 'package:dart_firebase_admin/firestore.dart';
+import 'package:dart_firebase_admin/messaging.dart';
 
 import 'env.dart';
 
@@ -37,6 +38,9 @@ class FirebaseConfig {
 
   /// The Auth instance, or `null` when running in-memory.
   static Auth? get auth => _app != null ? Auth(_app!) : null;
+
+  /// The Messaging instance, or `null` when running in-memory.
+  static Messaging? get messaging => _app != null ? Messaging(_app!) : null;
 
   /// Attempts to initialise Firebase from the Base64-encoded service
   /// account key in the environment. Logs diagnostic information and

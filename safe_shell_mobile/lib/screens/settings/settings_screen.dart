@@ -18,6 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'privacy_policy_screen.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import '../../services/encryption_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/login_screen.dart';
 import 'package:provider/provider.dart';
@@ -78,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text(seconds == 0
               ? 'Auto-Lock disabled'
               : 'Auto-Lock set to ${_labelForSeconds(seconds)}'),
-          backgroundColor: seconds == 0 ? null : const Color(0xFFA855F7),
+          backgroundColor: seconds == 0 ? null : const Color(0xFF4DA3FF),
         ),
       );
     }
@@ -386,7 +387,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppColors.primary.withOpacity(0.06),
+                  AppColors.primary.withValues(alpha: 0.06),
                   Colors.transparent
                 ]),
               ),
@@ -401,7 +402,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  const Color(0xFF8B5CF6).withOpacity(0.04),
+                  const Color(0xFF8B5CF6).withValues(alpha: 0.04),
                   Colors.transparent
                 ]),
               ),
@@ -426,9 +427,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5)),
                 const SizedBox(height: 4),
+                _sectionTitle(Icons.cleaning_services_rounded, 'Security & Storage', const Color(0xFFEF4444)),
+                _actionTile(
+                  Icons.cleaning_services_rounded,
+                  'Clear Media Cache',
+                  'Wipe all decrypted temporary previews',
+                  const Color(0xFFEF4444),
+                  () async {
+                    HapticFeedback.mediumImpact();
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: AppColors.surface,
+                        title: const Text('Clear Cache?', style: TextStyle(color: Colors.white)),
+                        content: const Text(
+                          'This will delete all temporarily decrypted previews. They will be re-decrypted as needed.',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Clear', style: TextStyle(color: Colors.redAccent)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmed == true && mounted) {
+                      await EncryptionService.clearDecryptedCache();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Media cache cleared')),
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
                 Text('Customize your vault experience',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.25), fontSize: 13)),
+                        color: Colors.white.withValues(alpha: 0.25), fontSize: 13)),
                 const SizedBox(height: 20),
 
                 // App Version Info
@@ -437,11 +474,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     gradient: LinearGradient(colors: [
-                      AppColors.primary.withOpacity(0.08),
-                      AppColors.primary.withOpacity(0.02)
+                      AppColors.primary.withValues(alpha: 0.08),
+                      AppColors.primary.withValues(alpha: 0.02)
                     ]),
                     border:
-                        Border.all(color: AppColors.primary.withOpacity(0.1)),
+                        Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                   ),
                   child: Row(
                     children: [
@@ -449,8 +486,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [
-                            AppColors.primary.withOpacity(0.2),
-                            AppColors.primary.withOpacity(0.06)
+                            AppColors.primary.withValues(alpha: 0.2),
+                            AppColors.primary.withValues(alpha: 0.06)
                           ]),
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -466,7 +503,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   fontSize: 15, fontWeight: FontWeight.w700)),
                           Text('Version 1.0.0',
                               style: TextStyle(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   fontSize: 11)),
                         ],
                       ),
@@ -475,13 +512,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF34D399).withOpacity(0.1),
+                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text('Latest',
                             style: TextStyle(
                                 color:
-                                    const Color(0xFF34D399).withOpacity(0.7),
+                                    const Color(0xFF10B981).withValues(alpha: 0.7),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700)),
                       ),
@@ -492,13 +529,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // Security Section
                 _sectionTitle(
-                    Icons.lock_rounded, 'Security', const Color(0xFFA855F7)),
+                    Icons.lock_rounded, 'Security', const Color(0xFF4DA3FF)),
                 const SizedBox(height: 12),
                 _actionTile(
                     Icons.person_rounded,
                     'My Profile',
                     'Manage account & data',
-                    const Color(0xFFA855F7), () {
+                    const Color(0xFF4DA3FF), () {
                   SoundEffects.tap();
                   HapticFeedback.selectionClick();
                   Navigator.push(context,
@@ -535,13 +572,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Discreet Mode',
                     'Disguise SafeShell as a Calculator',
                     _discreetMode,
-                    const Color(0xFF34D399), (v) {
+                    const Color(0xFF10B981), (v) {
                   SoundEffects.tap();
                   _toggleDiscreetMode(v);
                 }),
                 const SizedBox(height: 8),
+                // --- NEW SECURITY TOGGLES ---
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, _) {
+                    return Column(
+                      children: [
+                        _toggleTile(
+                          Icons.usb_rounded,
+                          'USB Protection',
+                          settings.usbAppsLocked 
+                            ? '🔒 Gallery, Files & Video are LOCKED'
+                            : 'Auto-lock Gallery, Files & Video on USB connect',
+                          settings.usbDetectionEnabled,
+                          settings.usbAppsLocked ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
+                          (v) => settings.toggleUsbDetection(v),
+                        ),
+                        const SizedBox(height: 8),
+                        _toggleTile(
+                          Icons.security_rounded,
+                          'Anti-Uninstall',
+                          'Prevent unauthorized app removal',
+                          settings.antiUninstallEnabled,
+                          const Color(0xFFEF4444),
+                          (v) => settings.toggleAntiUninstall(v),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
                 _actionTile(Icons.pin_rounded, 'Set Calculator PIN',
-                    'Change the maths hidden Pin', const Color(0xFFA855F7),
+                    'Change the maths hidden Pin', const Color(0xFF4DA3FF),
                     () {
                   SoundEffects.tap();
                   HapticFeedback.selectionClick();
@@ -551,13 +617,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // Tools Section
                 _sectionTitle(Icons.build_circle_rounded, 'Tools',
-                    const Color(0xFF34D399)),
+                    const Color(0xFF10B981)),
                 const SizedBox(height: 12),
                 _actionTile(
                     Icons.cleaning_services_rounded,
                     'Clear Cache',
                     'Free up space & memory',
-                    const Color(0xFF34D399), () async {
+                    const Color(0xFF10B981), () async {
                   HapticFeedback.mediumImpact();
                   try {
                     await DefaultCacheManager().emptyCache();
@@ -565,7 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content:
                               Text('Cache cleared & Memory Optimized! ???'),
-                          backgroundColor: Color(0xFF34D399)));
+                          backgroundColor: Color(0xFF10B981)));
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -577,7 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
 
                 _actionTile(Icons.bar_chart_rounded, 'Analytics',
-                    'View storage charts & trends', const Color(0xFF34D399),
+                    'View storage charts & trends', const Color(0xFF10B981),
                     () {
                   HapticFeedback.selectionClick();
                   Navigator.push(
@@ -621,7 +687,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Recovery process finished! Check your Gallery.'),
-                        backgroundColor: Color(0xFF34D399),
+                        backgroundColor: Color(0xFF10B981),
                       ),
                     );
                   }
@@ -666,7 +732,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: const Color(0xFF161B22),
-        border: Border.all(color: color.withOpacity(0.08)),
+        border: Border.all(color: color.withValues(alpha: 0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,8 +744,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: LinearGradient(colors: [
-                    color.withOpacity(0.2),
-                    color.withOpacity(0.05)
+                    color.withValues(alpha: 0.2),
+                    color.withValues(alpha: 0.05)
                   ]),
                 ),
                 child:
@@ -700,7 +766,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? 'App stays unlocked'
                           : 'Lock after ${_labelForSeconds(_autoLockSeconds)} of inactivity',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           fontSize: 11),
                     ),
                   ],
@@ -727,17 +793,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: selected ? color : color.withOpacity(0.06),
+                      color: selected ? color : color.withValues(alpha: 0.06),
                       border: Border.all(
                           color:
-                              selected ? color : color.withOpacity(0.15)),
+                              selected ? color : color.withValues(alpha: 0.15)),
                     ),
                     child: Text(
                       _lockLabels[i],
                       style: TextStyle(
                         color: selected
                             ? Colors.white
-                            : color.withOpacity(0.6),
+                            : color.withValues(alpha: 0.6),
                         fontSize: 12,
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w500,
@@ -761,8 +827,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             gradient: LinearGradient(colors: [
-              color.withOpacity(0.15),
-              color.withOpacity(0.04)
+              color.withValues(alpha: 0.15),
+              color.withValues(alpha: 0.04)
             ]),
           ),
           child: Icon(icon, color: color, size: 15),
@@ -784,7 +850,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: const Color(0xFF161B22),
-        border: Border.all(color: color.withOpacity(0.06)),
+        border: Border.all(color: color.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
@@ -793,8 +859,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(colors: [
-                color.withOpacity(0.2),
-                color.withOpacity(0.05)
+                color.withValues(alpha: 0.2),
+                color.withValues(alpha: 0.05)
               ]),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -811,7 +877,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontSize: 13)),
                 Text(subtitle,
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.25),
+                        color: Colors.white.withValues(alpha: 0.25),
                         fontSize: 11)),
               ],
             ),
@@ -823,9 +889,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (onChanged != null) onChanged(v);
             },
             activeThumbColor: color,
-            activeTrackColor: color.withOpacity(0.3),
-            inactiveThumbColor: Colors.white.withOpacity(0.4),
-            inactiveTrackColor: Colors.white.withOpacity(0.06),
+            activeTrackColor: color.withValues(alpha: 0.3),
+            inactiveThumbColor: Colors.white.withValues(alpha: 0.4),
+            inactiveTrackColor: Colors.white.withValues(alpha: 0.06),
           ),
         ],
       ),
@@ -841,7 +907,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           color: const Color(0xFF161B22),
-          border: Border.all(color: color.withOpacity(0.06)),
+          border: Border.all(color: color.withValues(alpha: 0.06)),
         ),
         child: Row(
           children: [
@@ -850,8 +916,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: LinearGradient(colors: [
-                  color.withOpacity(0.2),
-                  color.withOpacity(0.05)
+                  color.withValues(alpha: 0.2),
+                  color.withValues(alpha: 0.05)
                 ]),
               ),
               child: Icon(icon, color: color, size: 18),
@@ -868,13 +934,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontSize: 13)),
                   Text(subtitle,
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           fontSize: 11)),
                 ],
               ),
             ),
             Icon(Icons.chevron_right_rounded,
-                color: color.withOpacity(0.2), size: 20),
+                color: color.withValues(alpha: 0.2), size: 20),
           ],
         ),
       ),

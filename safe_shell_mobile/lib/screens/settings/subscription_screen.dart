@@ -1,7 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:payhere_mobilesdk_flutter/payhere_mobilesdk_flutter.dart';
 import '../../widgets/primary_button.dart';
-import '../../core/theme.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -58,10 +61,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  cs.primary.withOpacity(0.14),
+                  cs.primary.withValues(alpha: 0.14),
                   cs.surface,
-                  cs.secondary.withOpacity(0.06),
-                  cs.primary.withOpacity(0.08),
+                  cs.secondary.withValues(alpha: 0.06),
+                  cs.primary.withValues(alpha: 0.08),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -73,17 +76,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
           Positioned(
             top: -70,
             left: -45,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.16), size: 220),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.16), size: 220),
           ),
           Positioned(
             bottom: -90,
             right: -50,
-            child: _GlowBlob(color: cs.primary.withOpacity(0.10), size: 260),
+            child: _GlowBlob(color: cs.primary.withValues(alpha: 0.10), size: 260),
           ),
           Positioned(
             top: 210,
             right: -20,
-            child: _GlowBlob(color: cs.secondary.withOpacity(0.06), size: 160),
+            child: _GlowBlob(color: cs.secondary.withValues(alpha: 0.06), size: 160),
           ),
 
           SafeArea(
@@ -113,8 +116,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                       //  Blue-consistent icon gradient
                                       gradient: LinearGradient(
                                         colors: [
-                                          cs.primary.withOpacity(0.92),
-                                          cs.primary.withOpacity(0.62),
+                                          cs.primary.withValues(alpha: 0.92),
+                                          cs.primary.withValues(alpha: 0.62),
                                         ],
                                       ),
 
@@ -123,7 +126,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                         BoxShadow(
                                           blurRadius: 22,
                                           spreadRadius: 1,
-                                          color: cs.primary.withOpacity(0.14),
+                                          color: cs.primary.withValues(alpha: 0.14),
                                         ),
                                       ],
                                     ),
@@ -158,7 +161,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                               Text(
                                 'Unlimited vault + USB protection + no ads',
                                 style: TextStyle(
-                                  color: cs.onSurface.withOpacity(0.75),
+                                  color: cs.onSurface.withValues(alpha: 0.75),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -181,25 +184,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         const SizedBox(height: 16),
 
                         PrimaryButton(
-                          text: 'Buy with Google Play',
+                          text: _isProcessing ? 'Processing...' : 'Go Pro with PayHere',
                           icon: Icons.payment_rounded,
-                          onPressed: () {
-                            // TODO: connect Google Play Billing
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Start purchase flow (TODO)'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
+                          isLoading: _isProcessing,
+                          onPressed: _startPayHerePayment,
                         ),
 
                         const SizedBox(height: 10),
 
                         Text(
-                          'Payments: Google Play / Visa / MasterCard via Google Play Billing.',
+                          'Secure payments via PayHere. All major credit and debit cards accepted.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.65)),
                         ),
                       ],
                     ),
@@ -243,6 +239,100 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       ),
     );
   }
+
+  bool _isProcessing = false;
+
+  Future<void> _startPayHerePayment() async {
+    if (_isProcessing) return;
+
+    final user = context.read<AuthProvider>().user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to purchase the Pro Plan')),
+      );
+      return;
+    }
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final orderId = 'PRO_${DateTime.now().millisecondsSinceEpoch}_${user.id}';
+      
+      // 1. Get Hash from Backend
+      final response = await ApiService().post('/payment/generate-hash', {
+        'order_id': orderId,
+        'amount': '800.00', // Example: LKR 800
+        'currency': 'LKR',
+      });
+
+      final String merchantId = response['merchant_id'];
+      final String hash = response['hash'];
+
+      // 2. Prepare PayHere Object
+      Map paymentObject = {
+        "sandbox": false, // Change to true for testing
+        "merchant_id": merchantId, 
+        "merchant_secret": "", // Handled by hash generated in backend via secret, so leave empty/ignore
+        "notify_url": "${ApiService.currentBaseUrl}/payment/notify", 
+        "order_id": orderId,
+        "items": "SafeShell Pro Plan",
+        "amount": "800.00",
+        "currency": "LKR",
+        "hash": hash,
+        "first_name": user.name.split(' ').first,
+        "last_name": user.name.split(' ').length > 1 ? user.name.split(' ').last : 'User',
+        "email": user.email,
+        "phone": "0771234567", // TODO: collect phone if mandatory
+        "address": "Sri Lanka",
+        "city": "Colombo",
+        "country": "Sri Lanka",
+        "delivery_address": "",
+        "delivery_city": "",
+        "delivery_country": "",
+        "custom_1": user.id,
+        "custom_2": ""
+      };
+
+      // 3. Start Payment
+      PayHere.startPayment(
+        paymentObject, 
+        (paymentId) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Payment Successful! You are now a Pro.'), backgroundColor: Colors.green),
+            );
+            context.read<AuthProvider>().checkAuth(); // refresh user status
+            Navigator.pop(context);
+          }
+        }, 
+        (error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Payment Failed: $error'), backgroundColor: Colors.red),
+            );
+          }
+        }, 
+        () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Payment Cancelled')),
+            );
+          }
+        }
+      );
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error initiating payment: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
 }
 
 class _GlassCard extends StatelessWidget {
@@ -267,16 +357,16 @@ class _GlassCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(26),
 
             //  slightly more front-surface feel
-            color: cs.surface.withOpacity(0.78),
+            color: cs.surface.withValues(alpha: 0.78),
 
             //  slightly clearer border
-            border: Border.all(color: cs.onSurface.withOpacity(0.10)),
+            border: Border.all(color: cs.onSurface.withValues(alpha: 0.10)),
 
             boxShadow: [
               BoxShadow(
                 blurRadius: 30,
                 spreadRadius: 2,
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withValues(alpha: 0.10),
               ),
             ],
           ),

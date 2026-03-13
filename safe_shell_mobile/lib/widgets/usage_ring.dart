@@ -1,49 +1,11 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
-class UsageRing extends StatefulWidget {
+class UsageRing extends StatelessWidget {
   final double value; // 0 to 100
 
   const UsageRing({super.key, required this.value});
-
-  @override
-  State<UsageRing> createState() => _UsageRingState();
-}
-
-class _UsageRingState extends State<UsageRing> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500));
-    _animation = Tween<double>(begin: 0, end: widget.value).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _controller.forward();
-  }
-
-  @override
-  void didUpdateWidget(UsageRing oldWidget) {
-    if (oldWidget.value != widget.value) {
-      _animation = Tween<double>(begin: _animation.value, end: widget.value).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-      );
-      _controller
-        ..reset()
-        ..forward();
-    }
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,25 +19,20 @@ class _UsageRingState extends State<UsageRing> with SingleTickerProviderStateMix
             child: CustomPaint(
               size: const Size(44, 44),
               painter: _RingPainter(
-                progress: _animation,
+                progress: value,
                 color: AppColors.primary,
-                backgroundColor: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08),
+                backgroundColor: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
               ),
             ),
           ),
           Center(
-            child: AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                return Text(
-                  '${_animation.value.round()}%',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isLight ? AppColors.textPrimary : Colors.white,
-                  ),
-                );
-              },
+            child: Text(
+              '${value.round()}%',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: isLight ? AppColors.textPrimary : Colors.white,
+              ),
             ),
           ),
         ],
@@ -85,7 +42,7 @@ class _UsageRingState extends State<UsageRing> with SingleTickerProviderStateMix
 }
 
 class _RingPainter extends CustomPainter {
-  final Animation<double> progress;
+  final double progress;
   final Color color;
   final Color backgroundColor;
 
@@ -93,7 +50,7 @@ class _RingPainter extends CustomPainter {
     required this.progress,
     required this.color,
     required this.backgroundColor,
-  }) : super(repaint: progress);
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -114,7 +71,7 @@ class _RingPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    final sweepAngle = 2 * pi * (progress.value / 100);
+    final sweepAngle = 2 * pi * (progress / 100);
     // Start from -90 degrees (top)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -126,6 +83,7 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _RingPainter oldDelegate) => 
+      oldDelegate.progress != progress;
 }
 

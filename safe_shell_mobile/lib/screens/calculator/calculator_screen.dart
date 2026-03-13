@@ -59,7 +59,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   void _unlockVault() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const AppLockListenerWrapper(child: AuthWrapper())),
+      MaterialPageRoute(builder: (_) => const AuthWrapper()),
     );
   }
 

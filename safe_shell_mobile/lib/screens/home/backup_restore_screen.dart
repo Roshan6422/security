@@ -192,7 +192,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.deepPurple.withOpacity(0.12), Colors.transparent],
+                  colors: [Colors.deepPurple.withValues(alpha: 0.12), Colors.transparent],
                 ),
               ),
             ),
@@ -204,7 +204,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.pinkAccent.withOpacity(0.08), Colors.transparent],
+                  colors: [Colors.pinkAccent.withValues(alpha: 0.08), Colors.transparent],
                 ),
               ),
             ),
@@ -254,8 +254,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.deepPurple.withOpacity(0.3),
-                                    AppColors.primary.withOpacity(0.2),
+                                    Colors.deepPurple.withValues(alpha: 0.3),
+                                    AppColors.primary.withValues(alpha: 0.2),
                                   ],
                                 ),
                               ),
@@ -310,8 +310,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.pinkAccent.withOpacity(0.3),
-                                    Colors.deepPurple.withOpacity(0.2),
+                                    Colors.pinkAccent.withValues(alpha: 0.3),
+                                    Colors.deepPurple.withValues(alpha: 0.2),
                                   ],
                                 ),
                               ),
@@ -360,7 +360,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.white.withOpacity(0.3), size: 20),
+                            Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.3), size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(

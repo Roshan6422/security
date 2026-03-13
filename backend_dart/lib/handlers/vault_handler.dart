@@ -26,10 +26,10 @@ String _detectType(String filename) {
       ? filename.substring(0, filename.length - 6)
       : filename;
   final ext = cleanName.split('.').last.toLowerCase();
-  const imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'tiff', 'ico'};
+  const imageExts = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'tiff', 'ico', 'heic', 'heif'};
   const videoExts = {'mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm', '3gp', 'm4v'};
   const audioExts = {'mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a', 'wma'};
-  const docExts = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'csv', 'md'};
+  const docExts = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'csv', 'md', 'key', 'pages', 'numbers'};
   const zipExts = {'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'};
 
   if (imageExts.contains(ext)) return 'photo';

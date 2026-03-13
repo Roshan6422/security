@@ -111,8 +111,8 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                     title: Text(app.name, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontWeight: FontWeight.w600)),
                     subtitle: Text(app.packageName, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white38, fontSize: 11)),
                     trailing: isAlreadyAdded
-                        ? const Icon(Icons.check_circle, color: Color(0xFF34D399))
-                        : Icon(Icons.add_circle_outline, color: AppColors.primary.withOpacity(0.5)),
+                        ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                        : Icon(Icons.add_circle_outline, color: AppColors.primary.withValues(alpha: 0.5)),
                     onTap: isAlreadyAdded
                         ? null
                           : () async {
@@ -130,7 +130,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                             
                             if (mounted) {
                               Navigator.pop(ctx);
-                              PremiumSnackbar.show(context, message: '${app.name} protected successfully', emoji: '', color: const Color(0xFF34D399));
+                              PremiumSnackbar.show(context, message: '${app.name} protected successfully', emoji: '', color: const Color(0xFF10B981));
                             }
                           },
                   );
@@ -211,9 +211,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _hasUsagePermission ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              color: _hasUsagePermission ? Colors.blue.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _hasUsagePermission ? Colors.blue.withOpacity(0.2) : Colors.orange.withOpacity(0.2)),
+              border: Border.all(color: _hasUsagePermission ? Colors.blue.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -254,9 +254,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _isServiceRunning ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              color: _isServiceRunning ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _isServiceRunning ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2)),
+              border: Border.all(color: _isServiceRunning ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -299,9 +299,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _hasOverlayPermission ? Colors.purple.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+              color: _hasOverlayPermission ? Colors.purple.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _hasOverlayPermission ? Colors.purple.withOpacity(0.2) : Colors.orange.withOpacity(0.2)),
+              border: Border.all(color: _hasOverlayPermission ? Colors.purple.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -344,9 +344,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,9 +413,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
             ),
-            child: Icon(Icons.lock_person_rounded, size: 64, color: AppColors.primary.withOpacity(0.5)),
+            child: Icon(Icons.lock_person_rounded, size: 64, color: AppColors.primary.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -459,7 +459,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
         setState(() => app.isHidden = true);
         _service.saveHiddenApps(_hiddenApps);
         if (mounted) {
-          PremiumSnackbar.show(context, message: '${app.name} hidden from launcher', emoji: '', color: const Color(0xFF34D399));
+          PremiumSnackbar.show(context, message: '${app.name} hidden from launcher', emoji: '', color: const Color(0xFF10B981));
         }
       } else {
         if (mounted) {
@@ -479,7 +479,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
   Color _getStatusColor(SystemApp app, bool isLight) {
     if (app.isHidden) return const Color(0xFFF59E0B);
     if (app.isLocked) return AppColors.primary;
-    return isLight ? Colors.grey : Colors.white.withOpacity(0.5);
+    return isLight ? Colors.grey : Colors.white.withValues(alpha: 0.5);
   }
 
   Widget _buildAppGrid(bool isLight) {
@@ -508,11 +508,11 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                   decoration: BoxDecoration(
                     color: isLight ? Colors.white : const Color(0xFF1A1F26),
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))] : [],
+                    boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))] : [],
                     border: Border.all(
                       color: app.isHidden
-                          ? const Color(0xFFF59E0B).withOpacity(0.3)
-                          : isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                          ? const Color(0xFFF59E0B).withValues(alpha: 0.3)
+                          : isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
                     ),
                   ),
                   child: Stack(
@@ -534,9 +534,9 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.1),
+                                color: statusColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: statusColor.withOpacity(0.2)),
+                                border: Border.all(color: statusColor.withValues(alpha: 0.2)),
                               ),
                               child: Text(
                                 _getStatusLabel(app),
@@ -565,7 +565,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                           },
                           child: Icon(
                             app.isLocked ? Icons.lock_rounded : Icons.lock_open_rounded,
-                            color: app.isLocked ? AppColors.primary : (isLight ? Colors.grey.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
+                            color: app.isLocked ? AppColors.primary : (isLight ? Colors.grey.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.2)),
                             size: 15,
                           ),
                         ),
@@ -578,7 +578,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                           onTap: () => _toggleHideApp(app),
                           child: Icon(
                             app.isHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                            color: app.isHidden ? const Color(0xFFF59E0B) : (isLight ? Colors.grey.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
+                            color: app.isHidden ? const Color(0xFFF59E0B) : (isLight ? Colors.grey.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.2)),
                             size: 15,
                           ),
                         ),

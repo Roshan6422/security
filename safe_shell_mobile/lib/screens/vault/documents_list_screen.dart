@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
-import '../../widgets/glass_card.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -260,8 +259,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     final subColor = isLight ? AppColors.textSecondary : Colors.white54;
     final dimColor = isLight ? AppColors.textTertiary : Colors.white24;
     final bgColor = isLight ? AppColors.background : AppColors.darkBackground;
-    final cardColor = isLight ? AppColors.surfaceVariant.withOpacity(0.5) : Colors.white.withOpacity(0.04);
-    final borderColor = isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08);
+    final cardColor = isLight ? AppColors.surfaceVariant.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.04);
+    final borderColor = isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -336,10 +335,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFA855F7).withOpacity(0.15) : cardColor,
+                          color: isSelected ? const Color(0xFF4DA3FF).withValues(alpha: 0.15) : cardColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFFA855F7).withOpacity(0.5) : borderColor,
+                            color: isSelected ? const Color(0xFF4DA3FF).withValues(alpha: 0.5) : borderColor,
                           ),
                         ),
                         child: Row(
@@ -357,10 +356,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.blue.withOpacity(0.2), Colors.blue.withOpacity(0.05)],
+                                  colors: [Colors.blue.withValues(alpha: 0.2), Colors.blue.withValues(alpha: 0.05)],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.blue.withOpacity(0.1)),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
                               ),
                               child: const Icon(Icons.description_rounded, color: Colors.blue),
                             ),

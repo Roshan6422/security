@@ -27,10 +27,13 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     try {
       final response = await ApiService().get('/vault?isDeleted=true');
       if (mounted) {
+        final allItems = response ?? [];
+        // Auto-delete items older than 30 days
+        await _autoDeleteExpired(allItems);
         setState(() {
-          _items = response ?? [];
+          _items = allItems.where((item) => !_isExpired(item)).toList();
           _isLoading = false;
-          _selectedIds.clear(); // Clear selection on refresh
+          _selectedIds.clear();
         });
       }
     } catch (e) {
@@ -38,6 +41,51 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+    }
+  }
+
+  bool _isExpired(dynamic item) {
+    if (item['deletedAt'] == null) return false;
+    try {
+      final deletedAt = DateTime.parse(item['deletedAt'].toString());
+      return DateTime.now().difference(deletedAt).inDays >= 30;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  int _daysRemaining(dynamic item) {
+    if (item['deletedAt'] == null) return 30;
+    try {
+      final deletedAt = DateTime.parse(item['deletedAt'].toString());
+      final daysPassed = DateTime.now().difference(deletedAt).inDays;
+      return (30 - daysPassed).clamp(0, 30);
+    } catch (_) {
+      return 30;
+    }
+  }
+
+  Future<void> _autoDeleteExpired(List<dynamic> items) async {
+    final expired = items.where((item) => _isExpired(item)).toList();
+    if (expired.isEmpty) return;
+    
+    for (final item in expired) {
+      try {
+        await ApiService().delete('/vault/${item['_id']}?permanent=true');
+        debugPrint('Auto-deleted expired item: ${item['name']}');
+      } catch (e) {
+        debugPrint('Auto-delete failed for ${item['_id']}: $e');
+      }
+    }
+    
+    if (mounted && expired.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${expired.length} expired item(s) auto-deleted'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -147,11 +195,11 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   Color _getColorForType(String type) {
     switch (type) {
-      case 'photo': return const Color(0xFFA855F7);
+      case 'photo': return const Color(0xFF4DA3FF);
       case 'video': return const Color(0xFF8B5CF6);
       case 'note': return const Color(0xFFFCD34D);
       case 'zip': return const Color(0xFFF59E0B);
-      default: return const Color(0xFF34D399);
+      default: return const Color(0xFF10B981);
     }
   }
 
@@ -175,8 +223,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.red.withOpacity(0.08),
-                boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.05), blurRadius: 100, spreadRadius: 50)],
+                color: Colors.red.withValues(alpha: 0.08),
+                boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.05), blurRadius: 100, spreadRadius: 50)],
               ),
             ),
           ),
@@ -188,8 +236,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.05),
-                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.05), blurRadius: 80, spreadRadius: 40)],
+                color: AppColors.primary.withValues(alpha: 0.05),
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.05), blurRadius: 80, spreadRadius: 40)],
               ),
             ),
           ),
@@ -243,9 +291,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: isLight ? Colors.black.withOpacity(0.03) : Colors.white.withOpacity(0.03),
+              color: isLight ? Colors.black.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.03),
               shape: BoxShape.circle,
-              border: Border.all(color: isLight ? Colors.black.withOpacity(0.05) : Colors.white.withOpacity(0.08)),
+              border: Border.all(color: isLight ? Colors.black.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.08)),
             ),
             child: Icon(Icons.delete_outline, size: 48, color: iconColor),
           ),
@@ -336,9 +384,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: color.withOpacity(0.2)),
+                        border: Border.all(color: color.withValues(alpha: 0.2)),
                       ),
                       child: Icon(_getIconForType(item['type'] ?? 'unknown'), color: color, size: 24),
                     ),
@@ -356,10 +404,14 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                           const SizedBox(width: 8),
                           Container(width: 3, height: 3, decoration: BoxDecoration(shape: BoxShape.circle, color: isLight ? Colors.black26 : Colors.white24)),
                           const SizedBox(width: 8),
-                          Text(
-                            'Deleted ${item['deletedAt'] != null ? item['deletedAt'].toString().substring(0, 10) : ''}',
-                            style: AppTextStyles.caption.copyWith(color: subColor),
-                          ),
+                          Builder(builder: (_) {
+                            final days = _daysRemaining(item);
+                            final daysColor = days <= 5 ? Colors.redAccent : days <= 15 ? Colors.orangeAccent : Colors.greenAccent;
+                            return Text(
+                              '$days days left',
+                              style: AppTextStyles.caption.copyWith(color: daysColor, fontWeight: FontWeight.w600),
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -367,7 +419,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                       duration: const Duration(milliseconds: 200),
                       child: isSelected
                           ? const Icon(Icons.check_circle, color: AppColors.primary)
-                          : Icon(Icons.circle_outlined, color: isLight ? Colors.black26 : Colors.white.withOpacity(0.2)),
+                          : Icon(Icons.circle_outlined, color: isLight ? Colors.black26 : Colors.white.withValues(alpha: 0.2)),
                     ),
                   ),
                 ),

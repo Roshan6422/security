@@ -83,11 +83,11 @@ class _PremiumButtonState extends State<PremiumButton> with SingleTickerProvider
               end: Alignment.bottomRight,
               colors: isEnabled 
                   ? colors 
-                  : [Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.2)],
+                  : [Colors.grey.withValues(alpha: 0.3), Colors.grey.withValues(alpha: 0.2)],
             ),
             boxShadow: isEnabled ? [
               BoxShadow(
-                color: colors[0].withOpacity(0.3),
+                color: colors[0].withValues(alpha: 0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 6),
                 spreadRadius: -2,

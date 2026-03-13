@@ -5,7 +5,7 @@ class PremiumSnackbar {
   static void show(BuildContext context, {
     required String message,
     String? emoji,
-    Color color = const Color(0xFFA855F7),
+    Color color = const Color(0xFF4DA3FF),
     Duration duration = const Duration(seconds: 3),
   }) {
     final overlay = Overlay.of(context);
@@ -79,10 +79,10 @@ class _AnimatedSnackbarState extends State<_AnimatedSnackbar> with SingleTickerP
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [widget.color.withOpacity(0.15), widget.color.withOpacity(0.05)]),
+              gradient: LinearGradient(colors: [widget.color.withValues(alpha: 0.15), widget.color.withValues(alpha: 0.05)]),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: widget.color.withOpacity(0.15)),
-              boxShadow: [BoxShadow(color: widget.color.withOpacity(0.1), blurRadius: 16, offset: const Offset(0, 4))],
+              border: Border.all(color: widget.color.withValues(alpha: 0.15)),
+              boxShadow: [BoxShadow(color: widget.color.withValues(alpha: 0.1), blurRadius: 16, offset: const Offset(0, 4))],
             ),
             child: Row(
               children: [

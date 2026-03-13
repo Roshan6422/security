@@ -3,7 +3,6 @@ import 'package:safe_shell_mobile/core/theme.dart';
 import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
 import 'note_editor_screen.dart';
 
 class VaultListScreen extends StatefulWidget {

@@ -32,13 +32,16 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     ProfileScreen(),
   ];
 
+
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Trigger legacy file recovery safely after the app is fully launched
     FileRecoveryService().restoreLegacyFiles();
   }
+
+
 
   @override
   void dispose() {
@@ -60,6 +63,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       }
     } else if (state == AppLifecycleState.resumed) {
       _autoLockTimer?.cancel();
+      
+      // Refresh security states (USB, Admin status) on resume
+      settings.checkAdminStatus();
+      
       if (_pausedAt != null && lockSeconds > 0) {
         final elapsed = DateTime.now().difference(_pausedAt!).inSeconds;
         if (elapsed >= lockSeconds) {
@@ -84,32 +91,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return BiometricGuardian(
-      child: Scaffold(
-        extendBody: true,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          child: KeyedSubtree(
-            key: ValueKey<int>(_currentIndex),
-            child: _screens[_currentIndex],
-          ),
-        ),
-        bottomNavigationBar: CustomBottomNav(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            HapticFeedback.selectionClick();
-            setState(() => _currentIndex = index);
-          },
-        ),
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          debugPrint('BNAV_TAP: Navigating to index $index');
+          HapticFeedback.selectionClick();
+          setState(() => _currentIndex = index);
+        },
       ),
     );
   }

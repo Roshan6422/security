@@ -11,16 +11,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/theme.dart';
+import 'package:local_auth/local_auth.dart';
 import '../../services/api_service.dart';
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/settings_provider.dart';
-import 'package:local_auth/local_auth.dart';
-
 import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
-import '../vault/vault_screen.dart';
-import '../subscription/payment_screen.dart';
 import '../settings/support_screen.dart';
 import '../calculator/calculator_screen.dart';
 import '../browser/private_browser_screen.dart';
@@ -32,24 +28,8 @@ import '../../widgets/stat_chip.dart';
 import '../../widgets/section_card.dart';
 
 /// Smooth page transition for premium navigation
-class _SmoothPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget page;
-  _SmoothPageRoute({required this.page})
-      : super(
-          pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: const Duration(milliseconds: 400),
-          reverseTransitionDuration: const Duration(milliseconds: 350),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curvedAnim = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-            return FadeTransition(
-              opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnim),
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0.04, 0), end: Offset.zero).animate(curvedAnim),
-                child: child,
-              ),
-            );
-          },
-        );
+class _InstantPageRoute<T> extends MaterialPageRoute<T> {
+  _InstantPageRoute({required super.builder});
 }
 
 class DashboardScreen extends StatefulWidget {
@@ -59,11 +39,12 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen> {
   // Quota single source of truth
   static const int _freePlanQuotaBytes = 5 * 1024 * 1024 * 1024;
 
   bool _isLoading = true;
+  bool _isOffline = false;
   int _fileCount = 0;
   int _photoCount = 0;
   int _videoCount = 0;
@@ -72,66 +53,30 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   double _storagePercent = 0.0;
   List<dynamic> _recentItems = [];
 
-  // Staggered entrance animations  9 sections used below
-  late AnimationController _staggerController;
-  late List<Animation<double>> _fadeAnims;
-  late List<Animation<Offset>> _slideAnims;
-  static const int _sections = 9;
-
-  // Background blob animation
-  late AnimationController _blobController;
-
-  // Shimmer animation for storage card
-  late AnimationController _shimmerController;
+  // Animations removed manually by request
 
   // Security tips
   static const List<Map<String, dynamic>> _securityTips = [
     {'icon': Icons.face_rounded, 'tip': 'Enable Face Lock for instant secure access', 'color': AppColors.primary},
     {'icon': Icons.vpn_lock_rounded, 'tip': 'Use Private Browser to leave zero digital footprint', 'color': Color(0xFF8B5CF6)},
-    {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF34D399)},
+    {'icon': Icons.cloud_upload_rounded, 'tip': 'Back up your vault regularly to prevent data loss', 'color': Color(0xFF10B981)},
     {'icon': Icons.grid_view_rounded, 'tip': 'Use Calculator disguise to hide your vault entrance', 'color': Color(0xFFF59E0B)},
     {'icon': Icons.lock_outline_rounded, 'tip': 'Set a strong PIN  avoid birthdays and simple patterns', 'color': Color(0xFFEF4444)},
-    {'icon': Icons.bolt_rounded, 'tip': 'Run Optimize weekly to clear cached data and save space', 'color': Color(0xFF34D399)},
+    {'icon': Icons.bolt_rounded, 'tip': 'Run Optimize weekly to clear cached data and save space', 'color': Color(0xFF10B981)},
   ];
 
   @override
   void initState() {
     super.initState();
-    _initAnimations();
     _fetchDashboardData();
-  }
-
-  void _initAnimations() {
-    _staggerController = AnimationController(
-      duration: const Duration(milliseconds: 1800),
-      vsync: this,
-    );
-
-    _fadeAnims = List.generate(_sections, (i) {
-      final start = (i * 0.07).clamp(0.0, 1.0);
-      final end = (start + 0.25).clamp(0.0, 1.0);
-      return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-      );
-    });
-
-    _slideAnims = List.generate(_sections, (i) {
-      final start = (i * 0.07).clamp(0.0, 1.0);
-      final end = (start + 0.25).clamp(0.0, 1.0);
-      return Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-        CurvedAnimation(parent: _staggerController, curve: Interval(start, end, curve: Curves.easeOutCubic)),
-      );
-    });
-
-    _staggerController.forward();
-
-    _blobController = AnimationController(duration: const Duration(seconds: 10), vsync: this)..repeat();
-    _shimmerController = AnimationController(duration: const Duration(seconds: 3), vsync: this)..repeat();
   }
 
   Future<void> _fetchDashboardData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isOffline = false;
+    });
     try {
       final stats = await VaultStatsService().getAggregatedStats();
       
@@ -155,7 +100,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isOffline = true;
+      });
       if (kDebugMode) debugPrint('Dashboard Error: $e');
     }
   }
@@ -185,29 +133,23 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   /// Navigate with smooth transition
   void _navigate(Widget page) {
-    Navigator.push(context, _SmoothPageRoute(page: page));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
 
   @override
   void dispose() {
-    _staggerController.dispose();
-    _blobController.dispose();
-    _shimmerController.dispose();
     super.dispose();
   }
 
   Widget _anim(int index, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnims[index],
-      child: SlideTransition(position: _slideAnims[index], child: child),
-    );
+    return child; // Removed animation
   }
 
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final textColor = isLight ? AppColors.textPrimary : Colors.white;
-    final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.4);
+    final subColor = isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.4);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -215,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
-          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 4))],
         ),
         child: GestureDetector(
           onLongPress: () async {
@@ -261,7 +203,30 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _anim(0, _buildHeader(textColor)),            // 0: header + bell
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
+                    if (_isOffline)
+                      _anim(0, Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 20),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'You are currently offline. Vault features require an internet connection.',
+                                style: TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )),
+                    if (!_isOffline) const SizedBox(height: 10),
                     _anim(1, _buildStorageCard(textColor, subColor)),        // 1: shimmer storage
                     const SizedBox(height: 16),
                     _anim(2, _buildStatRow(textColor, subColor)),            // 2: count-up stats
@@ -293,66 +258,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   // -----------------------------------------------
   Widget _buildAnimatedBackground() {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    
-    return AnimatedBuilder(
-      animation: _blobController,
-      builder: (context, child) {
-        final t = _blobController.value;
-        final size = MediaQuery.of(context).size;
-        
-        return Stack(
-          children: [
-            // Adjusted base gradient for light/dark
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isLight 
-                    ? [const Color(0xFFF0F7FF), const Color(0xFFFDFDFF), const Color(0xFFF5F9FF)]
-                    : [const Color(0xFF000000), const Color(0xFF050505), const Color(0xFF000000)],
-                ),
-              ),
-            ),
-            // Top Primary Blob
-            Positioned(
-              top: -120 + math.sin(t * 2 * math.pi) * 40,
-              right: -80 + math.cos(t * 2 * math.pi) * 30,
-              child: Container(
-                width: size.width * 0.9,
-                height: size.width * 0.9,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      AppColors.primary.withOpacity(isLight ? 0.08 : 0.04),
-                      AppColors.primary.withOpacity(0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Bottom Accent Blob
-            Positioned(
-              bottom: -100 + math.cos(t * 2 * math.pi) * 60,
-              left: -120 + math.sin(t * 2 * math.pi) * 50,
-              child: Container(
-                width: size.width * 1.0,
-                height: size.width * 1.0,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      AppColors.secondary.withOpacity(isLight ? 0.06 : 0.03),
-                      AppColors.secondary.withOpacity(0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isLight 
+            ? [const Color(0xFFF0F7FF), const Color(0xFFFDFDFF), const Color(0xFFF5F9FF)]
+            : [const Color(0xFF000000), const Color(0xFF050505), const Color(0xFF000000)],
+        ),
+      ),
     );
   }
 
@@ -378,9 +293,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   fontWeight: FontWeight.w800, 
                   letterSpacing: -0.7,
                   color: textColor,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.05, end: 0),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
             ],
           ),
         ),
@@ -392,13 +307,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04),
-                  border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08)),
+                  color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.04),
+                  border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(Icons.notifications_none_rounded, color: textColor.withOpacity(0.8), size: 22),
+                    Icon(Icons.notifications_none_rounded, color: textColor.withValues(alpha: 0.8), size: 22),
                     Positioned(
                       top: -1, right: -1,
                       child: Container(
@@ -407,7 +322,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           shape: BoxShape.circle,
                           color: Color(0xFFEF4444),
                         ),
-                      ).animate(onPlay: (controller) => controller.repeat()).scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 1.seconds, curve: Curves.easeInOut),
+                      ),
                     ),
                   ],
                 ),
@@ -418,7 +333,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               padding: const EdgeInsets.all(2),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFA855F7), Color(0xFF8B5CF6)]),
+                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6)]),
               ),
               child: CircleAvatar(
                 radius: 20,
@@ -439,11 +354,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: isLight ? Colors.white : Colors.white.withOpacity(0.03),
-        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.08) : Colors.white.withOpacity(0.08)),
+        color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.03),
+        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: isLight ? Colors.black.withOpacity(0.05) : Colors.black.withOpacity(0.2),
+            color: isLight ? Colors.black.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.2),
             blurRadius: 40,
             spreadRadius: isLight ? -5 : -10,
           ),
@@ -466,7 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.25),
+                        color: AppColors.primary.withValues(alpha: 0.25),
                         blurRadius: 15,
                         spreadRadius: -2,
                       ),
@@ -502,46 +417,39 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ],
             ),
           ),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: _storagePercent),
-            duration: const Duration(milliseconds: 1800),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 68, height: 68,
-                    child: CircularProgressIndicator(
-                      value: value, 
-                      backgroundColor: Colors.white.withOpacity(0.05), 
-                      color: const Color(0xFF00E5FF), 
-                      strokeWidth: 6, 
-                      strokeCap: StrokeCap.round,
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 68, height: 68,
+                child: CircularProgressIndicator(
+                  value: _storagePercent, 
+                  backgroundColor: Colors.white.withValues(alpha: 0.05), 
+                  color: const Color(0xFF00E5FF), 
+                  strokeWidth: 6, 
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              // Glow effect
+              Container(
+                width: 74, height: 74,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.15), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.1),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                     ),
-                  ),
-                  // Glow effect
-                  Container(
-                    width: 74, height: 74,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.15), width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00E5FF).withOpacity(0.1),
-                          blurRadius: 15,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '${(value * 100).toInt()}%', 
-                    style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w900),
-                  ),
-                ],
-              ).animate().scale(delay: 600.ms, duration: 400.ms);
-            },
+                  ],
+                ),
+              ),
+              Text(
+                '${(_storagePercent * 100).toInt()}%', 
+                style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.w900),
+              ),
+            ],
           ),
         ],
       ),
@@ -571,29 +479,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
-          color: isLight ? Colors.white : Colors.white.withOpacity(0.03),
-          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
-          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+          color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.03),
+          border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.06)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 12),
-            TweenAnimationBuilder<int>(
-              tween: IntTween(begin: 0, end: count),
-              duration: const Duration(milliseconds: 1200),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return Text('$value', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.w900, height: 1));
-              },
-            ),
+            Text('$count', style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.w900, height: 1)),
             const SizedBox(height: 4),
             Text(label, style: TextStyle(color: subColor, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
           ],
@@ -612,24 +513,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
-        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02),
+        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.06)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Row(
         children: [
           _buildQuickAction(Icons.camera_alt_rounded, 'Camera', const Color(0xFFF59E0B), _takePhoto, textColor),
           _buildQuickDivider(),
-          _buildQuickAction(Icons.photo_library_rounded, 'Upload', const Color(0xFFA855F7), _pickAndUploadImage, textColor),
+          _buildQuickAction(Icons.photo_library_rounded, 'Upload', const Color(0xFF4DA3FF), _pickAndUploadImage, textColor),
           _buildQuickDivider(),
           _buildQuickAction(Icons.description_rounded, 'Docs', const Color(0xFF0EA5E9), () => _navigate(const VaultScreen()), textColor),
           _buildQuickDivider(),
-          _buildQuickAction(Icons.shield_rounded, 'Secure', const Color(0xFF34D399), () {
+          _buildQuickAction(Icons.shield_rounded, 'Secure', const Color(0xFF10B981), () {
             PremiumSnackbar.show(
               context,
               message: 'Advanced encryption active!',
               emoji: '???',
-              color: const Color(0xFF34D399),
+              color: const Color(0xFF10B981),
             );
           }, textColor),
         ],
@@ -646,14 +547,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
+                color: color.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: color.withOpacity(0.12)),
+                border: Border.all(color: color.withValues(alpha: 0.12)),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: 8),
-            Text(label, textAlign: TextAlign.center, style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(label, textAlign: TextAlign.center, style: TextStyle(color: textColor.withValues(alpha: 0.6), fontSize: 11, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -661,7 +562,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildQuickDivider() {
-    return Container(width: 1, height: 40, margin: const EdgeInsets.symmetric(horizontal: 4), color: Colors.white.withOpacity(0.04));
+    return Container(width: 1, height: 40, margin: const EdgeInsets.symmetric(horizontal: 4), color: Colors.white.withValues(alpha: 0.04));
   }
 
   // -----------------------------------------------
@@ -681,16 +582,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildSecurityScoreCard(Color textColor, Color subColor) {
     final score = _getSecurityScoreWatch();
-    final scoreColor = score >= 80 ? const Color(0xFF34D399) : score >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
+    final scoreColor = score >= 80 ? const Color(0xFF10B981) : score >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
-        border: Border.all(color: scoreColor.withOpacity(isLight ? 0.2 : 0.15)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02),
+        border: Border.all(color: scoreColor.withValues(alpha: isLight ? 0.2 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         children: [
@@ -703,38 +604,30 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ],
           ),
           const SizedBox(height: 16),
-          // Animated gauge
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: score / 100),
-            duration: const Duration(milliseconds: 2000),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
-              return SizedBox(
-                width: 76, height: 76,
-                child: Stack(
-                  alignment: Alignment.center,
+          SizedBox(
+            width: 76, height: 76,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 76, height: 76,
+                  child: CircularProgressIndicator(
+                    value: score / 100,
+                    backgroundColor: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.05),
+                    color: scoreColor,
+                    strokeWidth: 7,
+                    strokeCap: StrokeCap.round,
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: 76, height: 76,
-                      child: CircularProgressIndicator(
-                        value: value,
-                        backgroundColor: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05),
-                        color: scoreColor,
-                        strokeWidth: 7,
-                        strokeCap: StrokeCap.round,
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('${(value * 100).toInt()}', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
-                        Text('%', style: TextStyle(color: subColor, fontSize: 10, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
+                    Text('$score', style: TextStyle(color: textColor, fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
+                    Text('%', style: TextStyle(color: subColor, fontSize: 10, fontWeight: FontWeight.w700)),
                   ],
                 ),
-              );
-            },
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -757,9 +650,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
-        border: Border.all(color: const Color(0xFFA855F7).withOpacity(isLight ? 0.2 : 0.15)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02),
+        border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: isLight ? 0.2 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -767,33 +660,25 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_graph_rounded, color: const Color(0xFFA855F7).withOpacity(0.8), size: 14),
+              Icon(Icons.auto_graph_rounded, color: const Color(0xFF4DA3FF).withValues(alpha: 0.8), size: 14),
               const SizedBox(width: 6),
               Text('Vault Heatmap', style: TextStyle(color: subColor, fontSize: 11, fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 16),
-          // Sparkline chart
           SizedBox(
             height: 76,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 2000),
-              curve: Curves.easeOutCubic,
-              builder: (context, animValue, child) {
-                return RepaintBoundary(
-                  child: CustomPaint(
-                    painter: _SparklinePainter(data: data, progress: animValue, isLight: isLight),
-                  ),
-                );
-              },
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: _SparklinePainter(data: data, progress: 1.0, isLight: isLight),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
-                Text(d, style: TextStyle(color: subColor.withOpacity(0.5), fontSize: 8, fontWeight: FontWeight.w800)),
+                Text(d, style: TextStyle(color: subColor.withValues(alpha: 0.5), fontSize: 8, fontWeight: FontWeight.w800)),
             ).toList(),
           ),
         ],
@@ -813,16 +698,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: isLight ? color.withOpacity(0.06) : color.withOpacity(0.05),
-        border: Border.all(color: color.withOpacity(isLight ? 0.12 : 0.15)),
-        boxShadow: isLight ? [BoxShadow(color: color.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 4))] : [],
+        color: isLight ? color.withValues(alpha: 0.06) : color.withValues(alpha: 0.05),
+        border: Border.all(color: color.withValues(alpha: isLight ? 0.12 : 0.15)),
+        boxShadow: isLight ? [BoxShadow(color: color.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 4))] : [],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(tip['icon'] as IconData, color: color, size: 22),
@@ -834,7 +719,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               children: [
                 Text(
                   'VAULT INTELLIGENCE', 
-                  style: TextStyle(color: color.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                  style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
                 ),
                 const SizedBox(height: 4),
                 Text(tip['tip'] as String, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 13, height: 1.4, fontWeight: FontWeight.w500)),
@@ -864,11 +749,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFA855F7).withOpacity(0.1), 
+              color: const Color(0xFF4DA3FF).withValues(alpha: 0.1), 
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.15)),
+              border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.15)),
             ),
-            child: const Text('EXPLORE', style: TextStyle(color: Color(0xFFA855F7), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+            child: const Text('EXPLORE', style: TextStyle(color: Color(0xFF4DA3FF), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
           ),
         ),
       ],
@@ -882,12 +767,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       return Container(
         height: 120,
         decoration: BoxDecoration(
-          color: isLight ? Colors.white : Colors.white.withOpacity(0.02), 
+          color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02), 
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05)),
-          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+          border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.05)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
         ),
-        child: const Center(child: CircularProgressIndicator(color: Color(0xFFA855F7), strokeWidth: 2)),
+        child: const Center(child: CircularProgressIndicator(color: Color(0xFF4DA3FF), strokeWidth: 2)),
       );
     }
 
@@ -896,22 +781,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(28),
-          color: isLight ? Colors.white : Colors.white.withOpacity(0.02),
-          border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.06)),
-          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+          color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02),
+          border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.06)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
         ),
         child: Column(
           children: [
             Stack(
               alignment: Alignment.center,
               children: [
-                Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFFA855F7).withOpacity(0.1), width: 1.5))),
-                Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFFA855F7).withOpacity(0.05))),
-                Icon(Icons.auto_awesome_rounded, color: const Color(0xFFA855F7).withOpacity(0.4), size: 28),
+                Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.1), width: 1.5))),
+                Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF4DA3FF).withValues(alpha: 0.05))),
+                Icon(Icons.auto_awesome_rounded, color: const Color(0xFF4DA3FF).withValues(alpha: 0.4), size: 28),
               ],
             ),
             const SizedBox(height: 20),
-            Text('Secure your digital assets', style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 15, fontWeight: FontWeight.w700)),
+            Text('Secure your digital assets', style: TextStyle(color: textColor.withValues(alpha: 0.6), fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text('Files added here are encrypted instantly', style: TextStyle(color: subColor, fontSize: 12, fontWeight: FontWeight.w500)),
             const SizedBox(height: 24),
@@ -920,9 +805,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFF2B7FD4)]),
+                  gradient: const LinearGradient(colors: [Color(0xFF4DA3FF), Color(0xFF2B7FD4)]),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 4))],
+                  boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 4))],
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -957,7 +842,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     final size = item['sizeFormatted'] ?? '';
     final isImage = _isImage(name);
     final isVideo = _isVideo(name);
-    final color = isImage ? const Color(0xFFA855F7) : isVideo ? const Color(0xFF8B5CF6) : const Color(0xFF34D399);
+    final color = isImage ? const Color(0xFF4DA3FF) : isVideo ? const Color(0xFF8B5CF6) : const Color(0xFF10B981);
     final icon = isImage ? Icons.image_rounded : isVideo ? Icons.play_circle_rounded : Icons.insert_drive_file_rounded;
     final isLight = Theme.of(context).brightness == Brightness.light;
 
@@ -966,15 +851,15 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22), 
-        color: isLight ? Colors.white : Colors.white.withOpacity(0.02), 
-        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.05)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))] : [],
+        color: isLight ? Colors.white : Colors.white.withValues(alpha: 0.02), 
+        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.05)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))] : [],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
@@ -987,7 +872,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded, color: textColor.withOpacity(0.3), size: 22),
+          Icon(Icons.chevron_right_rounded, color: textColor.withValues(alpha: 0.3), size: 22),
         ],
       ),
     );
@@ -1005,27 +890,27 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           style: AppTextStyles.subheading.copyWith(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: SectionCard(
-                icon: Icons.grid_view_rounded,
-                title: 'Calculator',
-                subtitle: 'Vault Entrance',
-                onTap: () => _navigate(const CalculatorScreen()),
+          Row(
+            children: [
+              Expanded(
+                child: SectionCard(
+                  icon: Icons.grid_view_rounded,
+                  title: 'Calculator',
+                  subtitle: 'Vault Entrance',
+                  onTap: () => _navigate(const CalculatorScreen()),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SectionCard(
-                icon: Icons.public_rounded,
-                title: 'Web Cloak',
-                subtitle: 'Private Browser',
-                onTap: () => _navigate(const PrivateBrowserScreen()),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SectionCard(
+                  icon: Icons.public_rounded,
+                  title: 'Web Cloak',
+                  subtitle: 'Private Browser',
+                  onTap: () => _navigate(const PrivateBrowserScreen()),
+                ),
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
+            ],
+          ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -1051,7 +936,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                         context,
                         message: 'Memory Optimized Successfully!',
                         emoji: '??',
-                        color: const Color(0xFF34D399),
+                        color: const Color(0xFF10B981),
                       );
                     }
                   } catch (e) {
@@ -1063,7 +948,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ),
           ],
-        ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -1095,7 +980,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ),
           ],
-        ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.1, end: 0),
+        ),
       ],
     );
   }
@@ -1142,9 +1027,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06), 
+          color: color.withValues(alpha: 0.06), 
           borderRadius: BorderRadius.circular(16), 
-          border: Border.all(color: color.withOpacity(0.12))
+          border: Border.all(color: color.withValues(alpha: 0.12))
         ),
         child: Row(
           children: [
@@ -1152,7 +1037,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             const SizedBox(width: 14),
             Text(title, style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontWeight: FontWeight.w600)),
             const Spacer(),
-            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.35), size: 20),
+            Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.35), size: 20),
           ],
         ),
       ),
@@ -1286,14 +1171,14 @@ class _SparklinePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [AppColors.primary.withOpacity(0.12 * progress), AppColors.primary.withOpacity(0.0)],
+        colors: [AppColors.primary.withValues(alpha: 0.12 * progress), AppColors.primary.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawPath(fillPath, fillPaint);
 
     // Line
     final linePaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.6 * progress)
+      ..color = AppColors.primary.withValues(alpha: 0.6 * progress)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -1362,17 +1247,11 @@ class _ScaleTapWidgetState extends State<_ScaleTapWidget> with SingleTickerProvi
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        _controller.forward();
-        HapticFeedback.selectionClick(); // Subtle haptic on press
-      },
-      onTapUp: (_) {
-        _controller.reverse();
-        HapticFeedback.lightImpact(); // Confirm haptic on release
+      onTap: () {
+        HapticFeedback.lightImpact(); // Confirm haptic on click
         widget.onTap();
       },
-      onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+      child: widget.child,
     );
   }
 }

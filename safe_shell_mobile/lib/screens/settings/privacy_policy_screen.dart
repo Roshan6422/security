@@ -70,7 +70,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Text(content, 
             style: AppTextStyles.body.copyWith(
-              color: Colors.white.withOpacity(0.8), 
+              color: Colors.white.withValues(alpha: 0.8), 
               fontSize: 15, 
               height: 1.6
             )

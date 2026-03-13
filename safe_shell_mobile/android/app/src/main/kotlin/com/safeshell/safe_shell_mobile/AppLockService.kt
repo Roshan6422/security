@@ -55,9 +55,18 @@ class AppLockService : Service() {
         Log.d("AppLockService", "onStartCommand called")
         
         // Handle package list updates via Intent
-        intent?.getStringArrayExtra("LOCKED_PACKAGES")?.let {
-            lockedPackages = it.toMutableSet()
-            Log.d("AppLockService", "Received updated locked packages: $lockedPackages")
+        val packagesFromIntent = intent?.getStringArrayExtra("LOCKED_PACKAGES")
+        if (packagesFromIntent != null) {
+            lockedPackages = packagesFromIntent.toMutableSet()
+            Log.d("AppLockService", "Received updated locked packages from Intent: $lockedPackages")
+        } else {
+            // Load from SharedPreferences as fallback (crucial for boot start)
+            val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
+            val savedPackages = prefs.getStringSet("locked_packages", null)
+            if (savedPackages != null) {
+                lockedPackages = savedPackages.toMutableSet()
+                Log.d("AppLockService", "Loaded ${lockedPackages.size} packages from SharedPreferences")
+            }
         }
 
         if (!isRunning) {
@@ -113,7 +122,7 @@ class AppLockService : Service() {
                         }
                     }
                 }
-                Thread.sleep(400) // Polling interval
+                Thread.sleep(100) // Reduced polling interval for faster interception
             }
         }.start()
     }
