@@ -44,7 +44,7 @@ Future<void> main() async {
   app.get('/', (Request request) {
     return Response.ok(
         jsonEncode({
-          'message': '🚀 SafeShell Dart Backend is live!',
+          'message': '🚀 SafeShell Dart Backend is live! (V2 - Firebase Integrated)',
           'documentation': 'https://github.com/Roshan6422/security',
           'endpoints': {
             'health': '/api/health',
