@@ -78,10 +78,29 @@ class FirebaseConfig {
       }
 
       print('[FIREBASE] Server Time (UTC): ${DateTime.now().toUtc().toIso8601String()}');
+      
+      // DIAGNOSTIC: Check for required fields
+      final requiredFields = ['project_id', 'client_email', 'private_key', 'type'];
+      for (final field in requiredFields) {
+        if (!serviceAccount.containsKey(field)) {
+          print('❌ [FIREBASE] Missing required field: $field');
+        }
+      }
 
-      // Ensure private key handles literal \n correctly within the map
+      // Ensure private key handles literal \n correctly and remove any \r or extra spaces
       if (serviceAccount['private_key'] is String) {
-        serviceAccount['private_key'] = (serviceAccount['private_key'] as String).replaceAll(r'\n', '\n');
+        String key = serviceAccount['private_key'] as String;
+        key = key.replaceAll(r'\n', '\n');
+        key = key.replaceAll(r'\r', '');
+        key = key.trim();
+        
+        // Ensure it has the correct header/footer
+        if (!key.contains('-----BEGIN PRIVATE KEY-----')) {
+          print('⚠️ [FIREBASE] Private key missing standard PEM header');
+        }
+        
+        serviceAccount['private_key'] = key;
+        print('[FIREBASE] Private Key Cleaned. New Length: ${key.length}');
       }
       
       // Write to a temporary file to satisfy Credential.fromServiceAccount(File)
