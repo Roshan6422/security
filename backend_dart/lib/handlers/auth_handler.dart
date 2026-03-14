@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:dart_firebase_admin/auth.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart' as jwt;
 import 'package:dbcrypt/dbcrypt.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -16,8 +17,8 @@ final _bcrypt = DBCrypt();
 final _random = Random();
 
 String _generateToken(String userId) {
-  final jwt = JWT({'id': userId});
-  return jwt.sign(SecretKey(Env.jwtSecret),
+  final jwtObj = jwt.JWT({'id': userId});
+  return jwtObj.sign(jwt.SecretKey(Env.jwtSecret),
       expiresIn: const Duration(days: 30));
 }
 
@@ -66,7 +67,7 @@ Router authRouter() {
         // JIT Provisioning: If user exists in Firebase but not in our DB, create them
         print('[AUTH] Auto-provisioning user for $email');
         user = await userRepo.create({
-          'name': decodedToken.claims['name'] ?? email.split('@')[0],
+          'name': email.split('@')[0],
           'email': email,
           'role': 'user',
           'subscriptionStatus': 'free',
@@ -136,6 +137,7 @@ Router authRouter() {
             headers: {'content-type': 'application/json'});
       }
 
+      // Note: User created below via userRepo
       final user = await userRepo.create({
         'name': name,
         'email': email,
@@ -203,7 +205,7 @@ Router authRouter() {
       final otp = (_random.nextInt(900000) + 100000).toString();
       user.resetOtp = otp;
       user.resetOtpExpire = DateTime.now().add(const Duration(minutes: 10));
-      await userRepo.update(user.id!, user.toMap());
+      await user.save();
 
       print('🔑 OTP for $email: $otp'); // Log for development/demo
 
@@ -256,20 +258,31 @@ Router authRouter() {
         return Response(400, body: jsonEncode({'message': 'Invalid OTP'}), headers: {'content-type': 'application/json'});
       }
 
-      // 1. Update Firebase Password
-      if (FirebaseConfig.auth != null) {
-         try {
-           final fbUser = await FirebaseConfig.auth!.getUserByEmail(email);
-           await FirebaseConfig.auth!.updateUser(fbUser.uid, password: newPassword);
-         } catch (e) {
-           return Response(500, body: jsonEncode({'message': 'Firebase update failed: $e'}), headers: {'content-type': 'application/json'});
-         }
+      // Verify Firebase Admin is initialized
+      if (FirebaseConfig.auth == null) {
+        return Response.internalServerError(body: jsonEncode({'error': 'Firebase Admin not initialized'}));
       }
 
-      // 2. Clear OTP on success
+      try {
+        final fbUser = await FirebaseConfig.auth!.getUserByEmail(email);
+        // 1. Update Firebase Password
+        await FirebaseConfig.auth!.updateUser(
+          fbUser.uid,
+          UpdateRequest(password: newPassword),
+        );
+
+        // 2. Update Backend Database (hashed password)
+        final hashedPassword = _hashPassword(newPassword);
+        user.password = hashedPassword;
+        await user.save();
+      } catch (e) {
+        return Response(500, body: jsonEncode({'message': 'Firebase update failed: $e'}), headers: {'content-type': 'application/json'});
+      }
+
+      // Clear OTP on success
       user.resetOtp = null;
       user.resetOtpExpire = null;
-      await userRepo.update(user.id!, user.toMap());
+      await user.save();
 
       return Response.ok(jsonEncode({'message': 'Password updated successfully'}), headers: {'content-type': 'application/json'});
     } catch (e) {

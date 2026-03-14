@@ -10,7 +10,7 @@ import '../middleware/auth_middleware.dart';
 import '../models/firestore_model.dart';
 import '../models/user.dart';
 
-const _uuid = Uuid();
+
 
 /// Device model stored in Firestore.
 class DeviceEntry extends FirestoreModel {

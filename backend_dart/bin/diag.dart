@@ -1,4 +1,4 @@
-import 'package:dotenv/dotenv.dart';
+
 import 'package:backend_dart/config/firebase.dart';
 import 'package:backend_dart/config/env.dart';
 

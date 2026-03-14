@@ -5,7 +5,6 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_static/shelf_static.dart';
-import 'package:dotenv/dotenv.dart';
 
 import 'package:backend_dart/config/env.dart';
 import 'package:backend_dart/config/firebase.dart';

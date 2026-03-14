@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 
-import '../config/env.dart';
+
 import '../middleware/auth_middleware.dart';
 import '../models/vault_item.dart';
 import '../services/storage_service.dart';
@@ -74,23 +76,44 @@ Router vaultRouter() {
       double totalSize = 0;
 
       for (final item in items) {
-        if (item.type == 'photo') photos++;
-        else if (item.type == 'video') videos++;
-        else if (item.type == 'note') notes++;
-        else if (item.type == 'document') docs++;
-        else if (item.type == 'zip') zips++;
-        else if (item.type == 'audio') audios++;
+        if (item.type == 'photo') {
+          photos++;
+        } else if (item.type == 'video') {
+          videos++;
+        } else if (item.type == 'note') {
+          notes++;
+        } else if (item.type == 'document') {
+          docs++;
+        } else if (item.type == 'zip') {
+          zips++;
+        } else if (item.type == 'audio') {
+          audios++;
+        }
 
         final parts = item.size.split(' ');
         if (parts.length == 2) {
           final val = double.tryParse(parts[0]) ?? 0;
           final unit = parts[1];
-          if (unit == 'KB') totalSize += val * 1024;
-          else if (unit == 'MB') totalSize += val * 1024 * 1024;
-          else if (unit == 'GB') totalSize += val * 1024 * 1024 * 1024;
-          else totalSize += val;
+          if (unit == 'KB') {
+            totalSize += val * 1024;
+          } else if (unit == 'MB') {
+            totalSize += val * 1024 * 1024;
+          } else if (unit == 'GB') {
+            totalSize += val * 1024 * 1024 * 1024;
+          } else {
+            totalSize += val;
+          }
         }
       }
+
+      // Fetch 10 most recent items to include in stats (reduces dashboard lag)
+      final sortedItems = List<VaultItem>.from(items);
+      sortedItems.sort((a, b) {
+        final dateA = a.createdAt ?? DateTime(2000);
+        final dateB = b.createdAt ?? DateTime(2000);
+        return dateB.compareTo(dateA);
+      });
+      final recent = sortedItems.take(10).map((i) => i.toJson()).toList();
 
       return Response.ok(jsonEncode({
         'count': items.length,
@@ -102,6 +125,7 @@ Router vaultRouter() {
         'audioCount': audios,
         'totalSize': totalSize.toInt(),
         'sizeFormatted': _formatSize(totalSize.toInt()),
+        'recentItems': recent,
       }), headers: {'content-type': 'application/json'});
     } catch (e, stackTrace) {
       // ✅ Fix 3: No error details leaked + logging
