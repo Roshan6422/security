@@ -5,6 +5,7 @@ import 'package:dart_firebase_admin/auth.dart';
 import 'package:dart_firebase_admin/dart_firebase_admin.dart';
 import 'package:dart_firebase_admin/firestore.dart';
 import 'package:dart_firebase_admin/messaging.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 import 'env.dart';
 
@@ -79,13 +80,8 @@ class FirebaseConfig {
 
       print('[FIREBASE] Server Time (UTC): ${DateTime.now().toUtc().toIso8601String()}');
       
-      // DIAGNOSTIC: Check for required fields
-      final requiredFields = ['project_id', 'client_email', 'private_key', 'type'];
-      for (final field in requiredFields) {
-        if (!serviceAccount.containsKey(field)) {
-          print('❌ [FIREBASE] Missing required field: $field');
-        }
-      }
+      // DIAGNOSTIC: Log all keys (not values)
+      print('[FIREBASE] Service Account Keys: ${serviceAccount.keys.toList()}');
 
       // Ensure private key handles literal \n correctly and remove any \r or extra spaces
       if (serviceAccount['private_key'] is String) {
@@ -99,6 +95,15 @@ class FirebaseConfig {
           print('⚠️ [FIREBASE] Private key missing standard PEM header');
         }
         
+        // DIAGNOSTIC: Try to sign a test JWT to see if the key is valid
+        try {
+          final testJwt = JWT({'test': 'diag'});
+          testJwt.sign(RSAPrivateKey(key), algorithm: JWTAlgorithm.RS256);
+          print('✅ [FIREBASE] Diagnostic: Private key confirmed as a valid RSA PEM string.');
+        } catch (e) {
+          print('❌ [FIREBASE] Diagnostic: Private key is NOT a valid RSA string! Error: $e');
+        }
+
         serviceAccount['private_key'] = key;
         print('[FIREBASE] Private Key Cleaned. New Length: ${key.length}');
         
