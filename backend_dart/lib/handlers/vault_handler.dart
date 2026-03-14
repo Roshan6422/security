@@ -43,6 +43,19 @@ String _detectType(String filename) {
 Router vaultRouter() {
   final router = Router();
 
+  // PUBLIC: GET /ping — health check
+  router.get('/ping', (Request request) async {
+    return Response.ok(
+      jsonEncode({
+        'status': 'online',
+        'message': 'SafeShell Backend is responding correctly',
+        'timestamp': DateTime.now().toIso8601String(),
+        'version': '1.0.1'
+      }),
+      headers: {'content-type': 'application/json'},
+    );
+  });
+
   // TEMP: GET /debug-all — dump all vault items for debugging
   router.get('/debug-all', (Request request) async {
     try {

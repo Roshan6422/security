@@ -152,7 +152,7 @@ Router authRouter() {
       // Auto-register if not found (Google accounts are pre-verified)
       if (user == null) {
           user = await userRepo.create({
-            'name': decodedToken.name ?? 'Google User',
+            'name': decodedToken.claims['name'] ?? 'Google User', // Fix: Access via claims map
             'email': email,
             'role': 'user',
             'subscriptionStatus': 'free',
