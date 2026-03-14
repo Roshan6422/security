@@ -83,8 +83,12 @@ class FirebaseConfig {
         serviceAccount['private_key'] = (serviceAccount['private_key'] as String).replaceAll(r'\n', '\n');
       }
       
-      print('[FIREBASE] Using Credential.fromServiceAccount for project: $projectId');
-      final credential = Credential.fromServiceAccount(serviceAccount);
+      // Write to a temporary file to satisfy Credential.fromServiceAccount(File)
+      final tempFile = File('service_account.json');
+      await tempFile.writeAsString(jsonEncode(serviceAccount));
+      
+      print('[FIREBASE] Using Credential.fromServiceAccount with file: ${tempFile.path}');
+      final credential = Credential.fromServiceAccount(tempFile);
 
       _app = FirebaseAdminApp.initializeApp(
         projectId,
