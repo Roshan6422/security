@@ -72,14 +72,25 @@ class FirebaseConfig {
       print('[FIREBASE] JSON parse successful');
 
       final projectId = serviceAccount['project_id'] as String?;
-      if (projectId == null) {
-        throw FormatException('Missing project_id in service account JSON');
+      final clientEmail = serviceAccount['client_email'] as String?;
+      final privateKeyRaw = serviceAccount['private_key'] as String?;
+
+      if (projectId == null || clientEmail == null || privateKeyRaw == null) {
+        throw FormatException('Missing required fields in service account JSON');
       }
+
+      // Ensure private key handles literal \n correctly and has a clean PEM format
+      final normalizedPrivateKey = privateKeyRaw.replaceAll(r'\n', '\n');
+      
+      print('[FIREBASE] Project ID: $projectId');
+      print('[FIREBASE] Client Email: $clientEmail');
+      print('[FIREBASE] Private Key Length: ${normalizedPrivateKey.length}');
+      print('[FIREBASE] Private Key starts with: ${normalizedPrivateKey.substring(0, 30).replaceAll('\n', '[NL]')}...');
 
       final credential = Credential.fromServiceAccountParams(
         clientId: serviceAccount['client_id'] as String,
-        email: serviceAccount['client_email'] as String,
-        privateKey: serviceAccount['private_key'] as String,
+        email: clientEmail,
+        privateKey: normalizedPrivateKey,
       );
 
       _app = FirebaseAdminApp.initializeApp(
