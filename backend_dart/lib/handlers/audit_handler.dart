@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -8,15 +7,14 @@ import 'package:crypto/crypto.dart';
 import '../middleware/auth_middleware.dart';
 import '../models/firestore_model.dart';
 
-/// Audit log entry model.
 class AuditEntry extends FirestoreModel {
   String userId;
-  String type;     // security, file, key, backup, settings
-  String action;   // File Added, File Deleted, File Opened, Login, etc.
-  String detail;   // fileId: xxx · name: yyy
-  String hash;     // SHA-256 chain hash
-  String fileUrl;  // optional: URL of the file for thumbnail
-  String fileType; // optional: photo, video, audio, document, note
+  String type;
+  String action;
+  String detail;
+  String hash;
+  String fileUrl;
+  String fileType;
   DateTime timestamp;
 
   AuditEntry({
@@ -61,52 +59,78 @@ class AuditEntry extends FirestoreModel {
   }
 }
 
-final _auditRepo = ModelRepository<AuditEntry>('audit_logs', AuditEntry.fromMap);
+final _auditRepo = ModelRepository<AuditEntry>(
+    'audit_logs', AuditEntry.fromMap);
 
-/// Builds the `/api/audit` router.
+const _allowedTypes = {'security', 'file', 'key', 'backup', 'settings'};
+const _allowedFileTypes = {'photo', 'video', 'audio', 'document', 'note', ''};
+
 Router auditRouter() {
   final router = Router();
 
-  // GET / — fetch audit log for user
+  // GET /
   router.get('/', (Request request) async {
     try {
       final user = getAuthUser(request);
-      final typeFilter = request.url.queryParameters['type'];
+      final userId = user.id;
+      if (userId == null) {
+        return Response(401,
+            body: jsonEncode({'message': 'Invalid session'}),
+            headers: {'content-type': 'application/json'});
+      }
 
+      final typeFilter = request.url.queryParameters['type'];
+      final page = int.tryParse(
+              request.url.queryParameters['page'] ?? '1') ?? 1;
+      final limit = int.tryParse(
+              request.url.queryParameters['limit'] ?? '50') ?? 50;
+
+      // ✅ Ideally server-side filtered query
       final allEntries = await _auditRepo.find();
       var userEntries = allEntries
-          .where((e) => e.userId == user.id)
+          .where((e) => e.userId == userId)
           .toList();
 
       if (typeFilter != null && typeFilter.isNotEmpty) {
-        userEntries = userEntries.where((e) => e.type == typeFilter).toList();
+        userEntries =
+            userEntries.where((e) => e.type == typeFilter).toList();
       }
 
-      // Sort by timestamp descending
       userEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-      final result = userEntries.map((e) => {
-        ...e.toMap(),
-        'id': e.id,
-      }).toList();
+      // ✅ Pagination
+      final startIndex = (page - 1) * limit;
+      final paginated = userEntries.skip(startIndex).take(limit).toList();
 
       return Response.ok(
-        jsonEncode(result),
+        jsonEncode({
+          'data': paginated.map((e) => {...e.toMap(), 'id': e.id}).toList(),
+          'page': page,
+          'total': userEntries.length,
+        }),
         headers: {'content-type': 'application/json'},
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Audit GET error: $e\n$stackTrace');
       return Response(500,
-        body: jsonEncode({'message': 'Server error: $e'}),
-        headers: {'content-type': 'application/json'},
-      );
+          body: jsonEncode({'message': 'Server error'}),
+          headers: {'content-type': 'application/json'});
     }
   });
 
-  // POST / — create audit entry
+  // POST /
   router.post('/', (Request request) async {
     try {
       final user = getAuthUser(request);
-      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final userId = user.id;
+      if (userId == null) {
+        return Response(401,
+            body: jsonEncode({'message': 'Invalid session'}),
+            headers: {'content-type': 'application/json'});
+      }
+
+      final body = jsonDecode(await request.readAsString())
+          as Map<String, dynamic>;
 
       final type = body['type'] as String? ?? 'file';
       final action = body['action'] as String? ?? '';
@@ -114,81 +138,123 @@ Router auditRouter() {
       final fileUrl = body['fileUrl'] as String? ?? '';
       final fileType = body['fileType'] as String? ?? '';
 
-      // Build chain hash
+      // ✅ Input validation
+      if (!_allowedTypes.contains(type)) {
+        return Response(400,
+            body: jsonEncode({'message': 'Invalid audit type'}),
+            headers: {'content-type': 'application/json'});
+      }
+      if (!_allowedFileTypes.contains(fileType)) {
+        return Response(400,
+            body: jsonEncode({'message': 'Invalid file type'}),
+            headers: {'content-type': 'application/json'});
+      }
+
+      // ✅ Single timestamp
+      final now = DateTime.now();
+
       String previousHash = '';
       final allEntries = await _auditRepo.find();
-      final userEntries = allEntries.where((e) => e.userId == user.id).toList();
+      final userEntries =
+          allEntries.where((e) => e.userId == userId).toList();
       userEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       if (userEntries.isNotEmpty) {
         previousHash = userEntries.last.hash;
       }
 
-      final chainInput = '$previousHash|${user.id}|$type|$action|$detail|${DateTime.now().toIso8601String()}';
-      final newHash = sha256.convert(utf8.encode(chainInput)).toString();
+      final chainInput =
+          '$previousHash|$userId|$type|$action|$detail'
+          '|${now.toIso8601String()}';
+      final newHash =
+          sha256.convert(utf8.encode(chainInput)).toString();
 
       final entry = AuditEntry(
-        userId: user.id!,
+        userId: userId,
         type: type,
         action: action,
         detail: detail,
         hash: newHash,
         fileUrl: fileUrl,
         fileType: fileType,
-        timestamp: DateTime.now(),
+        timestamp: now, // ✅ Same timestamp
       );
       await entry.save();
 
       return Response.ok(
-        jsonEncode({'message': 'Audit entry created', 'id': entry.id, 'hash': newHash}),
+        jsonEncode({
+          'message': 'Audit entry created',
+          'id': entry.id,
+          'hash': newHash,
+        }),
         headers: {'content-type': 'application/json'},
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Audit POST error: $e\n$stackTrace');
       return Response(500,
-        body: jsonEncode({'message': 'Server error: $e'}),
-        headers: {'content-type': 'application/json'},
-      );
+          body: jsonEncode({'message': 'Server error'}),
+          headers: {'content-type': 'application/json'});
     }
   });
 
-  // GET /verify — verify chain integrity
+  // GET /verify — ✅ Actual chain verification
   router.get('/verify', (Request request) async {
     try {
       final user = getAuthUser(request);
+      final userId = user.id;
+      if (userId == null) {
+        return Response(401,
+            body: jsonEncode({'message': 'Invalid session'}),
+            headers: {'content-type': 'application/json'});
+      }
+
       final allEntries = await _auditRepo.find();
-      final userEntries = allEntries.where((e) => e.userId == user.id).toList();
-      userEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final userEntries =
+          allEntries.where((e) => e.userId == userId).toList();
+      userEntries
+          .sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       bool verified = true;
-      int verifiedCount = userEntries.length;
+      String? brokenAtId;
+      String previousHash = '';
 
-      // Basic verification: just check entries exist and hashes are non-empty
       for (var entry in userEntries) {
-        if (entry.hash.isEmpty) {
+        final chainInput =
+            '$previousHash|${entry.userId}|${entry.type}'
+            '|${entry.action}|${entry.detail}'
+            '|${entry.timestamp.toIso8601String()}';
+        final expectedHash =
+            sha256.convert(utf8.encode(chainInput)).toString();
+
+        if (entry.hash != expectedHash) {
           verified = false;
+          brokenAtId = entry.id;
           break;
         }
+        previousHash = entry.hash;
       }
 
       return Response.ok(
         jsonEncode({
           'verified': verified,
-          'totalEvents': verifiedCount,
-          'message': verified ? 'All $verifiedCount events verified' : 'Chain integrity compromised',
+          'totalEvents': userEntries.length,
+          if (!verified) 'brokenAt': brokenAtId,
+          'message': verified
+              ? 'All ${userEntries.length} events verified'
+              : 'Chain integrity compromised',
         }),
         headers: {'content-type': 'application/json'},
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Audit verify error: $e\n$stackTrace');
       return Response(500,
-        body: jsonEncode({'message': 'Server error: $e'}),
-        headers: {'content-type': 'application/json'},
-      );
+          body: jsonEncode({'message': 'Server error'}),
+          headers: {'content-type': 'application/json'});
     }
   });
 
   return router;
 }
 
-/// Creates a [Handler] for audit routes.
 Handler auditHandler() {
   return const Pipeline()
       .addMiddleware(authMiddleware())

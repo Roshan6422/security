@@ -69,12 +69,13 @@ Router vaultRouter() {
       final user = getAuthUser(request);
       final items = await vaultItemRepo.find({'user': user.id!, 'isDeleted': false});
 
-      int photos = 0, videos = 0, docs = 0, zips = 0, audios = 0;
+      int photos = 0, videos = 0, docs = 0, notes = 0, zips = 0, audios = 0;
       double totalSize = 0;
 
       for (final item in items) {
         if (item.type == 'photo') photos++;
         else if (item.type == 'video') videos++;
+        else if (item.type == 'note') notes++;
         else if (item.type == 'document') docs++;
         else if (item.type == 'zip') zips++;
         else if (item.type == 'audio') audios++;
@@ -94,6 +95,7 @@ Router vaultRouter() {
         'count': items.length,
         'photoCount': photos,
         'videoCount': videos,
+        'noteCount': notes,
         'docCount': docs,
         'zipCount': zips,
         'audioCount': audios,
