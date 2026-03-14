@@ -135,6 +135,28 @@ Router vaultRouter() {
     }
   });
 
+  // POST / (JSON)
+  router.post('/', (Request request) async {
+    try {
+      final user = getAuthUser(request);
+      final body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      
+      final item = await vaultItemRepo.create({
+        'user': user.id!,
+        'name': body['name'] ?? 'Untitled',
+        'type': body['type'] ?? 'document',
+        'content': body['content'],
+        'size': body['size'] ?? '0 B',
+        'isDeleted': false,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      return Response(201, body: jsonEncode(item.toJson()), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Server error: $e'}));
+    }
+  });
+
   // POST /upload
   router.post('/upload', (Request request) async {
     try {
