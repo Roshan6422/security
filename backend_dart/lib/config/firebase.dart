@@ -101,6 +101,11 @@ class FirebaseConfig {
         
         serviceAccount['private_key'] = key;
         print('[FIREBASE] Private Key Cleaned. New Length: ${key.length}');
+        
+        // Log masked header/footer
+        final header = key.length > 20 ? key.substring(0, 25).replaceAll('\n', '[NL]') : 'short';
+        final footer = key.length > 20 ? key.substring(key.length - 25).replaceAll('\n', '[NL]') : 'short';
+        print('[FIREBASE] Private Key Tags: $header...$footer');
       }
       
       // Write to a temporary file to satisfy Credential.fromServiceAccount(File)
