@@ -124,12 +124,12 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
                   borderRadius: BorderRadius.circular(18),
                   color: const Color(0xFF1A0A0A),
                   border: Border.all(
-                    color: const Color(0xFFEF4444).withValues(alpha: _isHolding ? 0.8 : 0.25),
+                    color: const Color(0xFFEF4444).withOpacity(0.2),
                     width: _isHolding ? 2 : 1,
                   ),
                   boxShadow: _isHolding
-                      ? [BoxShadow(color: const Color(0xFFEF4444).withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 4)]
-                      : [BoxShadow(color: const Color(0xFFEF4444).withValues(alpha: 0.08), blurRadius: 10)],
+                      ? [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.3), blurRadius: 20, spreadRadius: 4)]
+                      : [BoxShadow(color: const Color(0xFFEF4444).withOpacity(0.08), blurRadius: 10)],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17),
@@ -144,8 +144,8 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  const Color(0xFFEF4444).withValues(alpha: 0.4),
-                                  const Color(0xFFDC2626).withValues(alpha: 0.3),
+                                  const Color(0xFFEF4444).withOpacity(0.4),
+                                  const Color(0xFFDC2626).withOpacity(0.3),
                                 ],
                               ),
                             ),
@@ -179,7 +179,7 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
                                   Text(
                                     'Hold to instantly lock',
                                     style: TextStyle(
-                                      color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                                      color: const Color(0xFFEF4444).withOpacity(0.5),
                                       fontSize: 10,
                                       letterSpacing: 0.3,
                                     ),

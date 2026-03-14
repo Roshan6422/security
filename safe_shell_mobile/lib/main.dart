@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
@@ -19,13 +21,33 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await DevicePerformance.init();
-
-  // Restore stealth mode on app restart (survives phone reboot)
-  _restoreStealthMode();
+  
+  // Turbo: run all initializations in parallel
+  await Future.wait([
+    _initFirebase(),
+    DevicePerformance.init(),
+    _restoreStealthMode(),
+  ]);
 
   runApp(const MyApp());
+}
+
+Future<void> _initFirebase() async {
+  try {
+    FirebaseApp app = await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    
+    // Turbo: Enable Firestore Offline Persistence for instant dashboard paint
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, // Or set to a reasonable limit like 100 * 1024 * 1024 (100MB)
+    );
+    
+    debugPrint('SafeShell: FIREBASE_READY: Project ID: ${app.options.projectId}');
+  } catch (e) {
+    debugPrint('SafeShell: FIREBASE_ERROR: $e');
+  }
 }
 
 Future<void> _restoreStealthMode() async {
@@ -87,6 +109,19 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
     _channel.setMethodCallHandler(_handleMethodCall);
     // Signal native that Flutter is ready  flushes any pending lock target
     _signalReady();
+    _checkInitialUsbState();
+  }
+
+  Future<void> _checkInitialUsbState() async {
+    // Wait a brief moment for providers to settle
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final isConnected = await settings.checkNativeUsbState();
+    if (isConnected) {
+      _handleUsbEvent(true);
+    }
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
@@ -147,9 +182,9 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
+                color: Colors.amber.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                border: Border.all(color: Colors.amber.withOpacity(0.3)),
               ),
               child: const Row(
                 children: [
@@ -167,7 +202,7 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
             const SizedBox(height: 8),
             Text(
               'To unlock apps, go to Settings → USB Protection → OFF',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
               textAlign: TextAlign.center,
             ),
           ],
@@ -229,66 +264,21 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  late Future<void> _authFuture;
-  late Future<bool> _keyFuture;
-  final _km = KeyManager();
-
-  @override
-  void initState() {
-    super.initState();
-    _authFuture = Provider.of<AuthProvider>(context, listen: false).checkAuth();
-    _keyFuture = _km.hasKey();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settings, child) {
-        return FutureBuilder(
-          future: _authFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
+    // Turbo: No more FutureBuilder flickering. 
+    // State is already hydrated by SplashScreen or main.dart
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (!auth.isAuthenticated) {
+          return const LoginScreen();
+        }
 
-            // Auth check takes priority
-
-            return Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                if (!auth.isAuthenticated) {
-                  return LoginScreen();
-                }
-
-                return FutureBuilder<bool>(
-                  future: _keyFuture,
-                  builder: (context, keySnapshot) {
-                    if (keySnapshot.connectionState == ConnectionState.waiting) {
-                      return const Scaffold(
-                        body: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    if (keySnapshot.data == true) {
-                      return const MainShell();
-                    } else {
-                      return const KeySetupScreen();
-                    }
-                  },
-                );
-              },
-            );
-          },
-        );
+        // Use a lightweight check for the user key (avoid secondary FutureBuilder)
+        return auth.user?.userKey != null ? const MainShell() : const KeySetupScreen();
       },
     );
   }

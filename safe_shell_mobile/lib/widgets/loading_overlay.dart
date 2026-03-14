@@ -51,11 +51,11 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
       width: 180,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1520).withValues(alpha: skipBlur ? 0.95 : 0.7),
+        color: const Color(0xFF0D1520).withOpacity(0.2),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
         boxShadow: skipBlur ? null : [
-          BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.08), blurRadius: 40, spreadRadius: 5),
+          BoxShadow(color: const Color(0xFF4DA3FF).withOpacity(0.08), blurRadius: 40, spreadRadius: 5),
         ],
       ),
       child: Column(
@@ -71,7 +71,7 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
                   width: 56, height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06), width: 2.5),
+                    border: Border.all(color: Colors.white.withOpacity(0.06), width: 2.5),
                   ),
                   child: CustomPaint(painter: _ArcPainter()),
                 ),
@@ -92,7 +92,7 @@ class _GlassLoadingWidgetState extends State<_GlassLoadingWidget> with SingleTic
     return Material(
       color: Colors.transparent,
       child: Container(
-        color: Colors.black.withValues(alpha: 0.5),
+        color: Colors.black.withOpacity(0.5),
         child: Center(
           child: skipBlur
               ? card

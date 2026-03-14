@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import '../../services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
+import '../../core/constants.dart';
 import '../../utils/vault_encryption_helper.dart';
 import '../../services/encryption_service.dart';
 import '../../services/audit_logger.dart';
+import '../../services/network_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/foundation.dart';
 
 class DocumentsListScreen extends StatefulWidget {
   const DocumentsListScreen({super.key});
@@ -32,25 +38,37 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
   }
 
   Future<void> _fetchItems() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
     try {
-      final response = await ApiService().get('/vault?type=document');
-      if (mounted) {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final response = await NetworkService.client.get(
+        Uri.parse('${AppConstants.baseUrl}/vault?type=document'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (!mounted) return;
+
         setState(() {
-          _items = (response as List).where((i) => i['isDeleted'] != true).toList();
+          _items = data.cast<Map<String, dynamic>>();
           _isLoading = false;
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+      } else {
+        throw Exception('Failed to fetch from backend');
       }
     } catch (e) {
+      debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
-            ? 'Connection failed. Check server URL & internet.'
-            : 'Failed to load documents: ${e.toString().replaceAll('Exception: ', '')}';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
-        );
+        _showError('Connection failed. Check backend status.');
       }
     }
   }
@@ -74,6 +92,13 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       _isSelectionMode = true;
       _selectedIds.add(id);
     });
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
   }
 
   void _selectAll() {
@@ -104,16 +129,18 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         }
 
         int successCount = 0;
+        int failCount = 0;
         for (final platformFile in result.files) {
-          if (platformFile.path != null) {
-            try {
-              await VaultEncryptionHelper.encryptAndUpload(platformFile.path!, '/vault/upload');
-              successCount++;
-            } catch (e) {
-               debugPrint('Upload failed for ${platformFile.name}: $e');
-            }
-          }
+        if (platformFile.path == null) continue;
+        
+        try {
+          await VaultEncryptionHelper.encryptAndUpload(platformFile.path!, 'document');
+          successCount++;
+        } catch (e) {
+          debugPrint('Upload failed for ${platformFile.name}: $e');
+          failCount++;
         }
+      }
 
         if (mounted) Navigator.pop(context); // Close loading
         _fetchItems();
@@ -123,7 +150,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
            AuditLogger.logFileUpload('$successCount document(s)', 'document');
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Encrypted & Saved to Vault ??')));
            // Automatically delete originals
-           _deleteOriginalsSilently(result.files);
+           _promptDeleteOriginals(result.files);
         }
       }
     } catch (e) {
@@ -132,20 +159,45 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     }
   }
 
-  Future<void> _deleteOriginalsSilently(List<PlatformFile> files) async {
-    for (final file in files) {
-      if (file.path != null) {
-        try {
-          final f = File(file.path!);
-          if (await f.exists()) {
-            await f.delete();
+  Future<void> _promptDeleteOriginals(List<PlatformFile> files) async {
+    if (files.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Originals?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Should we delete the ${files.length} original document${files.length > 1 ? 's' : ''} from your device?\n\nThey are now safely encrypted in your vault.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Originals'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      for (final file in files) {
+        if (file.path != null) {
+          try {
+            final f = File(file.path!);
+            if (await f.exists()) await f.delete();
+          } catch (e) {
+            debugPrint('Delete original error for ${file.name}: $e');
           }
-        } catch (e) {
-          debugPrint('Silent delete error for ${file.name}: $e');
         }
       }
+      SoundEffects.deleteAction();
     }
-    SoundEffects.deleteAction();
   }
 
   Future<void> _deleteSelected() async {
@@ -169,10 +221,22 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
     if (confirmed == true) {
        try {
-        for (final id in _selectedIds) {
-          final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
-          await ApiService().delete('/vault/$id');
-          AuditLogger.logFileDelete(item?['name'] ?? 'document', 'document');
+        const storage = FlutterSecureStorage();
+        final token = await storage.read(key: AppConstants.keyToken);
+        if (token == null) return;
+
+        int failCount = 0;
+        for (final id in _selectedIds.toList()) {
+          try {
+            final response = await NetworkService.client.delete(
+              Uri.parse('${AppConstants.baseUrl}/vault/$id'),
+              headers: {'Authorization': 'Bearer $token'},
+            );
+            if (response.statusCode != 200) failCount++;
+          } catch (e) {
+            debugPrint('Delete $id failed: $e');
+            failCount++;
+          }
         }
         SoundEffects.deleteAction();
         await _fetchItems();
@@ -212,8 +276,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
       if (item != null && item['url'] != null) {
         try {
-           final url = '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}';
-           final response = await http.get(Uri.parse(url));
+           final url = item['url'];
+           final response = await NetworkService.client.get(Uri.parse(url));
            if (response.statusCode == 200) {
              final tempDir = await getTemporaryDirectory();
              final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
@@ -259,8 +323,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     final subColor = isLight ? AppColors.textSecondary : Colors.white54;
     final dimColor = isLight ? AppColors.textTertiary : Colors.white24;
     final bgColor = isLight ? AppColors.background : AppColors.darkBackground;
-    final cardColor = isLight ? AppColors.surfaceVariant.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.04);
-    final borderColor = isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08);
+    final cardColor = isLight ? AppColors.surfaceVariant.withOpacity(0.5) : Colors.white.withOpacity(0.04);
+    final borderColor = isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -335,10 +399,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF4DA3FF).withValues(alpha: 0.15) : cardColor,
+                          color: isSelected ? const Color(0xFF4DA3FF).withOpacity(0.15) : cardColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF4DA3FF).withValues(alpha: 0.5) : borderColor,
+                            color: isSelected ? const Color(0xFF4DA3FF).withOpacity(0.5) : borderColor,
                           ),
                         ),
                         child: Row(
@@ -356,10 +420,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.blue.withValues(alpha: 0.2), Colors.blue.withValues(alpha: 0.05)],
+                                  colors: [Colors.blue.withOpacity(0.2), Colors.blue.withOpacity(0.05)],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.1)),
+                                border: Border.all(color: Colors.blue.withOpacity(0.1)),
                               ),
                               child: const Icon(Icons.description_rounded, color: Colors.blue),
                             ),

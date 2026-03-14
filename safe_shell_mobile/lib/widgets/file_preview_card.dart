@@ -81,12 +81,12 @@ class _FilePreviewCardState extends State<FilePreviewCard> with SingleTickerProv
             color: const Color(0xFF0D1520),
             border: Border.all(
               color: widget.selected
-                  ? widget.accentColor.withValues(alpha: 0.6)
-                  : widget.accentColor.withValues(alpha: 0.08),
+                  ? widget.accentColor.withOpacity(0.6)
+                  : widget.accentColor.withOpacity(0.08),
               width: widget.selected ? 2 : 1,
             ),
             boxShadow: widget.selected
-                ? [BoxShadow(color: widget.accentColor.withValues(alpha: 0.2), blurRadius: 12, spreadRadius: 1)]
+                ? [BoxShadow(color: widget.accentColor.withOpacity(0.2), blurRadius: 12, spreadRadius: 1)]
                 : [],
           ),
           child: Column(
@@ -117,7 +117,7 @@ class _FilePreviewCardState extends State<FilePreviewCard> with SingleTickerProv
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
                               colors: [
-                                const Color(0xFF0D1520).withValues(alpha: 0.95),
+                                const Color(0xFF0D1520).withOpacity(0.95),
                                 Colors.transparent,
                               ],
                             ),
@@ -145,7 +145,7 @@ class _FilePreviewCardState extends State<FilePreviewCard> with SingleTickerProv
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: Colors.black.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -184,7 +184,7 @@ class _FilePreviewCardState extends State<FilePreviewCard> with SingleTickerProv
                       Text(
                         widget.subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: Colors.white.withOpacity(0.3),
                           fontSize: 10,
                         ),
                       ),
@@ -212,7 +212,7 @@ class _NetworkThumbnail extends StatelessWidget {
       imageUrl: url,
       fit: BoxFit.cover,
       placeholder: (context, url) => Container(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       errorWidget: (context, url, error) => _IconThumbnail(
@@ -238,7 +238,7 @@ class _BlurThumbnail extends StatelessWidget {
         Image.file(
           File(path),
           fit: BoxFit.cover,
-          color: color.withValues(alpha: 0.08),
+          color: color.withOpacity(0.08),
           colorBlendMode: BlendMode.srcATop,
           cacheWidth: 200,
         ),
@@ -246,7 +246,7 @@ class _BlurThumbnail extends StatelessWidget {
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.03),
+              color: color.withOpacity(0.03),
             ),
           ),
         ),
@@ -268,11 +268,11 @@ class _IconThumbnail extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [color.withValues(alpha: 0.12), color.withValues(alpha: 0.03)],
+          colors: [color.withOpacity(0.12), color.withOpacity(0.03)],
         ),
       ),
       child: Center(
-        child: Icon(icon, color: color.withValues(alpha: 0.5), size: 40),
+        child: Icon(icon, color: color.withOpacity(0.5), size: 40),
       ),
     );
   }

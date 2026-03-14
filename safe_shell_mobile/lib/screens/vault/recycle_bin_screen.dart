@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:safe_shell_mobile/core/theme.dart';
-import 'package:safe_shell_mobile/widgets/glass_card.dart';
-import 'package:safe_shell_mobile/widgets/primary_button.dart';
-import '../../services/api_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants.dart';
+import '../../services/network_service.dart';
 import '../../services/audit_logger.dart';
+import '../../core/theme.dart'; // Added theme if needed
+import '../../widgets/glass_card.dart'; // Added glass_card if needed
+import '../../widgets/primary_button.dart'; // Added primary_button if needed
 
 class RecycleBinScreen extends StatefulWidget {
   const RecycleBinScreen({super.key});
@@ -25,16 +28,28 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   Future<void> _fetchDeletedItems() async {
     try {
-      final response = await ApiService().get('/vault?isDeleted=true');
-      if (mounted) {
-        final allItems = response ?? [];
-        // Auto-delete items older than 30 days
-        await _autoDeleteExpired(allItems);
-        setState(() {
-          _items = allItems.where((item) => !_isExpired(item)).toList();
-          _isLoading = false;
-          _selectedIds.clear();
-        });
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final response = await NetworkService.client.get(
+        Uri.parse('${AppConstants.baseUrl}/vault?isDeleted=true'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          // Auto-delete items older than 30 days
+          await _autoDeleteExpired(data);
+          setState(() {
+            _items = data.where((item) => !_isExpired(item)).toList();
+            _isLoading = false;
+            _selectedIds.clear();
+          });
+        }
+      } else {
+        throw Exception('Failed to fetch from backend');
       }
     } catch (e) {
       if (mounted) {
@@ -71,7 +86,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     
     for (final item in expired) {
       try {
-        await ApiService().delete('/vault/${item['_id']}?permanent=true');
+        await _deleteItemPermanently(item);
         debugPrint('Auto-deleted expired item: ${item['name']}');
       } catch (e) {
         debugPrint('Auto-delete failed for ${item['_id']}: $e');
@@ -113,10 +128,19 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     if (_selectedIds.isEmpty) return;
     
     try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
       for (final id in _selectedIds) {
-        final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
-        await ApiService().post('/vault/$id/restore', {});
-        AuditLogger.logFileRestore(item?['name'] ?? 'item', item?['type'] ?? 'file');
+        final response = await NetworkService.client.post(
+          Uri.parse('${AppConstants.baseUrl}/vault/$id/restore'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (response.statusCode == 200) {
+           final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
+           AuditLogger.logFileRestore(item?['name'] ?? 'item', item?['type'] ?? 'file');
+        }
       }
       await _fetchDeletedItems();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_selectedIds.length} items restored')));
@@ -145,7 +169,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
       try {
         for (final id in _selectedIds) {
           final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
-          await ApiService().delete('/vault/$id?permanent=true');
+          await _deleteItemPermanently(item);
           AuditLogger.logFilePermanentDelete(item?['name'] ?? 'item', item?['type'] ?? 'file');
         }
         await _fetchDeletedItems();
@@ -172,14 +196,43 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
     if (confirmed == true) {
       try {
-        final count = _items.length;
-        await ApiService().delete('/vault/empty-bin');
-        AuditLogger.logEmptyBin(count);
-        await _fetchDeletedItems();
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recycle Bin Emptied')));
+        const storage = FlutterSecureStorage();
+        final token = await storage.read(key: AppConstants.keyToken);
+        if (token == null) return;
+
+        final response = await NetworkService.client.delete(
+          Uri.parse('${AppConstants.baseUrl}/vault/empty-bin'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          AuditLogger.logEmptyBin(_items.length);
+          await _fetchDeletedItems();
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recycle Bin Emptied')));
+        } else {
+          throw Exception('Failed to empty bin');
+        }
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+    }
+  }
+
+  Future<void> _deleteItemPermanently(dynamic item) async {
+    if (item == null) return;
+    try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final id = item['_id'].toString();
+      await NetworkService.client.delete(
+        Uri.parse('${AppConstants.baseUrl}/vault/$id?permanent=true'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    } catch (e) {
+      debugPrint('Error deleting item permanently: $e');
+      rethrow;
     }
   }
 
@@ -223,8 +276,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.red.withValues(alpha: 0.08),
-                boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.05), blurRadius: 100, spreadRadius: 50)],
+                color: Colors.red.withOpacity(0.08),
+                boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.05), blurRadius: 100, spreadRadius: 50)],
               ),
             ),
           ),
@@ -236,8 +289,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.05),
-                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.05), blurRadius: 80, spreadRadius: 40)],
+                color: AppColors.primary.withOpacity(0.05),
+                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.05), blurRadius: 80, spreadRadius: 40)],
               ),
             ),
           ),
@@ -291,9 +344,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: isLight ? Colors.black.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.03),
+              color: isLight ? Colors.black.withOpacity(0.03) : Colors.white.withOpacity(0.03),
               shape: BoxShape.circle,
-              border: Border.all(color: isLight ? Colors.black.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: isLight ? Colors.black.withOpacity(0.05) : Colors.white.withOpacity(0.08)),
             ),
             child: Icon(Icons.delete_outline, size: 48, color: iconColor),
           ),
@@ -384,9 +437,9 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
+                        color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: color.withValues(alpha: 0.2)),
+                        border: Border.all(color: color.withOpacity(0.2)),
                       ),
                       child: Icon(_getIconForType(item['type'] ?? 'unknown'), color: color, size: 24),
                     ),
@@ -419,7 +472,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
                       duration: const Duration(milliseconds: 200),
                       child: isSelected
                           ? const Icon(Icons.check_circle, color: AppColors.primary)
-                          : Icon(Icons.circle_outlined, color: isLight ? Colors.black26 : Colors.white.withValues(alpha: 0.2)),
+                          : Icon(Icons.circle_outlined, color: isLight ? Colors.black26 : Colors.white.withOpacity(0.2)),
                     ),
                   ),
                 ),

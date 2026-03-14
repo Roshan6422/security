@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
-import '../../services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User, AuthProvider;
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/glass_card.dart';
@@ -41,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _fetchProfile();
-    _fetchAnalytics();
+    _fetchAnalytics(init: true);
   }
 
   @override
@@ -53,7 +54,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfile() async {
     try {
-      final user = await ApiService().get('/auth/me');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('User not logged in');
+
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (!doc.exists) throw Exception('Profile not found');
+      
+      final user = doc.data()!;
+      user['_id'] = uid;
+
       if (mounted) {
         setState(() {
           _userData = user;
@@ -66,31 +75,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _fetchAnalytics() async {
+  Future<void> _fetchAnalytics({bool init = false}) async {
     try {
-      final stats = await VaultStatsService().getAggregatedStats();
+      // Use the onRefresh callback for instant paint + background update
+      final stats = await VaultStatsService().getAggregatedStats(
+        onRefresh: (freshStats) {
+          if (mounted) {
+            setState(() {
+              _updateStatsFromModel(freshStats);
+            });
+          }
+        },
+      );
+      
       if (mounted) {
         setState(() {
-          _totalFiles = stats.totalCount;
-          _totalPhotos = stats.photoCount;
-          _totalVideos = stats.videoCount;
-          _totalDocs = stats.docCount;
-          _storageUsed = stats.sizeFormatted;
-          // Estimate days active from registration (default 30 days)
-          _daysActive = 30;
+          _updateStatsFromModel(stats);
         });
       }
     } catch (_) {}
+  }
+
+  void _updateStatsFromModel(VaultStats stats) {
+    _totalFiles = stats.totalCount;
+    _totalPhotos = stats.photoCount;
+    _totalVideos = stats.videoCount;
+    _totalDocs = stats.docCount;
+    _storageUsed = stats.sizeFormatted;
+    _daysActive = 30; // Still hardcoded as per original
   }
 
   Future<void> _updateProfile() async {
     HapticFeedback.lightImpact();
     setState(() => _isLoading = true);
     try {
-      await ApiService().put('/auth/profile', {
-        'name': _nameController.text,
-        'email': _emailController.text,
-      });
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'name': _nameController.text,
+          'email': _emailController.text,
+        });
+      }
       if (mounted) {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('? Profile updated'), backgroundColor: Color(0xFF10B981)));
@@ -136,7 +161,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirm == true) {
       try {
-        await ApiService().delete('/auth/delete-account');
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          // Permanently destroy account data from auth and database
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+          // We would also need to securely delete the vault bucket files here in future
+          await user.delete();
+        }
         await _logout();
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -225,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       height: height,
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: isCircle ? null : BorderRadius.circular(16),
         shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
       ),
@@ -240,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = _userData?['email'] ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final secondaryColor = isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3);
+    final secondaryColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3);
 
     return Column(
       children: [
@@ -285,11 +316,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
-      child: Text(text, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w700)),
+      child: Text(text, style: TextStyle(color: color.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -313,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4DA3FF).withValues(alpha: 0.3),
+            color: const Color(0xFF4DA3FF).withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -327,7 +358,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Positioned(
               right: -20,
               top: -20,
-              child: Icon(Icons.star_rounded, size: 120, color: Colors.white.withValues(alpha: 0.1)),
+              child: Icon(Icons.star_rounded, size: 120, color: Colors.white.withOpacity(0.1)),
             ),
             Padding(
               padding: const EdgeInsets.all(24),
@@ -339,7 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 20),
@@ -359,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'Unlock Cloud Backup, Unlimited Video Storage & Advanced Stealth.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13, height: 1.4),
+                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
@@ -417,8 +448,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           color: isLight ? Colors.white : AppColors.darkSurface,
-          border: Border.all(color: color.withValues(alpha: isLight ? 0.2 : 0.08)),
-          boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+          border: Border.all(color: color.withOpacity(0.2)),
+          boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
         ),
         child: Column(
           children: [
@@ -426,7 +457,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 6),
             Text('$count', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3), fontSize: 11)),
+            Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 11)),
           ],
         ),
       ),
@@ -448,8 +479,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.04)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Storage Breakdown', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
-              Text(_storageUsed, style: TextStyle(color: const Color(0xFF4DA3FF).withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.w600)),
+              Text(_storageUsed, style: TextStyle(color: const Color(0xFF4DA3FF).withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 14),
@@ -494,7 +525,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3), fontSize: 11)),
+        Text(label, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 11)),
       ],
     );
   }
@@ -508,8 +539,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.08), const Color(0xFF4DA3FF).withValues(alpha: 0.02)]),
-        border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.1)),
+        gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withOpacity(0.08), const Color(0xFF4DA3FF).withOpacity(0.02)]),
+        border: Border.all(color: const Color(0xFF4DA3FF).withOpacity(0.1)),
       ),
       child: GestureDetector(
         onTap: () => _copyToClipboard('Recovery Key', _userData?['recoveryKey'] ?? 'N/A'),
@@ -518,7 +549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.2), const Color(0xFF4DA3FF).withValues(alpha: 0.06)]),
+                gradient: LinearGradient(colors: [const Color(0xFF4DA3FF).withOpacity(0.2), const Color(0xFF4DA3FF).withOpacity(0.06)]),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.vpn_key_rounded, color: Color(0xFF4DA3FF), size: 18),
@@ -528,13 +559,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Recovery Key', style: TextStyle(color: isLight ? AppColors.primary.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.4), fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text('Recovery Key', style: TextStyle(color: isLight ? AppColors.primary.withOpacity(0.7) : Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 2),
                   Text(_userData?['recoveryKey'] ?? 'N/A', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1)),
                 ],
               ),
             ),
-            Icon(Icons.copy_rounded, color: const Color(0xFF4DA3FF).withValues(alpha: 0.4), size: 18),
+            Icon(Icons.copy_rounded, color: const Color(0xFF4DA3FF).withOpacity(0.4), size: 18),
           ],
         ),
       ),
@@ -551,8 +582,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.04)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.04)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -589,15 +620,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: color.withValues(alpha: 0.06),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
+          color: color.withOpacity(0.06),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.06)]),
+                gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.06)]),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -608,11 +639,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
-                  Text(subtitle, style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.2), fontSize: 11)),
+                  Text(subtitle, style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white.withOpacity(0.2), fontSize: 11)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.3), size: 20),
+            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.3), size: 20),
           ],
         ),
       ),
@@ -628,7 +659,7 @@ class _SubscriptionSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: isLight ? Colors.white : const Color(0xFF0F172A),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 40)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 40)],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
@@ -638,7 +669,7 @@ class _SubscriptionSheet extends StatelessWidget {
           const SizedBox(height: 24),
           const Text('Choose Your Protection', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
           const SizedBox(height: 8),
-          Text('Join 50,000+ users protecting their privacy.', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14)),
+          Text('Join 50,000+ users protecting their privacy.', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 14)),
           const SizedBox(height: 32),
           _SubscriptionPlan(
             title: 'Monthly Pass',
@@ -676,7 +707,7 @@ class _SubscriptionSheet extends StatelessWidget {
             },
           ),
           const SizedBox(height: 12),
-          Text('No commitment. Cancel anytime.', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 10)),
+          Text('No commitment. Cancel anytime.', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 10)),
           SizedBox(height: MediaQuery.of(context).padding.bottom + 10),
         ],
       ),
@@ -706,16 +737,16 @@ class _SubscriptionPlan extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: isPopular ? 0.3 : 0.1), width: isPopular ? 2 : 1),
+        border: Border.all(color: color.withOpacity(0.2), width: isPopular ? 2 : 1),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 24),
@@ -738,7 +769,7 @@ class _SubscriptionPlan extends StatelessWidget {
                     ],
                   ],
                 ),
-                Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 11)),
+                Text(description, style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11)),
               ],
             ),
           ),

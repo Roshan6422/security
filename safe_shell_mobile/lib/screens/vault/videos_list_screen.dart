@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import '../../services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import '../../utils/vault_encryption_helper.dart';
+import 'package:path/path.dart' as p;
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/audit_logger.dart';
+import '../../services/network_service.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants.dart';
 import '../../services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../utils/vault_encryption_helper.dart';
 
 class VideosListScreen extends StatefulWidget {
   const VideosListScreen({super.key});
@@ -31,17 +36,34 @@ class _VideosListScreenState extends State<VideosListScreen> {
   }
 
   Future<void> _fetchItems() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
     try {
-      final response = await ApiService().get('/vault?type=video');
-      if (mounted) {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final response = await NetworkService.client.get(
+        Uri.parse('${AppConstants.baseUrl}/vault?type=video'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (!mounted) return;
+
         setState(() {
-          _items = (response as List).where((i) => i['isDeleted'] != true).toList();
+          _items = data.cast<Map<String, dynamic>>();
           _isLoading = false;
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+      } else {
+        throw Exception('Failed to fetch from backend');
       }
     } catch (e) {
+      debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
@@ -106,17 +128,22 @@ class _VideosListScreenState extends State<VideosListScreen> {
         }
 
         int successCount = 0;
+        int failCount = 0;
         for (final asset in result) {
-          final file = await asset.file;
-          if (file != null) {
-            try {
-              await VaultEncryptionHelper.encryptAndUpload(file.path, '/vault/upload');
-              successCount++;
-            } catch (e) {
-              debugPrint('Upload failed for ${asset.id}: $e');
-            }
-          }
+        final file = await asset.file;
+        if (file == null) {
+          failCount++;
+          continue;
         }
+
+        try {
+          await VaultEncryptionHelper.encryptAndUpload(file.path, 'video');
+          successCount++;
+        } catch (e) {
+          debugPrint('Upload failed for ${asset.id}: $e');
+          failCount++;
+        }
+      }
         
         if (mounted) Navigator.pop(context); // Close loading
         await _fetchItems();
@@ -125,7 +152,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
            if (successCount > 0) {
              AuditLogger.logFileUpload('$successCount video(s)', 'video');
              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Videos Encrypted & Saved to Vault')));
-             _deleteOriginalsSilently(result);
+             _promptDeleteOriginals(result);
            }
         }
       }
@@ -135,13 +162,40 @@ class _VideosListScreenState extends State<VideosListScreen> {
     }
   }
 
-  Future<void> _deleteOriginalsSilently(List<AssetEntity> assets) async {
-    try {
-      final ids = assets.map((e) => e.id).toList();
-      await PhotoManager.editor.deleteWithIds(ids);
-      SoundEffects.deleteAction();
-    } catch (e) {
-      debugPrint('Silent delete error: $e');
+  Future<void> _promptDeleteOriginals(List<AssetEntity> assets) async {
+    if (assets.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete from Gallery?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Should we delete the ${assets.length} original video${assets.length > 1 ? 's' : ''} from your gallery?\n\nThey are now safely encrypted in your vault.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Originals'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final ids = assets.map((e) => e.id).toList();
+        await PhotoManager.editor.deleteWithIds(ids);
+        SoundEffects.deleteAction();
+      } catch (e) {
+        debugPrint('Delete originals error: $e');
+      }
     }
   }
 
@@ -166,14 +220,42 @@ class _VideosListScreenState extends State<VideosListScreen> {
 
     if (confirmed == true) {
        try {
-        for (final id in _selectedIds) {
-          final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
-          await ApiService().delete('/vault/$id');
-          AuditLogger.logFileDelete(item?['name'] ?? 'video', 'video');
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      int failCount = 0;
+      for (final id in _selectedIds.toList()) {
+        try {
+          final response = await NetworkService.client.delete(
+            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+          if (response.statusCode != 200) {
+            failCount++;
+            debugPrint('Failed to delete $id: ${response.statusCode} ${response.body}');
+          } else {
+            final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
+            AuditLogger.logFileDelete(item?['name'] ?? 'video', 'video');
+          }
+        } catch (e) {
+          debugPrint('Delete $id failed: $e');
+          failCount++;
         }
-        SoundEffects.deleteAction();
-        await _fetchItems();
-      } catch (e) {
+      }
+      SoundEffects.deleteAction();
+      await _fetchItems();
+
+      if (mounted) {
+        if (failCount == 0) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_selectedIds.length} videos moved to Recycle Bin.')));
+        } else if (failCount == _selectedIds.length) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete any videos.'), backgroundColor: Colors.redAccent));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Successfully deleted ${_selectedIds.length - failCount} videos, $failCount failed.'), backgroundColor: Colors.orangeAccent));
+        }
+      }
+    } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
@@ -194,8 +276,8 @@ class _VideosListScreenState extends State<VideosListScreen> {
       final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
       if (item != null && item['url'] != null) {
         try {
-           final url = '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}';
-           final response = await http.get(Uri.parse(url));
+           final url = item['url'];
+           final response = await NetworkService.client.get(Uri.parse(url));
            if (response.statusCode == 200) {
              final tempDir = await getTemporaryDirectory();
              final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
@@ -309,10 +391,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
                         duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+                          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.white.withOpacity(0.04),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.08),
+                            color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.white.withOpacity(0.08),
                           ),
                         ),
                         padding: const EdgeInsets.all(14),
@@ -332,10 +414,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
                               height: 56,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.purple.withValues(alpha: 0.2), Colors.purple.withValues(alpha: 0.05)],
+                                  colors: [Colors.purple.withOpacity(0.2), Colors.purple.withOpacity(0.05)],
                                 ),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.purple.withValues(alpha: 0.1)),
+                                border: Border.all(color: Colors.purple.withOpacity(0.1)),
                               ),
                               child: const Icon(Icons.play_circle_fill_rounded, color: Colors.purple, size: 28),
                             ),

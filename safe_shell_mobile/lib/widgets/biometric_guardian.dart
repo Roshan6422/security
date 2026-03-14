@@ -156,9 +156,9 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: 'Password...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
+                fillColor: Colors.white.withOpacity(0.05),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -204,7 +204,7 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
                    Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.lock_person, size: 64, color: AppColors.primary),
@@ -234,7 +234,7 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
                     icon: const Icon(Icons.password, size: 18, color: Colors.white38),
                     label: Text(
                       'Unlock with Account Password',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
                     ),
                   ),
                 ],

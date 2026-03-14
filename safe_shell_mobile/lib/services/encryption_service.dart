@@ -69,27 +69,12 @@ class EncryptionService {
     final clearText = await file.readAsBytes();
 
     late Uint8List finalBytes;
-    String fileSuffix = '.shell';
-
-    if (Platform.isAndroid) {
-      // 1. Use Hardware-backed AES-GCM (KeyStore)
-      final hardwareResult = await hwEncrypt(clearText);
-      final ciphertext = base64Decode(hardwareResult['ciphertext']!);
-      final iv = base64Decode(hardwareResult['iv']!);
-      
-      // Store in format: [IV Length (1 byte)] + [IV] + [Ciphertext]
-      final builder = BytesBuilder();
-      builder.addByte(iv.length);
-      builder.add(iv);
-      builder.add(ciphertext);
-      finalBytes = builder.toBytes();
-      fileSuffix = '.hw.shell';
-    } else {
-      // 2. Fallback to Pure Dart Cryptography
-      final key = await _getOrCreateKey();
-      final secretBox = await _algorithm.encrypt(clearText, secretKey: key);
-      finalBytes = Uint8List.fromList(secretBox.concatenation());
-    }
+    // 1. Fallback to Pure Dart Cryptography for ALL platforms.
+    // hwEncrypt (KeyStore) over MethodChannel crashes on large files (videos/photos)
+    // due to TransactionTooLargeException or OutOfMemoryError in Android.
+    final key = await _getOrCreateKey();
+    final secretBox = await _algorithm.encrypt(clearText, secretKey: key);
+    finalBytes = Uint8List.fromList(secretBox.concatenation());
 
     // 3. Prepare Vault Directory
     final appDir = await getApplicationDocumentsDirectory();
@@ -98,7 +83,7 @@ class EncryptionService {
 
     // 4. Save
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final targetPath = p.join(vaultDir.path, 'enc_$timestamp$fileSuffix');
+    final targetPath = p.join(vaultDir.path, 'enc_$timestamp.shell');
     await File(targetPath).writeAsBytes(finalBytes);
 
     return targetPath;
@@ -112,18 +97,21 @@ class EncryptionService {
     final fileBytes = await encryptedFile.readAsBytes();
     late Uint8List clearText;
 
-    if (encryptedPath.endsWith('.hw.shell')) {
-      // 1. Hardware Decryption
-      final ivLength = fileBytes[0];
-      final iv = base64Encode(fileBytes.sublist(1, 1 + ivLength));
-      final ciphertext = base64Encode(fileBytes.sublist(1 + ivLength));
-      
-      clearText = await hwDecrypt(ciphertext, iv);
-    } else {
-      // 2. Pure Dart Decryption
-      final key = await _getOrCreateKey();
-      final secretBox = SecretBox.fromConcatenation(fileBytes, nonceLength: 12, macLength: 16);
-      clearText = Uint8List.fromList(await _algorithm.decrypt(secretBox, secretKey: key));
+    // 1. Pure Dart Decryption
+    try {
+      if (encryptedPath.endsWith('.hw.shell')) {
+        // Fallback for files encrypted before the revert
+        final ivLength = fileBytes[0];
+        final iv = base64Encode(fileBytes.sublist(1, 1 + ivLength));
+        final ciphertext = base64Encode(fileBytes.sublist(1 + ivLength));
+        clearText = await hwDecrypt(ciphertext, iv);
+      } else {
+        final key = await _getOrCreateKey();
+        final secretBox = SecretBox.fromConcatenation(fileBytes, nonceLength: 12, macLength: 16);
+        clearText = Uint8List.fromList(await _algorithm.decrypt(secretBox, secretKey: key));
+      }
+    } catch (_) {
+      throw Exception('Failed to decrypt file. It may be corrupted or using an old key.');
     }
 
     // 3. Write to Temp

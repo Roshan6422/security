@@ -7,19 +7,37 @@ import android.hardware.usb.UsbManager
 import android.util.Log
 import io.flutter.plugin.common.MethodChannel
 
-class UsbBroadcastReceiver(private val channel: MethodChannel) : BroadcastReceiver() {
+class UsbBroadcastReceiver(private var channel: MethodChannel? = null) : BroadcastReceiver() {
+    // Default constructor for system manifest registration
+    constructor() : this(null)
+
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
+        val prefs = context.getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
+        
+        var isConnected = false
+        var shouldReport = false
+
         if (UsbManager.ACTION_USB_DEVICE_ATTACHED == action) {
             Log.d("SafeShellUSB", "USB Device Attached")
-            channel.invokeMethod("onUsbStatusChanged", mapOf("connected" to true))
+            isConnected = true
+            shouldReport = true
         } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
             Log.d("SafeShellUSB", "USB Device Detached")
-            channel.invokeMethod("onUsbStatusChanged", mapOf("connected" to false))
+            isConnected = false
+            shouldReport = true
         } else if ("android.hardware.usb.action.USB_STATE" == action) {
-            val connected = intent.extras?.getBoolean("connected") ?: false
-            Log.d("SafeShellUSB", "USB State Changed: Connected=$connected")
-            channel.invokeMethod("onUsbStatusChanged", mapOf("connected" to connected))
+            isConnected = intent.extras?.getBoolean("connected") ?: false
+            Log.d("SafeShellUSB", "USB State Changed: Connected=$isConnected")
+            shouldReport = true
+        }
+
+        if (shouldReport) {
+            // Persist state so Flutter can read it on boot
+            prefs.edit().putBoolean("usb_connected", isConnected).apply()
+            
+            // Try to report to Flutter if channel is active
+            channel?.invokeMethod("onUsbStatusChanged", mapOf("connected" to isConnected))
         }
     }
 }

@@ -52,10 +52,10 @@ class FileRecoveryService {
       }
 
       // 3. Process Files
-      final entities = cloakDir.listSync();
+      final entities = cloakDir.list();
       int restoredCount = 0;
 
-      for (var entity in entities) {
+      await for (var entity in entities) {
         if (entity is File && entity.path.endsWith('.safe_cloak')) {
           try {
             final obfName = p.basename(entity.path);

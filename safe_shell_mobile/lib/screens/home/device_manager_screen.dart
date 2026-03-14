@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../core/theme.dart';
-import '../../services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/glass_card.dart';
 
 class DeviceManagerScreen extends StatefulWidget {
@@ -13,7 +14,6 @@ class DeviceManagerScreen extends StatefulWidget {
 }
 
 class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
-  final ApiService _api = ApiService();
   List<Map<String, dynamic>> _devices = [];
   int _totalDevices = 0;
   int _trustedCount = 0;
@@ -52,13 +52,29 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
       _currentModel = model;
 
-      // Register this device
-      await _api.post('/device/register', {
-        'deviceName': deviceName,
-        'model': model,
-        'os': os,
-        'platform': platform,
-      });
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final devicesRef = FirebaseFirestore.instance.collection('users').doc(uid).collection('devices');
+        
+        // Find existing device by model
+        final existing = await devicesRef.where('model', isEqualTo: model).get();
+        if (existing.docs.isEmpty) {
+          // Register this device
+          await devicesRef.add({
+            'deviceName': deviceName,
+            'model': model,
+            'os': os,
+            'platform': platform,
+            'isTrusted': true,
+            'lastActive': DateTime.now().toIso8601String(),
+          });
+        } else {
+          // Update last active
+          await devicesRef.doc(existing.docs.first.id).update({
+            'lastActive': DateTime.now().toIso8601String(),
+          });
+        }
+      }
 
       // Fetch all devices
       await _fetchDevices();
@@ -72,13 +88,26 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
   Future<void> _fetchDevices() async {
     try {
-      final response = await _api.get('/device/list');
-      if (mounted && response != null) {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).collection('devices').get();
+      
+      final devices = snapshot.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+      int trusted = 0;
+      int untrusted = 0;
+      
+      for (var d in devices) {
+        if (d['isTrusted'] == true) trusted++;
+        else untrusted++;
+      }
+
+      if (mounted) {
         setState(() {
-          _devices = List<Map<String, dynamic>>.from(response['devices'] ?? []);
-          _totalDevices = response['total'] ?? 0;
-          _trustedCount = response['trusted'] ?? 0;
-          _untrustedCount = response['untrusted'] ?? 0;
+          _devices = devices;
+          _totalDevices = devices.length;
+          _trustedCount = trusted;
+          _untrustedCount = untrusted;
           _isLoading = false;
         });
       }
@@ -90,7 +119,12 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
   Future<void> _toggleTrust(String deviceId, bool currentTrust) async {
     try {
-      await _api.put('/device/$deviceId/trust', {'trusted': !currentTrust});
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).collection('devices').doc(deviceId).update({
+          'isTrusted': !currentTrust,
+        });
+      }
       await _fetchDevices();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -106,7 +140,10 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
   Future<void> _removeDevice(String deviceId) async {
     try {
-      await _api.delete('/device/$deviceId');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).collection('devices').doc(deviceId).delete();
+      }
       await _fetchDevices();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,9 +185,9 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
                   ),
                   child: const Icon(Icons.phone_android, color: Colors.white70, size: 28),
                 ),
@@ -161,7 +198,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                     style: AppTextStyles.subheading.copyWith(fontSize: 18),
                   ),
                 ),
-                Icon(Icons.edit, color: Colors.white.withValues(alpha: 0.3), size: 20),
+                Icon(Icons.edit, color: Colors.white.withOpacity(0.3), size: 20),
               ],
             ),
             const SizedBox(height: 24),
@@ -189,7 +226,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: (isTrusted ? Colors.orange : Colors.green).withValues(alpha: 0.1),
+                  backgroundColor: (isTrusted ? Colors.orange : Colors.green).withOpacity(0.1),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
@@ -234,7 +271,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.primary.withValues(alpha: 0.15), Colors.transparent],
+                  colors: [AppColors.primary.withOpacity(0.15), Colors.transparent],
                 ),
               ),
             ),
@@ -281,7 +318,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      color: AppColors.primary.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(Icons.devices, color: AppColors.primary, size: 24),
@@ -339,9 +376,9 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                                       Container(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                         decoration: BoxDecoration(
-                                                          color: AppColors.primary.withValues(alpha: 0.15),
+                                                          color: AppColors.primary.withOpacity(0.15),
                                                           borderRadius: BorderRadius.circular(8),
-                                                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                                                         ),
                                                         child: Text(
                                                           'This device',
@@ -399,7 +436,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.05),
+                                            color: Colors.white.withOpacity(0.05),
                                             borderRadius: BorderRadius.circular(10),
                                           ),
                                           child: Text(
@@ -423,7 +460,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                               padding: const EdgeInsets.all(16),
                               child: Row(
                                 children: [
-                                  Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.3), size: 20),
+                                  Icon(Icons.info_outline, color: Colors.white.withOpacity(0.3), size: 20),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(

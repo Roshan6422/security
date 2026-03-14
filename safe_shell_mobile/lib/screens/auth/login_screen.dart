@@ -1,13 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:safe_shell_mobile/utils/sound_effects.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../services/api_service.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/premium_button.dart';
@@ -41,15 +39,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _checkBiometrics() async {
+    if (kDebugMode) debugPrint('LoginScreen: Checking biometrics...');
     try {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
       final canCheck = await _localAuth.canCheckBiometrics;
       final biometricEnabled = await _storage.read(key: 'biometric_enabled');
       
+      if (kDebugMode) debugPrint('LoginScreen: BioSupport=$isDeviceSupported, CanCheck=$canCheck, Enabled=$biometricEnabled');
+      
       setState(() {
         _canCheckBiometrics = isDeviceSupported && canCheck && biometricEnabled == 'true';
       });
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('LoginScreen: Biometric Check Error: $e');
+    }
   }
 
   Future<void> _authenticate() async {
@@ -99,11 +102,23 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login({bool isBiometric = false}) async {
+    if (kDebugMode) debugPrint('LoginScreen: Login attempt (Biometric: $isBiometric)');
     if (_formKey.currentState!.validate()) {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid email address'), backgroundColor: Colors.redAccent),
+        );
+        return;
+      }
+
       try {
+        print('SafeShell: LOGIN_SCREEN: Validated form. Calling AuthProvider.login...');
         await Provider.of<AuthProvider>(context, listen: false).login(
-          _emailController.text,
-          _passwordController.text,
+          email,
+          password,
         );
         
         // Save credentials for biometrics if successful and not already using biometrics (or update them)
@@ -133,100 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
 
-  Future<void> _testConnection(String url, StateSetter setState) async {
-    setState(() => _testingConnection = true);
-    try {
-      // Create a temporary instance or use static method if possible, but ApiService is singleton-ish
-      // We need to temporarily set the URL to test it, then revert if failed? 
-      // Actually, we can just use http directly to test execution without affecting global state yet, 
-      // OR update global state and test.
-      final testUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-      final fullUrl = testUrl.endsWith('/api') ? '$testUrl/health' : '$testUrl/api/health';
-      
-      final response = await http.get(Uri.parse(fullUrl)).timeout(const Duration(seconds: 5));
-      
-      if (response.statusCode == 200) {
-        if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Connection Successful!'), backgroundColor: Colors.green),
-          );
-        }
-      } else {
-        throw Exception('Status: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connection Failed: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      setState(() => _testingConnection = false);
-    }
-  }
-
-  void _showServerUrlDialog() {
-    final urlController = TextEditingController(text: ApiService.currentBaseUrl);
-
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final isLight = Theme.of(context).brightness == Brightness.light;
-          final textColor = isLight ? AppColors.textPrimary : Colors.white;
-          final subColor = isLight ? AppColors.textSecondary : Colors.white70;
-
-          return AlertDialog(
-            backgroundColor: isLight ? AppColors.surface : AppColors.darkSurface,
-            title: Text('Server Configuration', style: AppTextStyles.heading.copyWith(color: textColor)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Enter the backend URL (e.g., https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app)',
-                  style: AppTextStyles.body.copyWith(color: subColor, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                label: 'Base URL',
-                prefixIcon: Icons.link,
-                controller: urlController,
-              ),
-              const SizedBox(height: 16),
-              if (_testingConnection)
-                const CircularProgressIndicator()
-              else
-                ElevatedButton.icon(
-                  onPressed: () => _testConnection(urlController.text, setState),
-                  icon: const Icon(Icons.wifi_tethering),
-                  label: const Text('Test Connection'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.1),
-                    foregroundColor: isLight ? AppColors.primary : Colors.white,
-                  ),
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel', style: TextStyle(color: subColor)),
-            ),
-            TextButton(
-              onPressed: () async {
-                await ApiService.setBaseUrl(urlController.text);
-                if (mounted) Navigator.pop(context);
-                setState(() {}); // Refresh UI
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-        },
-      ),
-    );
-  }
+  // Removed legacy server config UI
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             builder: (context, auth, child) {
                               return PremiumButton(
                                 text: 'Login',
-                                onPressed: _login,
+                                onPressed: () => _login(),
                                 isLoading: auth.isLoading,
                               );
                             },
@@ -331,14 +253,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               }
                             },
                             icon: Image.network(
-                              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                              'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                               height: 18,
+                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
                             ),
                             label: const Text('Sign in with Google'),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 54),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                              side: BorderSide(color: Colors.white.withOpacity(0.1)),
                               foregroundColor: Colors.white,
                             ),
                           ),
@@ -357,31 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   _buildBottomLinks(),
                   const SizedBox(height: 24),
                   
-                  // Server Config Link (Subtle)
-                  GestureDetector(
-                    onTap: _showServerUrlDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.dns_outlined, size: 14, color: Colors.white38),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Node: ${ApiService.currentBaseUrl}',
-                            style: AppTextStyles.caption.copyWith(
-                                color: Theme.of(context).brightness == Brightness.light ? Colors.black38 : Colors.white38, 
-                                fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Server connection UI removed for pure Firebase setup
                 ],
               ),
             ),
@@ -392,45 +291,47 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildStaticBlobs() {
-    return Stack(
-      children: [
-        // Primary Blue Blob (Static)
-        Positioned(
-          top: -150,
-          right: -100,
-          child: Container(
-            width: 450,
-            height: 450,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.1),
-                  AppColors.primary.withValues(alpha: 0.0),
-                ],
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          // Primary Blue Blob (Static)
+          Positioned(
+            top: -150,
+            right: -100,
+            child: Container(
+              width: 450,
+              height: 450,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.1),
+                    AppColors.primary.withOpacity(0.0),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        // Secondary Indigo Blob (Static)
-        Positioned(
-          bottom: -100,
-          left: -150,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppColors.secondary.withValues(alpha: 0.08),
-                  AppColors.secondary.withValues(alpha: 0.0),
-                ],
+          // Secondary Indigo Blob (Static)
+          Positioned(
+            bottom: -100,
+            left: -150,
+            child: Container(
+              width: 500,
+              height: 500,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withOpacity(0.08),
+                    AppColors.secondary.withOpacity(0.0),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -438,12 +339,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.01),
+        color: AppColors.primary.withOpacity(0.01),
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.05), width: 1.0),
+        border: Border.all(color: AppColors.primary.withOpacity(0.05), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.02),
+            color: AppColors.primary.withOpacity(0.02),
             blurRadius: 50,
             spreadRadius: 1,
           ),
@@ -478,11 +379,18 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
-          child: Text(
-            'Recover Account',
-            style: AppTextStyles.caption.copyWith(color: AppColors.primary.withValues(alpha: 0.8), fontWeight: FontWeight.bold),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              child: Text(
+                'Recover Account',
+                style: AppTextStyles.caption.copyWith(color: AppColors.primary.withOpacity(0.8), fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -513,9 +421,9 @@ class _BiometricRippleButton extends StatelessWidget {
         width: 52, height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.primary.withValues(alpha: 0.05)]),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 12)],
+          gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.15), AppColors.primary.withOpacity(0.05)]),
+          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 12)],
         ),
         child: const Icon(Icons.face_rounded, size: 30, color: AppColors.primary),
       ),

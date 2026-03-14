@@ -21,7 +21,7 @@ class UsageRing extends StatelessWidget {
               painter: _RingPainter(
                 progress: value,
                 color: AppColors.primary,
-                backgroundColor: isLight ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
+                backgroundColor: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.08),
               ),
             ),
           ),

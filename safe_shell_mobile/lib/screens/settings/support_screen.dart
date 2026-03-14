@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../widgets/glass_card.dart';
-import '../../services/api_service.dart';
+import 'support_detail_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class SupportScreen extends StatefulWidget {
@@ -23,10 +25,20 @@ class _SupportScreenState extends State<SupportScreen> {
 
   Future<void> _fetchTickets() async {
     try {
-      final response = await ApiService().get('/support');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      
+      final snapshot = await FirebaseFirestore.instance
+          .collection('support_tickets')
+          .where('uid', isEqualTo: uid)
+          .get();
+          
+      final docs = snapshot.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+      docs.sort((a, b) => (b['createdAt']?.toString() ?? '').compareTo(a['createdAt']?.toString() ?? ''));
+          
       if (mounted) {
         setState(() {
-          _tickets = response as List;
+          _tickets = docs;
           _isLoading = false;
         });
       }
@@ -64,9 +76,9 @@ class _SupportScreenState extends State<SupportScreen> {
               height: 520,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: AppColors.primary.withOpacity(0.12),
                 boxShadow: [
-                  BoxShadow(color: AppColors.primary.withValues(alpha: 0.12), blurRadius: 120),
+                  BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 120),
                 ],
               ),
             ),
@@ -88,7 +100,7 @@ class _SupportScreenState extends State<SupportScreen> {
                           Text('Support', style: AppTextStyles.display.copyWith(fontSize: 28)),
                           Text(
                             "We're here to help.",
-                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary.withValues(alpha: 0.55)),
+                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary.withOpacity(0.55)),
                           ),
                         ],
                       ),
@@ -101,7 +113,7 @@ class _SupportScreenState extends State<SupportScreen> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: [
-                              BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12),
+                              BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 12),
                             ],
                           ),
                           child: const Icon(Icons.add, color: Colors.white),
@@ -154,7 +166,7 @@ class _SupportScreenState extends State<SupportScreen> {
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: Colors.white.withOpacity(0.05),
               ),
               child: const Icon(Icons.message, color: Colors.white24, size: 32),
             ),
@@ -194,11 +206,21 @@ class _SupportScreenState extends State<SupportScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: GlassCard(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: GestureDetector(
+        onTap: () async {
+          final updated = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SupportDetailScreen(ticket: ticket),
+            ),
+          );
+          if (updated == true) _fetchTickets();
+        },
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -213,9 +235,9 @@ class _SupportScreenState extends State<SupportScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isOpen ? const Color(0xFF10B981).withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
+                    color: isOpen ? const Color(0xFF10B981).withOpacity(0.1) : Colors.white.withOpacity(0.05),
                     border: Border.all(
-                      color: isOpen ? const Color(0xFF10B981).withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
+                      color: isOpen ? const Color(0xFF10B981).withOpacity(0.2) : Colors.white.withOpacity(0.1),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -257,7 +279,8 @@ class _SupportScreenState extends State<SupportScreen> {
           ],
         ),
       ),
-    );
+    ),
+   );
   }
 }
 
@@ -282,10 +305,17 @@ class _NewTicketDialogState extends State<NewTicketDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      await ApiService().post('/support', {
-        'subject': _subjectController.text,
-        'message': _messageController.text,
-      });
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('support_tickets').add({
+          'uid': uid,
+          'subject': _subjectController.text,
+          'message': _messageController.text,
+          'status': 'open',
+          'createdAt': DateTime.now().toIso8601String(),
+          'replies': [],
+        });
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -350,9 +380,9 @@ class _NewTicketDialogState extends State<NewTicketDialog> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: TextField(
@@ -362,7 +392,7 @@ class _NewTicketDialogState extends State<NewTicketDialog> {
             decoration: InputDecoration(
               border: InputBorder.none,
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
             ),
           ),
         ),

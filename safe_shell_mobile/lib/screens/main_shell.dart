@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_bottom_nav.dart';
-import '../widgets/biometric_guardian.dart';
+// ✅ Fix 1: Removed unused import
+// import '../widgets/biometric_guardian.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import 'home/dashboard_screen.dart';
@@ -32,16 +33,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     ProfileScreen(),
   ];
 
-
+  late List<bool> _initializedScreens;
 
   @override
   void initState() {
     super.initState();
+    _initializedScreens = List.generate(_screens.length, (index) => index == 0);
     WidgetsBinding.instance.addObserver(this);
     FileRecoveryService().restoreLegacyFiles();
   }
-
-
 
   @override
   void dispose() {
@@ -96,14 +96,21 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: List.generate(_screens.length, (index) {
+          return _initializedScreens[index] 
+              ? _screens[index] 
+              : const SizedBox.shrink();
+        }),
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
           debugPrint('BNAV_TAP: Navigating to index $index');
           HapticFeedback.selectionClick();
-          setState(() => _currentIndex = index);
+          setState(() {
+            _currentIndex = index;
+            _initializedScreens[index] = true;
+          });
         },
       ),
     );

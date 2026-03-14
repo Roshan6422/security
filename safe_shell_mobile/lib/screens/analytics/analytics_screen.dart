@@ -144,9 +144,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        gradient: isLight ? null : LinearGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.04), const Color(0xFF4DA3FF).withValues(alpha: 0.01)]),
-        border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: isLight ? 0.2 : 0.05)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        gradient: isLight ? null : LinearGradient(colors: [const Color(0xFF4DA3FF).withOpacity(0.04), const Color(0xFF4DA3FF).withOpacity(0.01)]),
+        border: Border.all(color: const Color(0xFF4DA3FF).withOpacity(0.2)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +156,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4DA3FF).withValues(alpha: 0.1),
+                  color: const Color(0xFF4DA3FF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.cloud_rounded, color: Color(0xFF4DA3FF), size: 18),
@@ -179,7 +179,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                   return RepaintBoundary(
                     child: Stack(
                       children: [
-                        Container(color: Colors.white.withValues(alpha: 0.04)),
+                        Container(color: Colors.white.withOpacity(0.04)),
                         FractionallySizedBox(
                           widthFactor: (usedPercent * _chartController.value),
                           child: Container(
@@ -199,7 +199,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
           const SizedBox(height: 8),
           Text(
             '${(usedPercent * 100).toStringAsFixed(1)}% of ${_storageTotalMB.toStringAsFixed(0)} MB used',
-            style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.25), fontSize: 11),
+            style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25), fontSize: 11),
           ),
         ],
       ),
@@ -221,15 +221,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.03)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.03)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('File Breakdown', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('$_totalFiles total files', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.25), fontSize: 11)),
+          Text('$_totalFiles total files', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25), fontSize: 11)),
           const SizedBox(height: 18),
           Row(
             children: items.map((item) {
@@ -239,7 +239,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [item.color.withValues(alpha: 0.15), item.color.withValues(alpha: 0.04)]),
+                        gradient: LinearGradient(colors: [item.color.withOpacity(0.15), item.color.withOpacity(0.04)]),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(item.icon, color: item.color, size: 20),
@@ -255,7 +255,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(item.name, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.3), fontSize: 10)),
+                    Text(item.name, style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3), fontSize: 10)),
                   ],
                 ),
               );
@@ -277,15 +277,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.03)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.03)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Upload Trend', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Last 7 days activity', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.25), fontSize: 11)),
+          Text('Last 7 days activity', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25), fontSize: 11)),
           const SizedBox(height: 24),
           SizedBox(
             height: 120,
@@ -310,12 +310,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                                   gradient: LinearGradient(
                                     begin: Alignment.bottomCenter,
                                     end: Alignment.topCenter,
-                                    colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.3), const Color(0xFF4DA3FF)],
+                                    colors: [const Color(0xFF4DA3FF).withOpacity(0.3), const Color(0xFF4DA3FF)],
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(days[i], style: TextStyle(color: isLight ? AppColors.textSecondary.withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.25), fontSize: 9)),
+                              Text(days[i], style: TextStyle(color: isLight ? AppColors.textSecondary.withOpacity(0.7) : Colors.white.withOpacity(0.25), fontSize: 9)),
                             ],
                           ),
                         ),
@@ -347,8 +347,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         color: isLight ? Colors.white : AppColors.darkSurface,
-        border: Border.all(color: isLight ? AppColors.primary.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.03)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.05) : Colors.white.withOpacity(0.03)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,7 +390,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: item.$3)),
                   const SizedBox(width: 6),
-                  Text('${item.$1} $pct%', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.35), fontSize: 11)),
+                  Text('${item.$1} $pct%', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.35), fontSize: 11)),
                 ],
               );
             }).toList(),
@@ -407,17 +407,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        color: isLight ? Colors.white : const Color(0xFF10B981).withValues(alpha: 0.08),
-        gradient: isLight ? null : LinearGradient(colors: [const Color(0xFF10B981).withValues(alpha: 0.08), const Color(0xFF10B981).withValues(alpha: 0.02)]),
-        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: isLight ? 0.2 : 0.08)),
-        boxShadow: isLight ? [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        color: isLight ? Colors.white : const Color(0xFF10B981).withOpacity(0.08),
+        gradient: isLight ? null : LinearGradient(colors: [const Color(0xFF10B981).withOpacity(0.08), const Color(0xFF10B981).withOpacity(0.02)]),
+        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
+        boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))] : [],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [const Color(0xFF10B981).withValues(alpha: 0.2), const Color(0xFF10B981).withValues(alpha: 0.05)]),
+              gradient: LinearGradient(colors: [const Color(0xFF10B981).withOpacity(0.2), const Color(0xFF10B981).withOpacity(0.05)]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 22),
@@ -428,14 +428,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with TickerProviderSt
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Vault Secured', style: TextStyle(color: Color(0xFF10B981), fontSize: 14, fontWeight: FontWeight.w700)),
-                Text('AES-256 encryption active', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withValues(alpha: 0.25), fontSize: 11)),
+                Text('AES-256 encryption active', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.25), fontSize: 11)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: const Color(0xFF10B981).withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text('Active', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w700)),

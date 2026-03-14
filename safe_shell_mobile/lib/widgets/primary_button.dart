@@ -43,7 +43,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                   BoxShadow(
                     blurRadius: 26,
                     spreadRadius: 1,
-                    color: cs.primary.withValues(alpha: 0.22),
+                    color: cs.primary.withOpacity(0.22),
                   ),
                 ],
         ),
@@ -77,8 +77,8 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                         borderRadius: BorderRadius.circular(18),
                         gradient: LinearGradient(
                           colors: [
-                            Colors.white.withValues(alpha: 0.18),
-                            Colors.white.withValues(alpha: 0.06),
+                            Colors.white.withOpacity(0.18),
+                            Colors.white.withOpacity(0.06),
                             Colors.transparent,
                           ],
                           begin: Alignment.topLeft,

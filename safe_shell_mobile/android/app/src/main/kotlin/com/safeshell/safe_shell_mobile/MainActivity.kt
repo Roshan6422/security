@@ -97,6 +97,10 @@ class MainActivity: FlutterFragmentActivity() {
                     startActivity(intent)
                     result.success(true)
                 }
+                "isUsbConnected" -> {
+                    val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
+                    result.success(prefs.getBoolean("usb_connected", false))
+                }
                 "setLockedApps" -> {
                     val pkgList = call.argument<List<String>>("packages") ?: listOf()
                     setLockedApps(pkgList)
@@ -184,25 +188,18 @@ class MainActivity: FlutterFragmentActivity() {
                     startActivity(intent)
                     result.success(true)
                 }
+                "deactivateDeviceAdmin" -> {
+                    val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
+                    dpm.removeActiveAdmin(componentName)
+                    result.success(true)
+                }
                 "getUsbStatus" -> {
                     val usbManager = getSystemService(Context.USB_SERVICE) as android.hardware.usb.UsbManager
                     val deviceList = usbManager.deviceList
                     result.success(deviceList.isNotEmpty())
                 }
-                "toggleStealthMode" -> {
-                    val enable = call.argument<Boolean>("enable") ?: false
-                    toggleStealthMode(enable)
-                    result.success(true)
-                }
-                "toggleScreenshot" -> {
-                    val allow = call.argument<Boolean>("allow") ?: false
-                    if (allow) {
-                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-                    } else {
-                        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
-                    }
-                    result.success(true)
-                }
+                // --- DELETED DUPLICATE HANDLERS (toggleStealthMode, toggleScreenshot) ---
 
                 else -> result.notImplemented()
             }

@@ -1,12 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Fire-and-forget audit logger for vault operations.
-/// Logs are posted to the backend `/audit` endpoint.
+/// Logs are posted to Firestore `security_logs` collection.
 class AuditLogger {
-  static final ApiService _api = ApiService();
-
-  /// Log a file upload event.
   static void logFileUpload(String fileName, String fileType, {String? fileUrl}) {
     _log(
       type: 'file',
@@ -101,15 +99,23 @@ class AuditLogger {
     String? fileType,
     String? fileUrl,
   }) {
-    // Fire-and-forget — don't await, don't block UI
-    _api.post('/audit', {
-      'type': type,
-      'action': action,
-      'detail': detail,
-      if (fileType != null) 'fileType': fileType,
-      if (fileUrl != null) 'fileUrl': fileUrl,
-    }).catchError((e) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      FirebaseFirestore.instance.collection('security_logs').add({
+        'uid': uid,
+        'type': type,
+        'action': action,
+        'detail': detail,
+        if (fileType != null) 'fileType': fileType,
+        if (fileUrl != null) 'fileUrl': fileUrl,
+        'timestamp': DateTime.now().toIso8601String(),
+        'ipAddress': '127.0.0.1', // Placeholder
+        'deviceName': 'Mobile Device', // Placeholder
+      });
+    } catch (e) {
       if (kDebugMode) debugPrint('AuditLogger error: $e');
-    });
+    }
   }
 }

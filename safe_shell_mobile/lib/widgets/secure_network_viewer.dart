@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
-import '../services/api_service.dart';
 import '../services/encryption_service.dart';
+import '../services/network_service.dart';
 
 class SecureNetworkViewer extends StatefulWidget {
   final String relativeUrl;
@@ -56,51 +56,59 @@ class _SecureNetworkViewerState extends State<SecureNetworkViewer> {
       final cacheFilename = _getCacheFilename(widget.relativeUrl);
       final cacheFile = File(p.join(cacheDir.path, cacheFilename));
 
-      // 1. Serve from cache if available
-      if (await cacheFile.exists()) {
+      // Support both local paths and network URLs
+      if (widget.relativeUrl.startsWith('http')) {
+        // 1. Serve from cache if available
+        if (await cacheFile.exists()) {
+          if (mounted) {
+            setState(() {
+              _localPath = cacheFile.path;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+
+        // 2. Download encrypted file
+        final fullUrl = widget.relativeUrl;
+        final response = await NetworkService.client.get(Uri.parse(fullUrl));
+
+        if (response.statusCode != 200) {
+          throw Exception('Failed to download: ${response.statusCode}');
+        }
+
+        // 3. Save temp encrypted file
+        final tempEncPath = p.join(cacheDir.path, 'temp_${DateTime.now().millisecondsSinceEpoch}.enc');
+        final tempEncFile = File(tempEncPath);
+        await tempEncFile.writeAsBytes(response.bodyBytes);
+
+        // 4. Decrypt
+        final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+        final decryptedFile = File(decryptedPath);
+
+        // 5. Move decrypted file to stable cache path
+        await decryptedFile.rename(cacheFile.path);
+
+        // 6. Cleanup temp encrypted
+        if (await tempEncFile.exists()) await tempEncFile.delete();
+
         if (mounted) {
           setState(() {
             _localPath = cacheFile.path;
             _isLoading = false;
           });
         }
-        return;
+      } else {
+        // It's a local file path
+        final decryptedPath = await EncryptionService.decryptFile(widget.relativeUrl);
+        if (mounted) {
+          setState(() {
+            _localPath = decryptedPath;
+            _isLoading = false;
+          });
+        }
       }
 
-      // 2. Download encrypted file
-      final baseUrl = ApiService.currentBaseUrl.replaceAll('/api', '');
-      final fullUrl = '$baseUrl${widget.relativeUrl}';
-
-      final response = await http.get(
-        Uri.parse(fullUrl),
-        headers: await ApiService.getAuthHeaders(),
-      );
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download: ${response.statusCode}');
-      }
-
-      // 3. Save temp encrypted file
-      final tempEncPath = p.join(cacheDir.path, 'temp_${DateTime.now().millisecondsSinceEpoch}.enc');
-      final tempEncFile = File(tempEncPath);
-      await tempEncFile.writeAsBytes(response.bodyBytes);
-
-      // 4. Decrypt
-      final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
-      final decryptedFile = File(decryptedPath);
-
-      // 5. Move decrypted file to stable cache path
-      await decryptedFile.rename(cacheFile.path);
-
-      // 6. Cleanup temp encrypted
-      if (await tempEncFile.exists()) await tempEncFile.delete();
-
-      if (mounted) {
-        setState(() {
-          _localPath = cacheFile.path;
-          _isLoading = false;
-        });
-      }
     } catch (e) {
       debugPrint('SecureNetworkViewer: Error: $e');
       if (mounted) {

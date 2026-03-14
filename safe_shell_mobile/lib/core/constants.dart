@@ -1,12 +1,6 @@
 class AppConstants {
   // Use 10.0.2.2 for Android Emulator to access localhost
   // If running on a physical device, use your machine's local IP address (e.g., http://192.168.1.5:5000/api)
-  // Production URL for Koyeb
-  // static const String baseUrl = 'https://valid-stacia-safeshell-26edef1b.koyeb.app/api';
-  // static const String baseUrl = 'https://safeshell-backend.onrender.com/api';
-  // static const String baseUrl = 'http://10.54.126.127:5000/api';
-  // static const String baseUrl = 'https://loud-marcelle-safeshell-ddaba28e.koyeb.app/api';
-  // static const String baseUrl = 'http://10.54.126.20:8000/api';
   static const String baseUrl = 'https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app/api';
   
   static const String keyToken = 'auth_token';

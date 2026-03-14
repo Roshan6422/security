@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
-import '../services/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/encryption_service.dart';
+import 'package:open_filex/open_filex.dart';
+import '../services/network_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class FileViewer {
   static Future<void> openFile(BuildContext context, String url, String filename) async {
-    final fullUrl = '${ApiService.currentBaseUrl.replaceAll('/api', '')}$url';
+    final fullUrl = url;
     
     // For web URL (optional fallback)
     /* 
@@ -26,7 +27,7 @@ class FileViewer {
         builder: (ctx) => const Center(child: CircularProgressIndicator()),
       );
 
-      final response = await http.get(Uri.parse(fullUrl), headers: await ApiService.getAuthHeaders());
+      final response = await NetworkService.client.get(Uri.parse(fullUrl));
       
       if (context.mounted) Navigator.pop(context); // Close loader
 

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants.dart';
+import '../../services/network_service.dart';
 import '../../services/audit_logger.dart';
 import 'note_editor_screen.dart';
 
@@ -25,17 +28,34 @@ class _NotesListScreenState extends State<NotesListScreen> {
   }
 
   Future<void> _fetchItems() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
     try {
-      final response = await ApiService().get('/vault?type=note');
-      if (mounted) {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final response = await NetworkService.client.get(
+        Uri.parse('${AppConstants.baseUrl}/vault?type=note'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (!mounted) return;
+
         setState(() {
-          _items = (response as List).where((i) => i['isDeleted'] != true).toList();
+          _items = data.cast<Map<String, dynamic>>();
           _isLoading = false;
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+      } else {
+        throw Exception('Failed to fetch from backend');
       }
     } catch (e) {
+      debugPrint('Fetch error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -93,10 +113,19 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
     if (confirmed == true) {
        try {
+        const storage = FlutterSecureStorage();
+        final token = await storage.read(key: AppConstants.keyToken);
+        if (token == null) return;
+
         for (final id in _selectedIds) {
-          final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
-          await ApiService().delete('/vault/$id');
-          AuditLogger.logNoteDelete(item?['name'] ?? 'note');
+          final response = await NetworkService.client.delete(
+            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+          if (response.statusCode == 200) {
+            final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
+            AuditLogger.logNoteDelete(item?['name'] ?? 'note');
+          }
         }
         await _fetchItems();
       } catch (e) {
@@ -221,7 +250,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
                               Positioned.fill(
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    color: AppColors.primary.withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(26), // Match GlassCard radius
                                     border: Border.all(color: AppColors.primary, width: 2),
                                   ),

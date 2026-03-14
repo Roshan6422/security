@@ -53,8 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBiometricSetting();
-    _loadDiscreetMode();
     _loadAutoLock();
   }
 
@@ -85,12 +83,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _loadDiscreetMode() async {
-    final mode = await _storage.read(key: 'discreet_mode');
-    if (mounted) setState(() => _discreetMode = mode == 'true');
-  }
-
   Future<void> _toggleDiscreetMode(bool value) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     if (value) {
       // Check if PIN is set first
       final pin = await _storage.read(key: 'calculator_pin');
@@ -102,18 +96,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
         return;
       }
+
+      // Check for required permissions before enabling
+      final hasOverlay = await _stealthChannel.invokeMethod<bool>('checkOverlayPermission') ?? false;
+      if (!hasOverlay) {
+        if (mounted) {
+          final request = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              title: const Text('Overlay Permission Required', style: TextStyle(color: Colors.white)),
+              content: const Text('SafeShell needs "Display over other apps" permission to mask the app icon effectively on some devices.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Grant', style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          );
+          if (request == true) {
+            await _stealthChannel.invokeMethod('requestOverlayPermission');
+            return; 
+          } else {
+            return;
+          }
+        }
+      }
     }
 
-    await _storage.write(key: 'discreet_mode', value: value.toString());
-    
-    // Trigger native icon swap
-    try {
-      await _stealthChannel.invokeMethod('toggleStealthMode', {'enable': value});
-    } catch (e) {
-      debugPrint('Error toggling stealth mode: $e');
-    }
-
-    setState(() => _discreetMode = value);
+    await settings.toggleDiscreetMode(value);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,6 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
   }
+
 
   Future<void> _setCalculatorPin() async {
     final result = await showDialog<String>(
@@ -183,71 +197,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
 
-  Future<void> _loadBiometricSetting() async {
-    try {
-      final canCheck = await _localAuth.canCheckBiometrics;
-      final isSupported = await _localAuth.isDeviceSupported();
-      final saved = await _storage.read(key: 'biometric_enabled');
-      if (mounted) {
-        setState(() {
-          _canUseBiometrics = canCheck && isSupported;
-          _biometrics = saved == 'true';
-        });
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _requestBatteryOptimization(bool value) async {
-    if (!value) {
-      setState(() => _batterySaver = false);
-      return;
-    }
-
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Enable Ultra Protection?',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
-          'To ensure your files remain protected at all times, please allow SafeShell to run without battery restrictions.\n\nThis prevents the system from stopping the protection service.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Enable Protection',
-                style: TextStyle(
-                    color: AppColors.primary, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-
-    if (proceed == true) {
-      var status = await Permission.ignoreBatteryOptimizations.status;
-      if (!status.isGranted) {
-        status = await Permission.ignoreBatteryOptimizations.request();
-      }
-
-      if (mounted) {
-        setState(() => _batterySaver = status.isGranted);
-        if (status.isGranted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ultra Protection Enabled! ???')));
-        } else {
-          setState(() => _batterySaver = false);
-        }
-      }
-    } else {
-      setState(() => _batterySaver = false);
-    }
-  }
-
   Future<void> _toggleBiometric(bool value) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     if (value) {
       try {
         final bool isSupported = await _localAuth.isDeviceSupported();
@@ -283,35 +234,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
-    await _storage.write(key: 'biometric_enabled', value: value.toString());
+    await settings.toggleBiometrics(value);
     if (mounted) {
-      setState(() => _biometrics = value);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(value
-                ? 'Biometric lock enabled ?'
+                ? 'Biometric lock enabled 🔓'
                 : 'Biometric lock disabled')),
       );
     }
   }
 
   Future<void> _toggleScreenshot(bool value) async {
-    try {
-      await _stealthChannel.invokeMethod('toggleScreenshot', {'allow': value});
-      setState(() => _allowScreenshots = value);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(value ? 'Screenshots Allowed' : 'Screenshots Blocked'),
-            backgroundColor: value ? Colors.green : null,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error toggling screenshots: $e');
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    await settings.toggleScreenshots(value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text(value ? 'Screenshots Allowed' : 'Screenshots Blocked'),
+          backgroundColor: value ? Colors.green : null,
+        ),
+      );
     }
   }
+
 
 
   Future<void> _confirmClearAppData() async {
@@ -387,7 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  AppColors.primary.withValues(alpha: 0.06),
+                  AppColors.primary.withOpacity(0.06),
                   Colors.transparent
                 ]),
               ),
@@ -402,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  const Color(0xFF8B5CF6).withValues(alpha: 0.04),
+                  const Color(0xFF8B5CF6).withOpacity(0.04),
                   Colors.transparent
                 ]),
               ),
@@ -465,7 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 Text('Customize your vault experience',
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.25), fontSize: 13)),
+                        color: Colors.white.withOpacity(0.25), fontSize: 13)),
                 const SizedBox(height: 20),
 
                 // App Version Info
@@ -474,11 +421,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     gradient: LinearGradient(colors: [
-                      AppColors.primary.withValues(alpha: 0.08),
-                      AppColors.primary.withValues(alpha: 0.02)
+                      AppColors.primary.withOpacity(0.08),
+                      AppColors.primary.withOpacity(0.02)
                     ]),
                     border:
-                        Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                        Border.all(color: AppColors.primary.withOpacity(0.1)),
                   ),
                   child: Row(
                     children: [
@@ -486,8 +433,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [
-                            AppColors.primary.withValues(alpha: 0.2),
-                            AppColors.primary.withValues(alpha: 0.06)
+                            AppColors.primary.withOpacity(0.2),
+                            AppColors.primary.withOpacity(0.06)
                           ]),
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -503,7 +450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   fontSize: 15, fontWeight: FontWeight.w700)),
                           Text('Version 1.0.0',
                               style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.2),
+                                  color: Colors.white.withOpacity(0.2),
                                   fontSize: 11)),
                         ],
                       ),
@@ -512,13 +459,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                          color: const Color(0xFF10B981).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text('Latest',
                             style: TextStyle(
                                 color:
-                                    const Color(0xFF10B981).withValues(alpha: 0.7),
+                                    const Color(0xFF10B981).withOpacity(0.7),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700)),
                       ),
@@ -542,40 +489,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       MaterialPageRoute(builder: (_) => const ProfileScreen()));
                 }),
                 const SizedBox(height: 8),
-                _toggleTile(
-                    Icons.face_rounded,
-                    'Face Lock',
-                    _canUseBiometrics
-                        ? 'Use Face Lock to unlock'
-                        : 'Not supported',
-                    _biometrics,
-                    const Color(0xFF8B5CF6),
-                    _canUseBiometrics
-                        ? (v) {
-                            SoundEffects.tap();
-                            _toggleBiometric(v);
-                          }
-                        : null),
-                const SizedBox(height: 8),
-                _toggleTile(
-                    Icons.screenshot_rounded,
-                    'Allow Screenshots',
-                    'Temporarily enable screenshots',
-                    _allowScreenshots,
-                    const Color(0xFFF59E0B), (v) {
-                  SoundEffects.tap();
-                  _toggleScreenshot(v);
-                }),
-                const SizedBox(height: 8),
-                _toggleTile(
-                    Icons.calculate_rounded,
-                    'Discreet Mode',
-                    'Disguise SafeShell as a Calculator',
-                    _discreetMode,
-                    const Color(0xFF10B981), (v) {
-                  SoundEffects.tap();
-                  _toggleDiscreetMode(v);
-                }),
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, _) {
+                    return Column(
+                      children: [
+                        _toggleTile(
+                            Icons.face_rounded,
+                            'Face Lock',
+                            'Use Face Lock to unlock',
+                            settings.biometricsEnabled,
+                            const Color(0xFF8B5CF6),
+                            (v) {
+                              SoundEffects.tap();
+                              _toggleBiometric(v);
+                            }),
+                        const SizedBox(height: 8),
+                        _toggleTile(
+                            Icons.screenshot_rounded,
+                            'Allow Screenshots',
+                            'Temporarily enable screenshots',
+                            settings.allowScreenshots,
+                            const Color(0xFFF59E0B), (v) {
+                          SoundEffects.tap();
+                          _toggleScreenshot(v);
+                        }),
+                        const SizedBox(height: 8),
+                        _toggleTile(
+                            Icons.calculate_rounded,
+                            'Discreet Mode',
+                            'Disguise SafeShell as a Calculator',
+                            settings.discreetMode,
+                            const Color(0xFF10B981), (v) {
+                          SoundEffects.tap();
+                          _toggleDiscreetMode(v);
+                        }),
+                      ],
+                    );
+                  }
+                ),
+
                 const SizedBox(height: 8),
                 // --- NEW SECURITY TOGGLES ---
                 Consumer<SettingsProvider>(
@@ -732,7 +684,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: const Color(0xFF161B22),
-        border: Border.all(color: color.withValues(alpha: 0.08)),
+        border: Border.all(color: color.withOpacity(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -744,8 +696,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: LinearGradient(colors: [
-                    color.withValues(alpha: 0.2),
-                    color.withValues(alpha: 0.05)
+                    color.withOpacity(0.2),
+                    color.withOpacity(0.05)
                   ]),
                 ),
                 child:
@@ -766,7 +718,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? 'App stays unlocked'
                           : 'Lock after ${_labelForSeconds(_autoLockSeconds)} of inactivity',
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: Colors.white.withOpacity(0.25),
                           fontSize: 11),
                     ),
                   ],
@@ -793,17 +745,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: selected ? color : color.withValues(alpha: 0.06),
+                      color: selected ? color : color.withOpacity(0.06),
                       border: Border.all(
                           color:
-                              selected ? color : color.withValues(alpha: 0.15)),
+                              selected ? color : color.withOpacity(0.15)),
                     ),
                     child: Text(
                       _lockLabels[i],
                       style: TextStyle(
                         color: selected
                             ? Colors.white
-                            : color.withValues(alpha: 0.6),
+                            : color.withOpacity(0.6),
                         fontSize: 12,
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w500,
@@ -827,8 +779,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             gradient: LinearGradient(colors: [
-              color.withValues(alpha: 0.15),
-              color.withValues(alpha: 0.04)
+              color.withOpacity(0.15),
+              color.withOpacity(0.04)
             ]),
           ),
           child: Icon(icon, color: color, size: 15),
@@ -850,7 +802,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: const Color(0xFF161B22),
-        border: Border.all(color: color.withValues(alpha: 0.06)),
+        border: Border.all(color: color.withOpacity(0.06)),
       ),
       child: Row(
         children: [
@@ -859,8 +811,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: LinearGradient(colors: [
-                color.withValues(alpha: 0.2),
-                color.withValues(alpha: 0.05)
+                color.withOpacity(0.2),
+                color.withOpacity(0.05)
               ]),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -877,7 +829,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontSize: 13)),
                 Text(subtitle,
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: Colors.white.withOpacity(0.25),
                         fontSize: 11)),
               ],
             ),
@@ -889,9 +841,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (onChanged != null) onChanged(v);
             },
             activeThumbColor: color,
-            activeTrackColor: color.withValues(alpha: 0.3),
-            inactiveThumbColor: Colors.white.withValues(alpha: 0.4),
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.06),
+            activeTrackColor: color.withOpacity(0.3),
+            inactiveThumbColor: Colors.white.withOpacity(0.4),
+            inactiveTrackColor: Colors.white.withOpacity(0.06),
           ),
         ],
       ),
@@ -907,7 +859,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           color: const Color(0xFF161B22),
-          border: Border.all(color: color.withValues(alpha: 0.06)),
+          border: Border.all(color: color.withOpacity(0.06)),
         ),
         child: Row(
           children: [
@@ -916,8 +868,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: LinearGradient(colors: [
-                  color.withValues(alpha: 0.2),
-                  color.withValues(alpha: 0.05)
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.05)
                 ]),
               ),
               child: Icon(icon, color: color, size: 18),
@@ -934,13 +886,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontSize: 13)),
                   Text(subtitle,
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: Colors.white.withOpacity(0.25),
                           fontSize: 11)),
                 ],
               ),
             ),
             Icon(Icons.chevron_right_rounded,
-                color: color.withValues(alpha: 0.2), size: 20),
+                color: color.withOpacity(0.2), size: 20),
           ],
         ),
       ),

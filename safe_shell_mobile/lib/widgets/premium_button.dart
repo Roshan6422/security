@@ -63,60 +63,66 @@ class _PremiumButtonState extends State<PremiumButton> with SingleTickerProvider
     final colors = widget.gradientColors ?? [AppColors.primary, AppColors.secondary];
     final isEnabled = widget.onPressed != null && !widget.isLoading;
 
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
-      onTap: isEnabled ? () {
-        HapticFeedback.lightImpact();
-        widget.onPressed!();
-      } : null,
-      child: ScaleTransition(
-        scale: _scale,
-        child: Container(
-          width: double.infinity,
-          height: 58,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isEnabled 
-                  ? colors 
-                  : [Colors.grey.withValues(alpha: 0.3), Colors.grey.withValues(alpha: 0.2)],
-            ),
-            boxShadow: isEnabled ? [
-              BoxShadow(
-                color: colors[0].withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 6),
-                spreadRadius: -2,
-              ),
-            ] : [],
+    return Material(
+      color: Colors.transparent,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isEnabled 
+                ? colors 
+                : [Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.2)],
           ),
-          child: Center(
-            child: widget.isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, color: Colors.white, size: 20),
-                        const SizedBox(width: 10),
-                      ],
-                      Text(
-                        widget.text,
-                        style: AppTextStyles.button.copyWith(color: Colors.white),
+          boxShadow: isEnabled ? [
+            BoxShadow(
+              color: colors[0].withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+              spreadRadius: -2,
+            ),
+          ] : [],
+        ),
+        child: InkWell(
+          onTapDown: _handleTapDown,
+          onTapUp: _handleTapUp,
+          onTapCancel: _handleTapCancel,
+          onTap: isEnabled ? () {
+            HapticFeedback.lightImpact();
+            widget.onPressed!();
+          } : null,
+          borderRadius: BorderRadius.circular(20),
+          child: ScaleTransition(
+            scale: _scale,
+            child: SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: Center(
+                child: widget.isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.icon != null) ...[
+                            Icon(widget.icon, color: Colors.white, size: 20),
+                            const SizedBox(width: 10),
+                          ],
+                          Text(
+                            widget.text,
+                            style: AppTextStyles.button.copyWith(color: Colors.white),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+              ),
+            ),
           ),
         ),
       ),

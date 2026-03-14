@@ -13,6 +13,9 @@ class SettingsProvider extends ChangeNotifier {
   bool _usbDetectionEnabled = false;
   bool _antiUninstallEnabled = false;
   bool _usbAppsLocked = false; // tracks if apps are currently locked by USB protection
+  bool _discreetMode = false;
+  bool _biometricsEnabled = false;
+  bool _allowScreenshots = false;
 
   // Common packages for File Manager, Gallery, Video on Android
   // These cover stock Samsung, Google, and AOSP apps
@@ -37,22 +40,41 @@ class SettingsProvider extends ChangeNotifier {
   bool get usbDetectionEnabled => _usbDetectionEnabled;
   bool get antiUninstallEnabled => _antiUninstallEnabled;
   bool get usbAppsLocked => _usbAppsLocked;
+  bool get discreetMode => _discreetMode;
+  bool get biometricsEnabled => _biometricsEnabled;
+  bool get allowScreenshots => _allowScreenshots;
 
   SettingsProvider() {
     _loadSettings();
   }
 
   Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
     final lockStr = await _storage.read(key: 'auto_lock_seconds');
     _autoLockSeconds = int.tryParse(lockStr ?? '0') ?? 0;
 
-    _usbDetectionEnabled = (await _storage.read(key: 'usb_detection')) == 'true';
-    _usbAppsLocked = (await _storage.read(key: 'usb_apps_locked')) == 'true';
+    _usbDetectionEnabled = prefs.getBool('usb_detection') ?? false;
+    _usbAppsLocked = prefs.getBool('usb_apps_locked') ?? false;
+    _discreetMode = prefs.getBool('discreet_mode') ?? false;
+    _biometricsEnabled = prefs.getBool('biometric_enabled') ?? false;
+    _allowScreenshots = prefs.getBool('allow_screenshots') ?? false;
     
     // Sync Anti-Uninstall with Native Admin status
     _antiUninstallEnabled = await _channel.invokeMethod<bool>('isDeviceAdmin') ?? false;
 
+    // Apply screenshot setting on load
+    await _channel.invokeMethod('toggleScreenshot', {'allow': _allowScreenshots});
+
     notifyListeners();
+  }
+
+  /// Checks the current USB state from native code (used on startup)
+  Future<bool> checkNativeUsbState() async {
+    try {
+      return await _channel.invokeMethod<bool>('isUsbConnected') ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> setAutoLockSeconds(int seconds) async {
@@ -63,7 +85,8 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> toggleUsbDetection(bool enable) async {
     _usbDetectionEnabled = enable;
-    await _storage.write(key: 'usb_detection', value: enable.toString());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('usb_detection', enable);
     
     // When turning OFF USB protection, unlock all protected apps
     if (!enable && _usbAppsLocked) {
@@ -111,7 +134,8 @@ class SettingsProvider extends ChangeNotifier {
       
       await _channel.invokeMethod('setLockedApps', {'packages': fullList});
       _usbAppsLocked = true;
-      await _storage.write(key: 'usb_apps_locked', value: 'true');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('usb_apps_locked', true);
       notifyListeners();
       debugPrint('USB Protection: Locked USB apps + ${userLocked.length} user apps');
     } catch (e) {
@@ -127,7 +151,8 @@ class SettingsProvider extends ChangeNotifier {
       // Sync only the user's manual locks, effectively unlocking USB-specific apps
       await _channel.invokeMethod('setLockedApps', {'packages': userLocked});
       _usbAppsLocked = false;
-      await _storage.write(key: 'usb_apps_locked', value: 'false');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('usb_apps_locked', false);
       notifyListeners();
       debugPrint('USB Protection: Unlocked USB apps, kept ${userLocked.length} user apps locked');
     } catch (e) {
@@ -135,16 +160,39 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> toggleDiscreetMode(bool enable) async {
+    _discreetMode = enable;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('discreet_mode', enable);
+    
+    // Let it persist before invoking native method which might kill the process
+    await _channel.invokeMethod('toggleStealthMode', {'enable': enable});
+    notifyListeners();
+  }
+
+  Future<void> toggleBiometrics(bool enable) async {
+    _biometricsEnabled = enable;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('biometric_enabled', enable);
+    notifyListeners();
+  }
+
+  Future<void> toggleScreenshots(bool allow) async {
+    _allowScreenshots = allow;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allow_screenshots', allow);
+    await _channel.invokeMethod('toggleScreenshot', {'allow': allow});
+    notifyListeners();
+  }
+
   Future<void> toggleAntiUninstall(bool enable) async {
     if (enable) {
       await _channel.invokeMethod('requestDeviceAdmin');
-      // Status will be updated via _loadSettings or next check
     } else {
-      // User must manually disable in Android Settings for full security,
-      // but we can reflect the status check.
+      await _channel.invokeMethod('deactivateDeviceAdmin');
     }
-    _antiUninstallEnabled = await _channel.invokeMethod<bool>('isDeviceAdmin') ?? false;
-    notifyListeners();
+    // Check status after a small delay to allow native screen to return
+    Future.delayed(const Duration(seconds: 1), () => checkAdminStatus());
   }
 
   Future<void> checkAdminStatus() async {

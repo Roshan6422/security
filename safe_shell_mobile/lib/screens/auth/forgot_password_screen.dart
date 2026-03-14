@@ -15,7 +15,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // Step: 0 = Enter Email, 1 = Enter OTP & New Password
+  // Step: 0 = Enter Email, 1 = Enter OTP, 2 = New Password
   int _step = 0;
   final _emailController = TextEditingController();
   final _otpController = TextEditingController();
@@ -38,30 +38,79 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     try {
       final authProvider = context.read<AuthProvider>();
-      await authProvider.forgotPassword(email);
+      await authProvider.sendResetOtp(email);
       
       if (mounted) {
         setState(() {
           _step = 1;
           _success = 'Reset code sent to your email!';
-          _error = '';
-        });
-        
-        // Clear success message after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) setState(() => _success = '');
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _error = 'Failed to send reset code. Please check your internet connection.';
-        });
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
       }
     }
   }
 
-  // _resetPassword removed - Firebase handles reset via email link.
+  Future<void> _verifyOtp() async {
+    setState(() => _error = '');
+    final otp = _otpController.text.trim();
+    if (otp.length != 6) {
+      setState(() => _error = 'Please enter a 6-digit code');
+      return;
+    }
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.verifyOtp(_emailController.text.trim(), otp);
+      
+      if (mounted) {
+        setState(() {
+          _step = 2;
+          _success = 'Code verified! Enter new password.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    setState(() => _error = '');
+    final newPw = _newPasswordController.text;
+    final confPw = _confirmPasswordController.text;
+
+    if (newPw.length < 6) {
+      setState(() => _error = 'Password must be at least 6 characters');
+      return;
+    }
+    if (newPw != confPw) {
+      setState(() => _error = 'Passwords do not match');
+      return;
+    }
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      await authProvider.resetPasswordCustom(
+        _emailController.text.trim(),
+        _otpController.text.trim(),
+        newPw,
+      );
+      
+      if (mounted) {
+        setState(() => _success = 'Password reset successful!');
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -89,161 +138,170 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.04),
-                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.02), blurRadius: 150)],
+                color: AppColors.primary.withOpacity(0.04),
               ),
             ),
           ),
-          Positioned(
-            bottom: 100,
-            left: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.03),
-                boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.02), blurRadius: 180)],
-              ),
-            ),
-          ),
-
+          
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
                   const SizedBox(height: 56),
-
-                  // Header Icon
                   Container(
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                      color: AppColors.primary.withOpacity(0.15),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                     ),
                     child: const Icon(Icons.lock_reset, color: AppColors.primary, size: 32),
                   ),
                   const SizedBox(height: 24),
-                  Text('Forgot Password', style: AppTextStyles.display.copyWith(fontSize: 30)),
+                  Text('Reset Password', style: AppTextStyles.display.copyWith(fontSize: 30)),
                   const SizedBox(height: 8),
                   Text(
                     _step == 0
                         ? 'Enter your email to receive a reset code'
-                        : 'Enter the 6-digit code and your new password',
-                    style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+                        : _step == 1
+                            ? 'Enter the 6-digit code sent to ${_emailController.text}'
+                            : 'Create a new secure password',
+                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
 
-                  // Form Card
                   GlassCard(
                     padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        if (_step == 0) ...[
-                          CustomTextField(
-                            label: 'Email Address',
-                            prefixIcon: Icons.email,
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 24),
-                          PrimaryButton(
-                            text: 'Send Reset Link',
-                            isLoading: isLoading,
-                            onPressed: _sendResetCode,
-                          ),
-                        ] else ...[
-                          const Icon(Icons.mark_email_read_rounded, color: Colors.greenAccent, size: 64),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Check Your Inbox',
-                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'We have sent a secure password reset link to ${_emailController.text}. Please follow the instructions in the email.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13, height: 1.5),
-                          ),
-                          const SizedBox(height: 32),
-                          PrimaryButton(
-                            text: 'Back to Login',
-                            onPressed: () => Navigator.pop(context),
-                          ),
+                    child: AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      child: Column(
+                        children: [
+                          if (_step == 0) ...[
+                            CustomTextField(
+                              label: 'Email Address',
+                              prefixIcon: Icons.email,
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                            ),
+                            const SizedBox(height: 24),
+                            PrimaryButton(
+                              text: 'Send Code',
+                              isLoading: isLoading,
+                              onPressed: _sendResetCode,
+                            ),
+                          ] else if (_step == 1) ...[
+                            CustomTextField(
+                              label: '6-Digit Code',
+                              prefixIcon: Icons.pin,
+                              controller: _otpController,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                            ),
+                            const SizedBox(height: 24),
+                            PrimaryButton(
+                              text: 'Verify Code',
+                              isLoading: isLoading,
+                              onPressed: _verifyOtp,
+                            ),
+                            if (context.watch<AuthProvider>().lastOtp != null) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Recovery Code:',
+                                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      context.watch<AuthProvider>().lastOtp!,
+                                      style: AppTextStyles.display.copyWith(
+                                        color: AppColors.primary,
+                                        fontSize: 24,
+                                        letterSpacing: 4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            TextButton(
+                              onPressed: isLoading ? null : _sendResetCode,
+                              child: const Text('Resend Code', style: TextStyle(color: AppColors.primary)),
+                            ),
+                          ] else ...[
+                            CustomTextField(
+                              label: 'New Password',
+                              prefixIcon: Icons.lock,
+                              controller: _newPasswordController,
+                              obscureText: _obscureNew,
+                              onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
+                            ),
+                            const SizedBox(height: 16),
+                            CustomTextField(
+                              label: 'Confirm Password',
+                              prefixIcon: Icons.check_circle,
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirm,
+                              onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                            ),
+                            const SizedBox(height: 24),
+                            PrimaryButton(
+                              text: 'Finish Reset',
+                              isLoading: isLoading,
+                              onPressed: _resetPassword,
+                            ),
+                          ],
+
+                          if (_error.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            _message(Colors.redAccent, Icons.error_outline, _error),
+                          ],
+                          if (_success.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            _message(Colors.greenAccent, Icons.check_circle, _success),
+                          ],
                         ],
-
-                        // Error
-                        if (_error.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 16),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.error_outline, color: Colors.redAccent, size: 14),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(_error, style: const TextStyle(color: Colors.redAccent, fontSize: 12))),
-                              ],
-                            ),
-                          ),
-
-                        // Success
-                        if (_success.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 16),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(_success, style: const TextStyle(color: Colors.greenAccent, fontSize: 12))),
-                              ],
-                            ),
-                          ),
-                      ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Back to Sign In
-                  GestureDetector(
-                    onTap: () {
-                      if (_step == 1) {
-                        setState(() {
-                          _step = 0;
-                          _error = '';
-                          _success = '';
-                        });
-                      } else {
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.chevron_left, color: Colors.white.withValues(alpha: 0.4), size: 18),
-                        const SizedBox(width: 4),
-                        Text('Back to Sign In', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 14, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Back to Login', style: TextStyle(color: Colors.white.withOpacity(0.4))),
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _message(Color color, IconData icon, String msg) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(child: Text(msg, style: TextStyle(color: color, fontSize: 12))),
         ],
       ),
     );

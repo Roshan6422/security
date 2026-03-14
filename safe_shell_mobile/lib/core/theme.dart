@@ -114,7 +114,7 @@ class AppTheme {
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      dividerColor: AppColors.divider.withValues(alpha: 0.1),
+      dividerColor: AppColors.divider.withOpacity(0.1),
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -149,25 +149,25 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           elevation: 6,
-          shadowColor: AppColors.primary.withValues(alpha: 0.4),
+          shadowColor: AppColors.primary.withOpacity(0.4),
         ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 8,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
+        shadowColor: Colors.black.withOpacity(0.06),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
+        fillColor: AppColors.surfaceVariant.withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.1)),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -185,7 +185,7 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
       primaryColor: AppColors.primary,
-      dividerColor: Colors.white.withValues(alpha: 0.05),
+      dividerColor: Colors.white.withOpacity(0.05),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -220,7 +220,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           elevation: 8,
-          shadowColor: AppColors.primary.withValues(alpha: 0.6),
+          shadowColor: AppColors.primary.withOpacity(0.6),
         ),
       ),
       cardTheme: CardThemeData(
@@ -228,7 +228,7 @@ class AppTheme {
         elevation: 0, 
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+          side: BorderSide(color: Colors.white.withOpacity(0.06)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -240,7 +240,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

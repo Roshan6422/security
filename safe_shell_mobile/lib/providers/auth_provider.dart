@@ -1,20 +1,23 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:firebase_auth/firebase_auth.dart' as auth hide AuthProvider;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
 import '../services/fcm_service.dart';
 
 import '../core/constants.dart';
+import '../services/network_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
-  final ApiService _apiService = ApiService();
   final _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const _profileCacheKey = 'cached_user_profile';
 
   User? get user => _user;
   bool get isLoading => _isLoading;
@@ -23,20 +26,44 @@ class AuthProvider with ChangeNotifier {
   Future<void> checkAuth() async {
     try {
       final token = await _storage.read(key: AppConstants.keyToken);
-      if (token != null) {
+      final currentUser = _firebaseAuth.currentUser;
+      
+      if (token != null && currentUser != null) {
+        // Turbo: Load from cache first for instant startup
+        final cachedProfile = await _storage.read(key: _profileCacheKey);
+        if (cachedProfile != null) {
+          final data = jsonDecode(cachedProfile);
+          data['token'] = token;
+          _user = User.fromJson(data);
+          notifyListeners();
+        }
+
         try {
-          final userData = await _apiService.get('/auth/me');
-          _user = User.fromJson(userData);
-          if (_user?.recoveryKey != null) {
-            await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
+          final doc = await _firestore.collection('users').doc(currentUser.uid).get();
+          if (doc.exists) {
+            final data = doc.data()!;
+            data['_id'] = currentUser.uid;
+            data['token'] = token;
+            _user = User.fromJson(data);
+            
+            // Update cache
+            await _storage.write(key: _profileCacheKey, value: jsonEncode(doc.data()!));
+            
+            if (_user?.recoveryKey != null) {
+              await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
+            }
+            FCMService.initialize(); // fire-and-forget, don't block auth
+          } else {
+             await logout();
           }
-          await FCMService.initialize();
         } catch (e) {
           await logout();
         }
+      } else {
+         await logout();
       }
     } catch (e) {
-      // Handle error implicitly or log to a service
+      if (kDebugMode) debugPrint('AuthProvider: checkAuth Error: $e');
     }
     notifyListeners();
   }
@@ -45,97 +72,100 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // 1. Try Firebase Login
-      try {
-        final cred = await _firebaseAuth.signInWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        final idToken = await cred.user?.getIdToken();
-        if (idToken == null) throw Exception('Failed to get auth token');
+      final cred = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      final idToken = await cred.user?.getIdToken();
+      if (idToken == null) throw Exception('Failed to get auth token');
 
-        final response = await _apiService.post('/auth/firebase-login', {'idToken': idToken});
-        await _handleLoginResponse(response, password);
-        return;
-      } on FirebaseAuthException catch (e) {
-        // If user doesn't exist in Firebase, try legacy migration
-        if (e.code == 'user-not-found') {
-          final response = await _apiService.post('/auth/login', {
-            'email': email,
-            'password': password,
-          });
-          
-          // Successful legacy login! Now migrate to Firebase
-          final cred = await _firebaseAuth.createUserWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
-          final idToken = await cred.user?.getIdToken();
-          
-          // Inform backend that this user is now Firebase-enabled
-          final fbResponse = await _apiService.post('/auth/firebase-login', {'idToken': idToken});
-          await _handleLoginResponse(fbResponse, password);
-          return;
+      // Sync with Koyeb Backend
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/firebase-login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode != 200) {
+        // If not found in backend but exists in Firebase, try auto-registering in backend
+        if (response.statusCode == 404) {
+           await _syncNewUserToBackend(cred.user!, idToken);
+        } else {
+           throw Exception('Backend sync failed: ${response.body}');
         }
-        rethrow;
-      }
-    } catch (e) {
-      // Local fallback for truly offline mode
-      final savedEmail = await _storage.read(key: 'saved_email') ?? await _storage.read(key: 'bio_email');
-      final savedPassword = await _storage.read(key: 'saved_password') ?? await _storage.read(key: 'bio_password');
-      final token = await _storage.read(key: AppConstants.keyToken);
-
-      if (savedEmail == email && savedPassword == password && token != null) {
-          _user = User(id: 'offline_mode', email: email, name: 'SafeShell User', role: 'user', subscriptionStatus: 'free', token: token);
       } else {
-        rethrow;
+        final userData = jsonDecode(response.body);
+        await _handleLoginResponse(userData, password);
       }
+      
+    } on auth.FirebaseAuthException catch (e) {
+      throw Exception(e.message ?? 'Authentication failed');
+    } catch (e) {
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _handleLoginResponse(dynamic response, String password) async {
-    _user = User.fromJson(response);
-    if (_user?.token != null) {
-      await _storage.write(key: AppConstants.keyToken, value: _user!.token);
-      await _storage.write(key: 'saved_password', value: password);
-      await _storage.write(key: 'saved_email', value: _user!.email);
-      if (_user?.recoveryKey != null) {
-        await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
+  Future<void> _syncNewUserToBackend(auth.User user, String idToken) async {
+     final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/firebase-register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'idToken': idToken,
+          'name': user.displayName ?? 'User',
+        }),
+      ).timeout(NetworkService.defaultTimeout);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        await _handleLoginResponse(userData, 'social_or_sync');
+      } else {
+        throw Exception('Failed to sync user to backend: ${response.body}');
       }
-      await FCMService.initialize();
-    }
   }
 
   Future<void> register(String name, String email, String password) async {
     _isLoading = true;
     notifyListeners();
     try {
-      // 1. Create in Firebase
       final cred = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      final idToken = await cred.user?.getIdToken();
       
-      // 2. Register in Backend
-      final response = await _apiService.post('/auth/firebase-register', {
-        'idToken': idToken,
+      final idToken = await cred.user?.getIdToken();
+      if (idToken == null) throw Exception('Failed to get auth token');
+
+      // Create Firestore Profile (Local fallback/client-side access)
+      await _firestore.collection('users').doc(cred.user!.uid).set({
         'name': name,
+        'email': email,
+        'role': 'user',
+        'subscriptionStatus': 'free',
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
-      _user = User.fromJson(response);
-      if (_user?.token != null) {
-        await _storage.write(key: AppConstants.keyToken, value: _user!.token);
-        await _storage.write(key: 'saved_password', value: password);
-        await _storage.write(key: 'saved_email', value: email);
-        if (_user?.recoveryKey != null) {
-          await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
-        }
-        await FCMService.initialize();
+      // Sync with Koyeb Backend
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/firebase-register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'idToken': idToken,
+          'name': name,
+        }),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+        await _handleLoginResponse(userData, password);
+      } else {
+        throw Exception('Backend registration failed: ${response.body}');
       }
+
+    } on auth.FirebaseAuthException catch (e) {
+      throw Exception(e.message ?? 'Registration failed');
     } catch (e) {
       rethrow;
     } finally {
@@ -157,23 +187,31 @@ class AuthProvider with ChangeNotifier {
       }
 
       final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
+      final auth.OAuthCredential credential = auth.GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-      if (idToken == null) {
-        throw Exception('Google sign-in failed: missing idToken');
+      final auth.UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+      final idToken = await userCredential.user?.getIdToken();
+      if (idToken == null) throw Exception('Google sign-in failed to get token');
+
+      // Sync with Koyeb Backend (Handles auto-registration on server)
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/google'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final userData = jsonDecode(response.body);
+        await _handleLoginResponse(userData, 'google_sso_no_password');
+      } else {
+        throw Exception('Google backend sync failed: ${response.body}');
       }
 
-      final response = await _apiService.post('/auth/google', {
-        'idToken': idToken,
-      });
-
-      _user = User.fromJson(response);
-      if (_user?.token != null) {
-        await _storage.write(key: AppConstants.keyToken, value: _user!.token);
-        await _storage.write(key: 'saved_email', value: _user!.email);
-        await FCMService.initialize();
-      }
     } catch (e) {
+      if (kDebugMode) debugPrint('AuthProvider: Google Sign-in Error: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -181,11 +219,71 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<void> forgotPassword(String email) async {
+  String? _lastOtp;
+  String? get lastOtp => _lastOtp;
+
+  Future<void> sendResetOtp(String email) async {
+    _isLoading = true;
+    _lastOtp = null;
+    notifyListeners();
+    try {
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _lastOtp = data['otp']?.toString();
+      } else {
+        final message = jsonDecode(response.body)['message'] ?? 'Failed to send OTP';
+        throw Exception(message);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> verifyOtp(String email, String otp) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'otp': otp}),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode != 200) {
+        final message = jsonDecode(response.body)['message'] ?? 'Invalid OTP';
+        throw Exception(message);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> resetPasswordCustom(String email, String otp, String newPassword) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await NetworkService.client.post(
+        Uri.parse('${AppConstants.baseUrl}/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+          'password': newPassword,
+        }),
+      ).timeout(NetworkService.defaultTimeout);
+
+      if (response.statusCode != 200) {
+        final message = jsonDecode(response.body)['message'] ?? 'Reset failed';
+        throw Exception(message);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -193,8 +291,6 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> resetPassword(String email, String otp, String newPassword) async {
-    // This is now handled entirely by Firebase's reset email link.
-    // We keep the method for interface compatibility but it's no longer used in the new flow.
     throw UnimplementedError('Reset password is now handled by Firebase reset link');
   }
 
@@ -202,10 +298,29 @@ class AuthProvider with ChangeNotifier {
     _user = null;
     await _storage.delete(key: AppConstants.keyToken);
     try {
+      await _firebaseAuth.signOut();
       if (await _googleSignIn.isSignedIn()) {
         await _googleSignIn.signOut();
       }
     } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> _handleLoginResponse(Map<String, dynamic> userData, String password) async {
+    final token = userData['token'];
+    
+    // The backend returns a flat JSON with user fields and 'token'
+    // We pass the whole map to User.fromJson, which will pick relevant fields
+    if (token == null) {
+      throw Exception('Invalid server response: Missing token');
+    }
+    
+    _user = User.fromJson(userData);
+    await _storage.write(key: AppConstants.keyToken, value: token);
+    
+    // Cache profile for offline/turbo startup
+    await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
+    
     notifyListeners();
   }
 }

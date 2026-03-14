@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme.dart';
-import '../../services/api_service.dart';
 import '../../widgets/glass_card.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
@@ -16,7 +17,6 @@ class BackupRestoreScreen extends StatefulWidget {
 }
 
 class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
-  final ApiService _api = ApiService();
   bool _isExporting = false;
   bool _isImporting = false;
 
@@ -24,17 +24,18 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     setState(() => _isExporting = true);
 
     try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('Not logged in');
+
       // 1. Fetch all vault items
-      final response = await _api.get('/vault');
-      if (response == null) throw Exception('Failed to fetch vault data');
+      final vaultSnapshot = await FirebaseFirestore.instance.collection('vault_files').where('ownerId', isEqualTo: uid).get();
+      final vaultItems = vaultSnapshot.docs.map((d) => {'id': d.id, ...d.data()}).toList();
 
       // 2. Fetch audit logs
       List auditLogs = [];
       try {
-        final auditResponse = await _api.get('/audit');
-        if (auditResponse != null && auditResponse is List) {
-          auditLogs = auditResponse;
-        }
+        final auditSnapshot = await FirebaseFirestore.instance.collection('security_logs').where('uid', isEqualTo: uid).get();
+        auditLogs = auditSnapshot.docs.map((d) => d.data()).toList();
       } catch (_) {}
 
       // 3. Create backup JSON
@@ -42,9 +43,9 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         'version': 1,
         'timestamp': DateTime.now().toIso8601String(),
         'type': 'safeshell_backup',
-        'vault_items': response,
+        'vault_items': vaultItems,
         'audit_log': auditLogs,
-        'item_count': (response is List) ? response.length : 0,
+        'item_count': vaultItems.length,
       };
 
       // 4. Encode to JSON string
@@ -192,7 +193,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.deepPurple.withValues(alpha: 0.12), Colors.transparent],
+                  colors: [Colors.deepPurple.withOpacity(0.12), Colors.transparent],
                 ),
               ),
             ),
@@ -204,7 +205,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Colors.pinkAccent.withValues(alpha: 0.08), Colors.transparent],
+                  colors: [Colors.pinkAccent.withOpacity(0.08), Colors.transparent],
                 ),
               ),
             ),
@@ -254,8 +255,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.deepPurple.withValues(alpha: 0.3),
-                                    AppColors.primary.withValues(alpha: 0.2),
+                                    Colors.deepPurple.withOpacity(0.3),
+                                    AppColors.primary.withOpacity(0.2),
                                   ],
                                 ),
                               ),
@@ -310,8 +311,8 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.pinkAccent.withValues(alpha: 0.3),
-                                    Colors.deepPurple.withValues(alpha: 0.2),
+                                    Colors.pinkAccent.withOpacity(0.3),
+                                    Colors.deepPurple.withOpacity(0.2),
                                   ],
                                 ),
                               ),
@@ -360,7 +361,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.3), size: 20),
+                            Icon(Icons.info_outline, color: Colors.white.withOpacity(0.3), size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(

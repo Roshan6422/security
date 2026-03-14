@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:safe_shell_mobile/core/theme.dart';
-import '../../services/api_service.dart';
+import '../../core/theme.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants.dart';
+import 'package:http/http.dart' as http;
+import '../../services/network_service.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final Map<String, dynamic>? note; 
@@ -33,20 +37,42 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final data = {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) throw Exception('Session expired');
+
+      final body = {
         'name': _titleController.text,
         'content': _contentController.text,
         'type': 'note',
+        'size': '${_contentController.text.length} B',
       };
 
+      http.Response response;
       if (widget.note != null) {
-        await ApiService().put('/vault/${widget.note!['_id']}', data);
+        response = await NetworkService.client.put(
+          Uri.parse('${AppConstants.baseUrl}/vault/${widget.note!['_id']}'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        );
       } else {
-        await ApiService().post('/vault', data);
+        response = await NetworkService.client.post(
+          Uri.parse('${AppConstants.baseUrl}/vault'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        );
       }
 
-      if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate refresh needed
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        throw Exception('Failed to save note: ${response.body}');
       }
     } catch (e) {
       if (mounted) {

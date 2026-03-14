@@ -28,8 +28,8 @@ class CustomBottomNav extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF050A12).withValues(alpha: 0.85),
-            const Color(0xFF050A12).withValues(alpha: 0.95),
+            const Color(0xFF050A12).withOpacity(0.85),
+            const Color(0xFF050A12).withOpacity(0.95),
           ],
         ),
         border: const Border(
@@ -104,7 +104,7 @@ class _NavItem extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Icon(
                 icon,
-                color: _isActive ? _activeColor : Colors.white.withValues(alpha: 0.3),
+                color: _isActive ? _activeColor : Colors.white.withOpacity(0.3),
                 size: 24,
               ),
             ),
@@ -112,7 +112,7 @@ class _NavItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: _isActive ? _activeColor : Colors.white.withValues(alpha: 0.3),
+                color: _isActive ? _activeColor : Colors.white.withOpacity(0.3),
                 fontWeight: _isActive ? FontWeight.w700 : FontWeight.w400,
                 fontSize: 10,
               ),

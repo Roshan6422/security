@@ -2,13 +2,12 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FCMService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
-  static final ApiService _apiService = ApiService();
 
   static Future<void> initialize() async {
     // Request permission
@@ -22,9 +21,9 @@ class FCMService {
       if (kDebugMode) print('User granted permission');
       
       // Initialize Local Notifications
-      final AndroidInitializationSettings initializationSettingsAndroid =
+      const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
-      final InitializationSettings initializationSettings =
+      const InitializationSettings initializationSettings =
           InitializationSettings(android: initializationSettingsAndroid);
       
       await _localNotifications.initialize(
@@ -45,23 +44,10 @@ class FCMService {
       _firebaseMessaging.onTokenRefresh.listen(_registerToken);
 
       // Foreground Message Handler
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (kDebugMode) print('Got a message whilst in the foreground!');
-        if (kDebugMode) print('Message data: ${message.data}');
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-        if (message.notification != null) {
-          _showNotification(message);
-        }
-
-        // Handle Commands
-        if (message.data.containsKey('command')) {
-          _handleCommand(message.data);
-        } else if (message.data['type'] == 'COMMAND') {
-          _handleCommand(message.data);
-        }
-      });
-
-      // Background Message Handler (needs to be static/global, defined in main.dart usually but okay here if referenced)
+      // Background Message Handler
+      FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
     } else {
       if (kDebugMode) print('User declined or has not accepted permission');
     }
@@ -69,26 +55,54 @@ class FCMService {
 
   static Future<void> _registerToken(String token) async {
     try {
-      // Create a specialized instance or use existing if state management allows
-      // For simplicity, we create a temporary instance or use static
-      // Assuming ApiService handles auth tokens correctly from storage
-      await _apiService.post('/device/register', {'token': token});
-      if (kDebugMode) print('Device token registered with backend');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'fcmToken': token,
+        });
+      }
+      if (kDebugMode) print('Device token registered with Firebase');
     } catch (e) {
       if (kDebugMode) print('Failed to register device token: $e');
     }
   }
 
-  static Future<void> _showNotification(RemoteMessage message) async {
-    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+  static void _handleForegroundMessage(RemoteMessage message) {
+    if (kDebugMode) print('Got a message whilst in the foreground!');
+    if (kDebugMode) print('Message data: ${message.data}');
+
+    if (message.notification != null) {
+      _showLocalNotification(message);
+    }
+
+    // Handle Commands
+    if (message.data.containsKey('command')) {
+      _handleCommand(message.data);
+    } else if (message.data['type'] == 'COMMAND') {
+      _handleCommand(message.data);
+    }
+  }
+
+  @pragma('vm:entry-point')
+  static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
+    if (kDebugMode) print('Handling a background message: ${message.messageId}');
+    if (message.data.containsKey('command')) {
+      _handleCommand(message.data);
+    } else if (message.data['type'] == 'COMMAND') {
+      _handleCommand(message.data);
+    }
+  }
+
+  static Future<void> _showLocalNotification(RemoteMessage message) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'safeshell_channel',
       'SafeShell Notifications',
-      channelDescription: 'SafeShell Notification Channel',
       importance: Importance.max,
       priority: Priority.high,
+      showWhen: true,
     );
-    final NotificationDetails platformChannelSpecifics =
+    const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _localNotifications.show(
@@ -100,34 +114,20 @@ class FCMService {
   }
 
   static void _handleCommand(Map<String, dynamic> data) async {
-    String command = data['command'] ?? '';
+    final command = data['command'] ?? data['type'];
     if (kDebugMode) print('Executing Command: $command');
-
-    switch (command.toUpperCase()) {
-      case 'LOCK_DEVICE':
-      case 'LOCK':
-        // Try to trigger the native app lock to overlay the screen
-        try {
-          const platform = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
-          await platform.invokeMethod('showAppLock', {'packageName': 'com.safeshell.safe_shell_mobile'});
-          if (kDebugMode) print('Triggered native AppLock screen');
-        } catch (e) {
-          if (kDebugMode) print('Failed to trigger native lock: $e');
-        }
-        break;
-      case 'SOUND_ALARM':
-      case 'ALARM':
-        // TODO: Play sound natively or via audioplayers package
-        if (kDebugMode) print('Would play loud alarm now!');
-        break;
-      case 'GET_LOCATION':
-      case 'LOCATION':
-        // TODO: Get location and send back
-        if (kDebugMode) print('Would fetch and upload location now!');
-        break;
-      case 'WIPE_DATA':
-        if (kDebugMode) print('Would wipe local data now!');
-        break;
+    
+    if (command == 'panic_lock') {
+      try {
+        final auth = FirebaseAuth.instance;
+        await auth.signOut();
+        // Since this is static, we can't easily navigate directly. 
+        // But the next time the app is opened, it will see the user is logged out.
+        // If we wanted immediate effect while app is open, we'd need a stream or global key.
+        if (kDebugMode) print('Remote Panic Lock executed: User signed out.');
+      } catch (e) {
+        if (kDebugMode) print('Remote sign out failed: $e');
+      }
     }
   }
 }

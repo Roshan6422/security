@@ -96,7 +96,7 @@ class _ConfettiPainter extends CustomPainter {
       final y = -50 + (progress * size.height * p.speed * 1.2);
       final x = p.x * size.width + math.sin(progress * math.pi * 4 * p.wobble) * 20;
       final opacity = (1.0 - progress).clamp(0.0, 1.0);
-      final paint = Paint()..color = p.color.withValues(alpha: opacity * 0.8);
+      final paint = Paint()..color = p.color.withOpacity(0.2);
       
       canvas.save();
       canvas.translate(x, y);

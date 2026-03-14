@@ -61,7 +61,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: TextField(
@@ -69,7 +69,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: 'Search or type URL',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
               border: InputBorder.none,
               prefixIcon: const Icon(Icons.lock, color: AppColors.primary, size: 16),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -1,14 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import '../../services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import '../../utils/sound_effects.dart';
-import '../../utils/vault_encryption_helper.dart';
-import '../../widgets/secure_network_viewer.dart';
 import '../../services/audit_logger.dart';
+import '../../services/encryption_service.dart';
+import '../../services/network_service.dart';
+import '../../utils/vault_encryption_helper.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/constants.dart';
 import 'photo_viewer_screen.dart';
+import '../../widgets/secure_network_viewer.dart';
 
 class PhotosListScreen extends StatefulWidget {
   const PhotosListScreen({super.key});
@@ -37,26 +44,33 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await ApiService().get('/vault?type=photo');
-      if (!mounted) return;
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
 
-      setState(() {
-        _items = (response as List)
-            .where((i) => i['isDeleted'] != true)
-            .cast<Map<String, dynamic>>()
-            .toList();
-        _isLoading = false;
-        _selectedIds.clear();
-        _isSelectionMode = false;
-      });
+      final response = await NetworkService.client.get(
+        Uri.parse('${AppConstants.baseUrl}/vault?type=photo'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        if (!mounted) return;
+
+        setState(() {
+          _items = data.cast<Map<String, dynamic>>();
+          _isLoading = false;
+          _selectedIds.clear();
+          _isSelectionMode = false;
+        });
+      } else {
+        throw Exception('Failed to fetch from backend (${response.statusCode})');
+      }
     } catch (e) {
       debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        final errorMessage = e.toString().contains('timed out') || e.toString().contains('SocketException')
-            ? 'Connection failed. Check server URL & internet.'
-            : 'Failed to load photos: ${e.toString().replaceAll('Exception: ', '')}';
-        _showError(errorMessage);
+        _showError('Connection failed. Check backend status.');
       }
     }
   }
@@ -136,7 +150,8 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
         }
 
         try {
-          await VaultEncryptionHelper.encryptAndUpload(file.path, '/vault/upload');
+          // VaultEncryptionHelper now handles backend upload and record creation
+          await VaultEncryptionHelper.encryptAndUpload(file.path, 'photo');
           successCount++;
         } catch (e) {
           debugPrint('Upload failed for ${asset.id}: $e');
@@ -158,8 +173,8 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           '$successCount photo${successCount > 1 ? 's' : ''} encrypted & saved'
           '${failCount > 0 ? ' ($failCount failed)' : ''}',
         );
-        // Automatically delete originals if any were successful
-        _deleteOriginalsSilently(result);
+        // Prompt to delete originals if any were successful
+        _promptDeleteOriginals(result);
       } else {
         _showError('All uploads failed');
       }
@@ -170,14 +185,40 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     }
   }
 
-  Future<void> _deleteOriginalsSilently(List<AssetEntity> assets) async {
-    try {
-      final ids = assets.map((e) => e.id).toList();
-      // Directly delete from device. Android will prompt for permission once for the batch.
-      await PhotoManager.editor.deleteWithIds(ids);
-      SoundEffects.deleteAction();
-    } catch (e) {
-      debugPrint('Silent delete error: $e');
+  Future<void> _promptDeleteOriginals(List<AssetEntity> assets) async {
+    if (assets.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete from Gallery?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Should we delete the ${assets.length} original photo${assets.length > 1 ? 's' : ''} from your gallery?\n\nThey are now safely encrypted in your vault.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Originals'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final ids = assets.map((e) => e.id).toList();
+        await PhotoManager.editor.deleteWithIds(ids);
+        SoundEffects.deleteAction();
+      } catch (e) {
+        debugPrint('Delete originals error: $e');
+      }
     }
   }
 
@@ -218,12 +259,21 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     _showLoadingDialog('Deleting...');
 
     try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
       int failCount = 0;
       for (final id in _selectedIds.toList()) {
         try {
-          final item = _findItemById(id);
-          await ApiService().delete('/vault/$id');
-          AuditLogger.logFileDelete(item?['name'] ?? 'photo', 'photo');
+          final response = await NetworkService.client.delete(
+            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+
+          if (response.statusCode != 200) {
+            failCount++;
+          }
         } catch (e) {
           debugPrint('Delete $id failed: $e');
           failCount++;
@@ -251,22 +301,36 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     _showLoadingDialog('Saving to gallery...');
 
     int successCount = 0;
-    final baseUrl = ApiService.currentBaseUrl.replaceAll('/api', '');
 
     for (final id in _selectedIds.toList()) {
       final item = _findItemById(id);
       if (item == null || item['url'] == null) continue;
 
       try {
-        final url = '$baseUrl${item['url']}';
-        final response = await http.get(Uri.parse(url));
+        final url = item['url'];
+        final response = await NetworkService.client.get(Uri.parse(url));
 
         if (response.statusCode == 200) {
+          // Download is encrypted — must decrypt before saving to gallery
+          final cacheDir = await EncryptionService.getDecryptedCacheDir();
+          final tempEncPath = '${cacheDir.path}/temp_save_$id.shell';
+          final tempEncFile = File(tempEncPath);
+          await tempEncFile.writeAsBytes(response.bodyBytes);
+
+          // Decrypt 
+          final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
+          final decryptedFile = File(decryptedPath);
+          final decryptedBytes = await decryptedFile.readAsBytes();
+
           final result = await PhotoManager.editor.saveImage(
-            response.bodyBytes,
+            decryptedBytes,
             filename: item['name'] ?? 'photo_$id',
           );
           if (result != null) successCount++;
+
+          // Cleanup temp files
+          if (await tempEncFile.exists()) await tempEncFile.delete();
+          if (await decryptedFile.exists()) await decryptedFile.delete();
         }
       } catch (e) {
         debugPrint('Save to gallery error for $id: $e');
@@ -464,7 +528,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           Icon(
             Icons.photo_library_outlined,
             size: 64,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Colors.white.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -488,9 +552,6 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     final item = _items[index];
     final id = item['_id'].toString();
     final isSelected = _selectedIds.contains(id);
-    // final imageUrl = item['url'] != null
-    //     ? '${ApiService.currentBaseUrl.replaceAll('/api', '')}${item['url']}'
-    //     : '';
 
     return GestureDetector(
       onLongPress: () => _enterSelectionMode(id),
@@ -527,7 +588,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           // Selection Overlay
           if (isSelected)
             Container(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.primary.withOpacity(0.2),
               child: const Center(
                 child: Icon(Icons.check_circle_rounded, color: Colors.white, size: 32),
               ),
@@ -543,7 +604,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withOpacity(0.7),
                     Colors.transparent,
                   ],
                 ),
@@ -560,7 +621,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           // Lock Indicator
           Positioned(
             top: 4, left: 4,
-            child: Icon(Icons.lock_rounded, color: Colors.white.withValues(alpha: 0.5), size: 10),
+            child: Icon(Icons.lock_rounded, color: Colors.white.withOpacity(0.5), size: 10),
           ),
 
           // Select Circle (Visible only in selection mode when not selected)

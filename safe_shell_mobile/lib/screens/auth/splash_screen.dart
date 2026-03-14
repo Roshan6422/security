@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../../core/theme.dart';
 import '../../main.dart';
 import '../calculator/calculator_screen.dart';
@@ -12,7 +13,8 @@ import 'onboarding_screen.dart';
 import '../../utils/device_performance.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final bool ignoreDelay;
+  const SplashScreen({super.key, this.ignoreDelay = false});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -51,6 +53,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
 
     _checkAuthAndNavigate();
+    _printFirebaseDiagnostics();
+  }
+
+  void _printFirebaseDiagnostics() {
+    try {
+      final app = Firebase.app();
+      print('SafeShell: [RUNTIME_CONFIG] App Name: ${app.name}');
+      print('SafeShell: [RUNTIME_CONFIG] Project ID: ${app.options.projectId}');
+      print('SafeShell: [RUNTIME_CONFIG] API Key Initial: ${app.options.apiKey?.substring(0, 5)}...');
+      print('SafeShell: [RUNTIME_CONFIG] App ID: ${app.options.appId}');
+    } catch (e) {
+      print('SafeShell: [RUNTIME_CONFIG] Error getting configuration: $e');
+    }
   }
 
   Future<void> _checkAuthAndNavigate() async {
@@ -66,22 +81,40 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return;
     }
 
-    // Shorter splash delay on low-end
-    await Future.delayed(Duration(milliseconds: _isLowEnd ? 1200 : 2500));
+    if (!_isDiscreetMode && !widget.ignoreDelay) {
+      // Shorter splash delay on low-end
+      await Future.delayed(const Duration(milliseconds: 400));
+    }
     if (!mounted) return;
 
     // Check if onboarding completed
-    final onboardingComplete = await storage.read(key: 'onboarding_complete') == 'true';
+    final onboardingValue = await storage.read(key: 'onboarding_complete');
+    print('SafeShell: SPLASH_READ: Onboarding value from storage: "$onboardingValue"');
+    final onboardingComplete = onboardingValue == 'true';
+    
     if (!onboardingComplete) {
       if (!mounted) return;
+      print('SafeShell: SPLASH_NAV: Going to Onboarding screen...');
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => OnboardingScreen(onComplete: () {
-          if (!mounted) return;
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
-        })),
+        MaterialPageRoute(builder: (_) => OnboardingScreen(
+          onComplete: () {
+            print('SafeShell: CALLBACK_ONBOARDING: "Get Started" triggered');
+            navigatorKey.currentState?.pushReplacement(
+              MaterialPageRoute(builder: (_) => const SplashScreen(ignoreDelay: true))
+            );
+          },
+          onSkip: () {
+            print('SafeShell: CALLBACK_ONBOARDING: "Skip" triggered');
+            navigatorKey.currentState?.pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginScreen())
+            );
+          },
+        )),
       );
       return;
     }
+
+    print('SafeShell: SPLASH_STATE: Onboarding is complete. Proceeding to Auth check...');
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.checkAuth();
@@ -148,8 +181,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF4DA3FF).withValues(alpha: 0.12),
-                    border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.25)),
+                    color: const Color(0xFF4DA3FF).withOpacity(0.12),
+                    border: Border.all(color: const Color(0xFF4DA3FF).withOpacity(0.25)),
                   ),
                   child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF4DA3FF)),
                 ),
@@ -167,7 +200,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 Text(
                   'Private vault. Stealth mode.',
                   style: AppTextStyles.body.copyWith(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: Colors.white.withOpacity(0.25),
                     fontSize: 14,
                   ),
                 ),
@@ -204,7 +237,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 width: 350, height: 350,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.15), Colors.transparent]),
+                  gradient: RadialGradient(colors: [const Color(0xFF4DA3FF).withOpacity(0.15), Colors.transparent]),
                 ),
               ),
             ),
@@ -218,7 +251,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 width: 280, height: 280,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withValues(alpha: 0.1), Colors.transparent]),
+                  gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withOpacity(0.1), Colors.transparent]),
                 ),
               ),
             ),
@@ -246,7 +279,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFF4DA3FF).withValues(alpha: (1 - _pulseController!.value) * 0.15),
+                                  color: const Color(0xFF4DA3FF).withOpacity(((1 - _pulseController!.value) * 0.15).clamp(0.0, 1.0)),
                                   width: 1.5,
                                 ),
                               ),
@@ -263,7 +296,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color(0xFF4DA3FF).withValues(alpha: 0.08),
+                                  color: const Color(0xFF4DA3FF).withOpacity(0.08),
                                   width: 1,
                                 ),
                               ),
@@ -280,10 +313,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [const Color(0xFF4DA3FF).withValues(alpha: 0.15), const Color(0xFF8B5CF6).withValues(alpha: 0.08)],
+                                colors: [const Color(0xFF4DA3FF).withOpacity(0.15), const Color(0xFF8B5CF6).withOpacity(0.08)],
                               ),
-                              border: Border.all(color: const Color(0xFF4DA3FF).withValues(alpha: 0.25)),
-                              boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)],
+                              border: Border.all(color: const Color(0xFF4DA3FF).withOpacity(0.25)),
+                              boxShadow: [BoxShadow(color: const Color(0xFF4DA3FF).withOpacity(0.2), blurRadius: 30, spreadRadius: 5)],
                             ),
                             child: const Icon(Icons.shield_outlined, size: 48, color: Color(0xFF4DA3FF)),
                           ),
@@ -300,7 +333,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     child: Text('SafeShell', style: AppTextStyles.display.copyWith(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white)),
                   ),
                   const SizedBox(height: 8),
-                  Text('Private vault. Stealth mode.', style: AppTextStyles.body.copyWith(color: Colors.white.withValues(alpha: 0.25), fontSize: 14)),
+                  Text('Private vault. Stealth mode.', style: AppTextStyles.body.copyWith(color: Colors.white.withOpacity(0.25), fontSize: 14)),
                   const SizedBox(height: 60),
                   // Custom loading dots
                   SizedBox(
@@ -369,7 +402,7 @@ class _LoadingDots extends StatelessWidget {
               width: 6, height: 6,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF4DA3FF).withValues(alpha: opacity),
+                color: const Color(0xFF4DA3FF).withOpacity(opacity),
               ),
             );
           }),
