@@ -10,8 +10,10 @@ import '../config/firebase.dart';
 import '../middleware/auth_middleware.dart';
 import '../models/user.dart';
 
+import 'dart:math';
+
 final _bcrypt = DBCrypt();
-// ✅ Removed unused: dart:math, _random
+final _random = Random();
 
 String _generateToken(String userId) {
   final jwt = JWT({'id': userId});
@@ -61,9 +63,15 @@ Router authRouter() {
 
       var user = await userRepo.findOne({'email': email});
       if (user == null) {
-        return Response(404,
-            body: jsonEncode({'message': 'User not found in system'}),
-            headers: {'content-type': 'application/json'});
+        // JIT Provisioning: If user exists in Firebase but not in our DB, create them
+        print('[AUTH] Auto-provisioning user for $email');
+        user = await userRepo.create({
+          'name': decodedToken.claims['name'] ?? email.split('@')[0],
+          'email': email,
+          'role': 'user',
+          'subscriptionStatus': 'free',
+          'isSuspended': false,
+        });
       }
 
       if (user.isSuspended) {
@@ -176,7 +184,102 @@ Router authRouter() {
     }
   });
 
-  // ... other routes same with fixes applied
+  // POST /forgot-password
+  router.post('/forgot-password', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+      final email = body['email'] as String?;
+
+      if (email == null) {
+        return Response(400, body: jsonEncode({'message': 'Email is required'}), headers: {'content-type': 'application/json'});
+      }
+
+      final user = await userRepo.findOne({'email': email});
+      if (user == null) {
+        // We return 200 even if user not found for security (privacy)
+        return Response.ok(jsonEncode({'message': 'If an account exists, an OTP has been sent.'}), headers: {'content-type': 'application/json'});
+      }
+
+      final otp = (_random.nextInt(900000) + 100000).toString();
+      user.resetOtp = otp;
+      user.resetOtpExpire = DateTime.now().add(const Duration(minutes: 10));
+      await userRepo.update(user.id!, user.toMap());
+
+      print('🔑 OTP for $email: $otp'); // Log for development/demo
+
+      return Response.ok(jsonEncode({'message': 'OTP sent successfully'}), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error: $e'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // POST /verify-otp
+  router.post('/verify-otp', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+      final email = body['email'] as String?;
+      final otp = body['otp'] as String?;
+
+      if (email == null || otp == null) {
+        return Response(400, body: jsonEncode({'message': 'Email and OTP are required'}), headers: {'content-type': 'application/json'});
+      }
+
+      final user = await userRepo.findOne({'email': email});
+      if (user == null || user.resetOtp != otp) {
+        return Response(400, body: jsonEncode({'message': 'Invalid OTP'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (user.resetOtpExpire == null || user.resetOtpExpire!.isBefore(DateTime.now())) {
+        return Response(400, body: jsonEncode({'message': 'OTP expired'}), headers: {'content-type': 'application/json'});
+      }
+
+      return Response.ok(jsonEncode({'message': 'OTP verified'}), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // POST /reset-password
+  router.post('/reset-password', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+      final email = body['email'] as String?;
+      final otp = body['otp'] as String?;
+      final newPassword = body['password'] as String?;
+
+      if (email == null || otp == null || newPassword == null) {
+        return Response(400, body: jsonEncode({'message': 'Invalid request'}), headers: {'content-type': 'application/json'});
+      }
+
+      final user = await userRepo.findOne({'email': email});
+      if (user == null || user.resetOtp != otp) {
+        return Response(400, body: jsonEncode({'message': 'Invalid OTP'}), headers: {'content-type': 'application/json'});
+      }
+
+      // 1. Update Firebase Password
+      if (FirebaseConfig.auth != null) {
+         try {
+           final fbUser = await FirebaseConfig.auth!.getUserByEmail(email);
+           await FirebaseConfig.auth!.updateUser(fbUser.uid, password: newPassword);
+         } catch (e) {
+           return Response(500, body: jsonEncode({'message': 'Firebase update failed: $e'}), headers: {'content-type': 'application/json'});
+         }
+      }
+
+      // 2. Clear OTP on success
+      user.resetOtp = null;
+      user.resetOtpExpire = null;
+      await userRepo.update(user.id!, user.toMap());
+
+      return Response.ok(jsonEncode({'message': 'Password updated successfully'}), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
 
   return router;
+}
+
+Handler authHandler() {
+  return authRouter().call;
 }

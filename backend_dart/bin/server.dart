@@ -56,6 +56,11 @@ Future<void> main() async {
         headers: {'content-type': 'application/json'});
   });
 
+  // Diagnostic route
+  app.get('/api/auth/ping', (Request request) {
+    return Response.ok(jsonEncode({'message': 'pong', 'info': 'Direct route on main router'}), headers: {'content-type': 'application/json'});
+  });
+
   // Health check
   app.get('/api/health', (Request request) {
     return Response.ok(
@@ -77,6 +82,22 @@ Future<void> main() async {
   app.mount('/api/support', supportHandler());
   app.mount('/api/device', deviceHandler());
   app.mount('/api/audit', auditHandler());
+
+  // Catch-all for 404s
+  app.all('/<ignored|.*>', (Request request) {
+    print('⚠️  404 - Not Found: ${request.method} ${request.url.path}');
+    print('   Full URL: ${request.requestedUri}');
+    print('   Headers: ${request.headers}');
+    return Response.notFound(
+      jsonEncode({
+        'message': 'Route not found: ${request.url.path}',
+        'requested_method': request.method,
+        'requested_url': request.url.toString(),
+        'full_uri': request.requestedUri.toString(),
+      }),
+      headers: {'content-type': 'application/json'},
+    );
+  });
 
   // Static file serving for uploads
   final staticHandler = createStaticHandler(
