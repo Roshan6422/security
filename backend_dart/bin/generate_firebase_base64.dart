@@ -1,38 +1,59 @@
 import 'dart:convert';
 import 'dart:io';
 
+// We import this just to check if the key is valid locally
+// Note: You might need to run 'dart pub get' first
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+
 void main() async {
-  print('--- SafeShell Firebase Key Generator ---');
-  print('This script will help you generate the correct Base64 string for your Koyeb environment.');
+  print('--- SafeShell Firebase Key Generator (v2) ---');
+  print('This script will generate a Base64 string and VERIFY your key locally.\n');
   
   final file = File('service-account.json');
   if (!file.existsSync()) {
-    print('❌ ERROR: "service-account.json" not found in the current directory.');
-    print('Please download your service account key from Firebase Console and rename it to "service-account.json".');
+    print('❌ ERROR: "service-account.json" not found.');
+    print('Download your key from Firebase Console -> Project Settings -> Service Accounts -> Generate Private Key.');
+    print('Rename the downloaded file to "service-account.json" and put it in this folder.');
     return;
   }
 
   try {
     final content = await file.readAsString();
-    // Validate JSON
     final json = jsonDecode(content);
-    if (json['private_key'] == null) {
-      print('❌ ERROR: The JSON file does not appear to be a valid service account key (missing private_key).');
+    
+    final privateKey = json['private_key'];
+    if (privateKey == null) {
+      print('❌ ERROR: Missing "private_key" in JSON.');
       return;
     }
 
-    print('✅ JSON validated.');
+    print('⏳ Verifying RSA key integrity locally...');
+    try {
+      final testJwt = JWT({'test': 'verify'});
+      testJwt.sign(RSAPrivateKey(privateKey), algorithm: JWTAlgorithm.RS256);
+      print('✅ RSA INTEGRITY VERIFIED: Your local key is mathematically valid.');
+    } catch (e) {
+      print('❌ RSA VERIFICATION FAILED: $e');
+      print('\nThis key is mathematically invalid (e.g. truncated or manually edited).');
+      print('Please generate a FRESH key from the Firebase Console.');
+      return;
+    }
     
-    // Encode to Base64 (compact, no newlines)
+    // Encode to Base64
     final base64String = base64Encode(utf8.encode(content));
     
-    print('\n--- YOUR BASE64 STRING (Copy the entire line below) ---\n');
-    print(base64String);
-    print('\n----------------------------------------------------\n');
-    print('Paste this value into your Koyeb ENVIRONMENT VARIABLE:');
-    print('Name: FIREBASE_SERVICE_ACCOUNT_BASE64');
+    // Write to a file instead of just printing (avoid terminal truncation)
+    final outputFile = File('base64_key.txt');
+    await outputFile.writeAsString(base64String);
+    
+    print('\n🎉 SUCCESS!');
+    print('The perfect Base64 string has been saved to: base64_key.txt');
+    print('\nSTEPS:');
+    print('1. Open "base64_key.txt" in your editor.');
+    print('2. Copy the entire contents (it is one very long line).');
+    print('3. Paste it into the Koyeb variable: FIREBASE_SERVICE_ACCOUNT_BASE64');
     
   } catch (e) {
-    print('❌ ERROR: Failed to process the file: $e');
+    print('❌ ERROR: $e');
   }
 }
