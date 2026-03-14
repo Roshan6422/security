@@ -209,7 +209,10 @@ Router authRouter() {
 
       print('🔑 OTP for $email: $otp'); // Log for development/demo
 
-      return Response.ok(jsonEncode({'message': 'OTP sent successfully'}), headers: {'content-type': 'application/json'});
+      return Response.ok(jsonEncode({
+        'message': 'OTP sent successfully',
+        'otp': otp
+      }), headers: {'content-type': 'application/json'});
     } catch (e) {
       return Response(500, body: jsonEncode({'message': 'Server error: $e'}), headers: {'content-type': 'application/json'});
     }
