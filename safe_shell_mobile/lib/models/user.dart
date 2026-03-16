@@ -5,7 +5,7 @@ class User {
   final String role;
   final String? token;
   final String? recoveryKey;
-  final String? userKey;
+  String? userKey;
   final String? subscriptionStatus;
   final String? subscriptionExpiry;
 
