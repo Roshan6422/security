@@ -63,6 +63,8 @@ class AuthProvider with ChangeNotifier {
          await logout();
       }
     } catch (e) {
+      // Auth check failed, just notify
+    }
     notifyListeners();
   }
 

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../security/key_manager.dart';
 import '../main_shell.dart';
