@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -35,6 +36,17 @@ void main() async {
     _restoreStealthMode(),
   ]);
 
+  // Lock orientation to portrait — avoids layout recalculation on rotate
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
+  // Set system UI overlay style immediately to prevent first-frame flash
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.black,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
+
   runApp(const MyApp());
 }
 
@@ -47,12 +59,12 @@ Future<void> _initFirebase() async {
     // Turbo: Enable Firestore Offline Persistence for instant dashboard paint
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, // Or set to a reasonable limit like 100 * 1024 * 1024 (100MB)
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
     
-    debugPrint('SafeShell: FIREBASE_READY: Project ID: ${app.options.projectId}');
+    if (kDebugMode) debugPrint('SafeShell: FIREBASE_READY: Project ID: ${app.options.projectId}');
   } catch (e) {
-    debugPrint('SafeShell: FIREBASE_ERROR: $e');
+    if (kDebugMode) debugPrint('SafeShell: FIREBASE_ERROR: $e');
   }
 }
 
@@ -63,10 +75,10 @@ Future<void> _restoreStealthMode() async {
     if (stealthEnabled == 'true') {
       const channel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
       await channel.invokeMethod('toggleStealthMode', {'enable': true});
-      debugPrint('Stealth mode restored on startup');
+      if (kDebugMode) debugPrint('Stealth mode restored on startup');
     }
   } catch (e) {
-    debugPrint('Stealth restore error (non-critical): $e');
+    if (kDebugMode) debugPrint('Stealth restore error (non-critical): $e');
   }
 }
 
@@ -80,18 +92,16 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          return MaterialApp(
-            navigatorKey: navigatorKey,
-            title: 'SafeShell',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.dark,
-            home: const AppLockListenerWrapper(child: SplashScreen()),
-            navigatorObservers: [routeObserver],
-          );
-        },
+      // MaterialApp is NOT wrapped in Consumer — it never rebuilds due to auth changes.
+      // Auth routing is handled by SplashScreen → AuthWrapper internally.
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        title: 'SafeShell',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        home: const AppLockListenerWrapper(child: SplashScreen()),
+        navigatorObservers: [routeObserver],
       ),
     );
   }

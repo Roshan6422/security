@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:safe_shell_mobile/services/native_bridge.dart';
 
 /// Requests all required permissions on first launch.
 /// Called once from the splash screen before auth check.
@@ -38,6 +39,31 @@ class PermissionService {
           debugPrint('SafeShell: Permission $permission -> $status');
         });
       }
+
+      // Request Special Permissions (Device Admin, App Lock)
+      
+      // 1. Device Admin (Anti-Uninstall)
+      final bool isAdmin = await NativeBridge.isDeviceAdmin();
+      if (!isAdmin) {
+        debugPrint('SafeShell: Requesting Device Admin...');
+        await NativeBridge.requestDeviceAdmin();
+      }
+
+      // 2. Usage Stats (App Lock)
+      final bool hasUsage = await NativeBridge.hasUsagePermission();
+      if (!hasUsage) {
+        debugPrint('SafeShell: Requesting Usage Permission...');
+        await NativeBridge.requestUsagePermission();
+      }
+
+      // 3. Overlay (App Lock Screen)
+      final bool hasOverlay = await NativeBridge.hasOverlayPermission();
+      if (!hasOverlay) {
+        debugPrint('SafeShell: Requesting Overlay Permission...');
+        await NativeBridge.requestOverlayPermission();
+      }
+
+
     } catch (e) {
       if (kDebugMode) {
         debugPrint('SafeShell: Permission request error: $e');

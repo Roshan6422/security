@@ -83,10 +83,17 @@ class VaultStatsService {
   static const _cacheKey = 'vault_stats_cache';
   final _storage = const FlutterSecureStorage();
 
+  // Cache SharedPreferences to avoid repeated platform-channel round-trips
+  static SharedPreferences? _prefs;
+  static Future<SharedPreferences> _getPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
   Future<VaultStats> getAggregatedStats({Function(VaultStats)? onRefresh}) async {
     VaultStats? cached;
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await _getPrefs();
       final raw = prefs.getString(_cacheKey);
       if (raw != null) {
         cached = VaultStats.fromJson(jsonDecode(raw));
@@ -118,7 +125,7 @@ class VaultStatsService {
 
         // Cache for next launch
         try {
-          final prefs = await SharedPreferences.getInstance();
+          final prefs = await _getPrefs();
           await prefs.setString(_cacheKey, jsonEncode(stats.toJson()));
         } catch (_) {}
 

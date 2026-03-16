@@ -82,6 +82,16 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> setUserKeyFlag() async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser != null) {
+      await _firestore.collection('users').doc(currentUser.uid).update({
+        'userKey': 'local_secured',
+      });
+      await refreshUser();
+    }
+  }
+
   Future<void> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
@@ -143,8 +153,9 @@ class AuthProvider with ChangeNotifier {
   Future<void> register(String name, String email, String password) async {
     _isLoading = true;
     notifyListeners();
+    auth.UserCredential? cred;
     try {
-      final cred = await _firebaseAuth.createUserWithEmailAndPassword(
+      cred = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -175,12 +186,21 @@ class AuthProvider with ChangeNotifier {
         final userData = jsonDecode(response.body);
         await _handleLoginResponse(userData, password);
       } else {
-        throw Exception('Backend registration failed: ${response.body}');
+        throw Exception('Backend registration failed: ${response.statusCode}');
       }
 
     } on auth.FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Registration failed');
     } catch (e) {
+      // Rollback: if backend sync fails, delete the Firebase user so they aren't stuck
+      if (cred != null && cred.user != null) {
+        try {
+          await cred.user!.delete();
+          await _firestore.collection('users').doc(cred.user!.uid).delete();
+        } catch (_) {
+          // Ignore rollback errors
+        }
+      }
       rethrow;
     } finally {
       _isLoading = false;

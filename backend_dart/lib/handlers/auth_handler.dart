@@ -49,7 +49,7 @@ Router authRouter() {
 
       if (FirebaseConfig.auth == null) {
         return Response(503,
-            body: jsonEncode({'message': 'Firebase Auth not configured'}),
+            body: jsonEncode({'message': 'user not found'}),
             headers: {'content-type': 'application/json'});
       }
 
@@ -58,7 +58,7 @@ Router authRouter() {
 
       if (email == null) {
         return Response(400,
-            body: jsonEncode({'message': 'Email not found in Token'}),
+            body: jsonEncode({'message': 'Email not found '}),
             headers: {'content-type': 'application/json'});
       }
 
@@ -67,6 +67,7 @@ Router authRouter() {
         // JIT Provisioning: If user exists in Firebase but not in our DB, create them
         print('[AUTH] Auto-provisioning user for $email');
         user = await userRepo.create({
+          '_id': decodedToken.uid,
           'name': email.split('@')[0],
           'email': email,
           'role': 'user',
@@ -116,7 +117,7 @@ Router authRouter() {
       // ✅ Null check added
       if (FirebaseConfig.auth == null) {
         return Response(503,
-            body: jsonEncode({'message': 'Firebase Auth not configured'}),
+            body: jsonEncode({'message': 'user not found'}),
             headers: {'content-type': 'application/json'});
       }
 
@@ -125,7 +126,7 @@ Router authRouter() {
 
       if (email == null) {
         return Response(400,
-            body: jsonEncode({'message': 'Email not found in Token'}),
+            body: jsonEncode({'message': 'Email not found '}),
             headers: {'content-type': 'application/json'});
       }
 
@@ -137,8 +138,9 @@ Router authRouter() {
             headers: {'content-type': 'application/json'});
       }
 
-      // Note: User created below via userRepo
+      // Note: User created below via userRepo using Firebase Auth UID
       final user = await userRepo.create({
+        '_id': decodedToken.uid,
         'name': name,
         'email': email,
         'role': 'user',

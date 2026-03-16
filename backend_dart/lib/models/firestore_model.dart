@@ -233,7 +233,7 @@ class ModelRepository<T extends FirestoreModel> {
     }).toList();
   }
 
-  /// Creates a new document.
+  /// Creates a new document. If '_id' is provided in [data], uses it as the document ID.
   Future<T> create(Map<String, dynamic> data) async {
     final now = DateTime.now().toIso8601String();
     data['createdAt'] = now;
@@ -243,9 +243,17 @@ class ModelRepository<T extends FirestoreModel> {
       return _memCreate(data);
     }
 
-    final docRef =
-        await FirebaseConfig.db!.collection(collectionName).add(data);
-    data['_id'] = docRef.id;
+    if (data.containsKey('_id') && data['_id'] != null) {
+      final id = data['_id'] as String;
+      // Exclude _id from the firestore payload, but keep it in the data map for _fromMap later
+      final payload = Map<String, dynamic>.from(data)..remove('_id');
+      await FirebaseConfig.db!.collection(collectionName).doc(id).set(payload);
+    } else {
+      final payload = Map<String, dynamic>.from(data)..remove('_id');
+      final docRef = await FirebaseConfig.db!.collection(collectionName).add(payload);
+      data['_id'] = docRef.id;
+    }
+    
     return _fromMap(data);
   }
 
@@ -313,10 +321,10 @@ class ModelRepository<T extends FirestoreModel> {
 
   T _memCreate(Map<String, dynamic> data) {
     final col = _getMemoryCollection(collectionName);
-    final id = _uuid.v4();
+    final id = (data['_id'] as String?) ?? _uuid.v4();
+    data['_id'] = id;
     col[id] = Map<String, dynamic>.from(data);
     _saveToDisk();
-    data['_id'] = id;
     return _fromMap(data);
   }
 

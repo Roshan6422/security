@@ -17,6 +17,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:local_auth/local_auth.dart';
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/user.dart' as model;
 import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
 import '../settings/support_screen.dart';
@@ -115,19 +116,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'Good evening';
   }
 
-  String _getUserFirstNameWatch() {
-    final user = context.watch<AuthProvider>().user;
+  String _getUserFirstName() {
+    // context.select — only rebuilds when user.name changes, not on any AuthProvider change
+    final user = context.select<AuthProvider, model.User?>((a) => a.user);
     if (user != null && user.name.isNotEmpty) return user.name.split(' ').first;
     return '';
   }
 
-  int _getSecurityScoreWatch() {
-    final user = context.watch<AuthProvider>().user;
-    int score = 60; // base: encryption active
-    if (user != null) score += 10; // authenticated
-    if (_fileCount > 0) score += 10; // vault has files
+  int _getSecurityScore() {
+    // context.select — subscribes only to (user, fileCount)
+    final user = context.select<AuthProvider, model.User?>((a) => a.user);
+    int score = 60;
+    if (user != null) score += 10;
+    if (_fileCount > 0) score += 10;
     if (user?.subscriptionStatus == 'premium') score += 10;
-    score += 10; // AES-256 encryption always on
+    score += 10;
     return score.clamp(0, 100);
   }
 
@@ -254,29 +257,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // -----------------------------------------------
-  //  ANIMATED BACKGROUND BLOBS
+  //  BACKGROUND (const widget — never rebuilds)
   // -----------------------------------------------
   Widget _buildAnimatedBackground() {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isLight 
-            ? [const Color(0xFFF0F7FF), const Color(0xFFFDFDFF), const Color(0xFFF5F9FF)]
-            : [const Color(0xFF000000), const Color(0xFF050505), const Color(0xFF000000)],
-        ),
-      ),
-    );
+    return const _DashboardBackground();
   }
 
   // -----------------------------------------------
   //  HEADER WITH NOTIFICATION BELL
   // -----------------------------------------------
   Widget _buildHeader(Color textColor) {
-    final firstName = _getUserFirstNameWatch();
-    final greeting = firstName.isNotEmpty ? '${_getGreeting()}, $firstName ??' : _getGreeting();
+    final firstName = _getUserFirstName();
+    final greeting = firstName.isNotEmpty ? '${_getGreeting()}, $firstName 👋' : _getGreeting();
     final isLight = Theme.of(context).brightness == Brightness.light;
 
     return Row(
@@ -583,7 +575,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSecurityScoreCard(Color textColor, Color subColor) {
-    final score = _getSecurityScoreWatch();
+    final score = _getSecurityScore();
     final scoreColor = score >= 80 ? const Color(0xFF10B981) : score >= 50 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444);
     final isLight = Theme.of(context).brightness == Brightness.light;
 
@@ -1106,6 +1098,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 // -----------------------------------------------
 //  DOT GRID BACKGROUND LAYER + PAINTER
+//  (see _DotGridLayer class below)
+// -----------------------------------------------
+
+// -----------------------------------------------
+//  CONST BACKGROUND WIDGET (never rebuilt)
+// -----------------------------------------------
+class _DashboardBackground extends StatelessWidget {
+  const _DashboardBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isLight
+              ? [const Color(0xFFF0F7FF), const Color(0xFFFDFDFF), const Color(0xFFF5F9FF)]
+              : [const Color(0xFF000000), const Color(0xFF050505), const Color(0xFF000000)],
+        ),
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------
+//  DOT GRID BACKGROUND LAYER + PAINTER
 // -----------------------------------------------
 class _DotGridLayer extends StatelessWidget {
   const _DotGridLayer();
@@ -1113,13 +1133,11 @@ class _DotGridLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    return Opacity(
-      opacity: isLight ? 0.05 : 0.025,
-      child: RepaintBoundary(
-        child: CustomPaint(
-          size: MediaQuery.of(context).size,
-          painter: _DotGridPainter(isLight: isLight),
-        ),
+    // No Opacity widget — opacity baked into painter color to eliminate compositing layer
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: MediaQuery.of(context).size,
+        painter: _DotGridPainter(isLight: isLight),
       ),
     );
   }
@@ -1132,8 +1150,11 @@ class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const spacing = 28.0;
+    // Opacity baked directly into color — no Opacity widget overhead
     final paint = Paint()
-      ..color = isLight ? Colors.black : Colors.white
+      ..color = isLight
+          ? const Color(0x0D000000) // black at 5% opacity
+          : const Color(0x06FFFFFF) // white at ~2.5% opacity
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 1.6;
 

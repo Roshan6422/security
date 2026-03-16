@@ -50,7 +50,7 @@ class _KeySetupScreenState extends State<KeySetupScreen>
     if (!mounted) return;
     
     // Refresh auth provider to reflect the "userKey set" state
-    await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+    await Provider.of<AuthProvider>(context, listen: false).setUserKeyFlag();
     
     setState(() => _saving = false);
     // Navigation is now handled reactively by AuthWrapper
@@ -63,7 +63,7 @@ class _KeySetupScreenState extends State<KeySetupScreen>
       if (!mounted) return;
       
       // Refresh auth provider to reflect the "userKey set" state
-      await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+      await Provider.of<AuthProvider>(context, listen: false).setUserKeyFlag();
       
       setState(() => _saving = false);
       // Navigation is now handled reactively by AuthWrapper
