@@ -11,6 +11,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'onboarding_screen.dart';
 import '../../utils/device_performance.dart';
+import '../../services/permission_service.dart';
 
 class SplashScreen extends StatefulWidget {
   final bool ignoreDelay;
@@ -115,6 +116,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
 
     print('SafeShell: SPLASH_STATE: Onboarding is complete. Proceeding to Auth check...');
+
+    // Request all permissions on launch
+    await PermissionService.requestAllPermissions();
+    if (!mounted) return;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.checkAuth();
