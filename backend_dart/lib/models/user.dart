@@ -11,7 +11,6 @@ class User extends FirestoreModel {
   String? calculatorPassword;
   bool isSuspended;
   String? deviceToken;
-  String? deviceToken;
   String? resetOtp;
   DateTime? resetOtpExpire;
   String? userKey;
@@ -26,7 +25,6 @@ class User extends FirestoreModel {
     this.calculatorPassword,
     this.isSuspended = false,
     this.deviceToken,
-    this.resetOtp,
     this.resetOtp,
     this.resetOtpExpire,
     this.userKey,
@@ -47,7 +45,6 @@ class User extends FirestoreModel {
         'isSuspended': isSuspended,
         'deviceToken': deviceToken,
         'resetOtp': resetOtp,
-        'resetOtp': resetOtp,
         'resetOtpExpire': resetOtpExpire?.toIso8601String(),
         'userKey': userKey,
       };
@@ -63,7 +60,6 @@ class User extends FirestoreModel {
       subscriptionExpiry: FirestoreModel.parseDate(map['subscriptionExpiry']),
       calculatorPassword: map['calculatorPassword'] as String?,
       isSuspended: map['isSuspended'] as bool? ?? false,
-      deviceToken: map['deviceToken'] as String?,
       deviceToken: map['deviceToken'] as String?,
       resetOtp: map['resetOtp'] as String?,
       resetOtpExpire: FirestoreModel.parseDate(map['resetOtpExpire']),

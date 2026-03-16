@@ -305,8 +305,8 @@ Router authRouter() {
       final token = authHeader.substring(7);
       
       try {
-        final decoded = JWT.verify(token, SecretKey(Env.jwtSecret));
-        final userId = decoded.payload['userId'] as String;
+        final decoded = jwt.JWT.verify(token, jwt.SecretKey(Env.jwtSecret));
+        final userId = decoded.payload['id'] as String; // Wait, looking at _generateToken, the payload is {'id': userId}
         
         final user = await userRepo.findById(userId);
         if (user == null) {
