@@ -295,6 +295,36 @@ Router authRouter() {
     }
   });
 
+  // POST /set-key-flag -> Requires JWT
+  router.post('/set-key-flag', (Request request) async {
+    try {
+      final authHeader = request.headers['authorization'];
+      if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+        return Response(401, body: jsonEncode({'message': 'Missing Token'}), headers: {'content-type': 'application/json'});
+      }
+      final token = authHeader.substring(7);
+      
+      try {
+        final decoded = JWT.verify(token, SecretKey(Env.jwtSecret));
+        final userId = decoded.payload['userId'] as String;
+        
+        final user = await userRepo.findById(userId);
+        if (user == null) {
+          return Response(404, body: jsonEncode({'message': 'User not found'}), headers: {'content-type': 'application/json'});
+        }
+
+        user.userKey = 'local_secured';
+        await user.save();
+
+        return Response.ok(jsonEncode({'message': 'Key flag updated successfully'}), headers: {'content-type': 'application/json'});
+      } catch (e) {
+        return Response(401, body: jsonEncode({'message': 'Invalid Token'}), headers: {'content-type': 'application/json'});
+      }
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
   return router;
 }
 

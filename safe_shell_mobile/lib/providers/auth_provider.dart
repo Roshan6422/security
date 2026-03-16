@@ -85,10 +85,32 @@ class AuthProvider with ChangeNotifier {
   Future<void> setUserKeyFlag() async {
     final currentUser = _firebaseAuth.currentUser;
     if (currentUser != null) {
-      await _firestore.collection('users').doc(currentUser.uid).update({
-        'userKey': 'local_secured',
-      });
-      await refreshUser();
+      try {
+        final idToken = await currentUser.getIdToken();
+        if (idToken == null) throw Exception('No auth token available');
+        
+        final response = await NetworkService.client.post(
+          Uri.parse('${AppConstants.baseUrl}/auth/set-key-flag'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${_user?.token ?? ''}', 
+          },
+        ).timeout(NetworkService.defaultTimeout);
+
+        if (response.statusCode == 200) {
+          // If successful, simulate the refresh locally to update UI immediately
+          if (_user != null) {
+            _user!.userKey = 'local_secured';
+            await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
+            notifyListeners();
+          }
+          await refreshUser(); // Optional server re-fetch
+        } else {
+          print('Failed to set key flag on backend: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('Error setting key flag: $e');
+      }
     }
   }
 
