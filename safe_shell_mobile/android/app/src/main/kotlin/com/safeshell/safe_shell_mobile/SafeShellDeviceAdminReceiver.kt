@@ -8,11 +8,16 @@ import android.widget.Toast
 class SafeShellDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) {
         super.onEnabled(context, intent)
-        Toast.makeText(context, "SafeShell Anti-Uninstall Enabled", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "SafeShell anti-uninstall enabled", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
+        return "Disabling protection may expose your vault data!"
     }
 
     override fun onDisabled(context: Context, intent: Intent) {
         super.onDisabled(context, intent)
-        Toast.makeText(context, "SafeShell Anti-Uninstall Disabled", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "SafeShell anti-uninstall disabled", Toast.LENGTH_LONG).show()
     }
 }
+
