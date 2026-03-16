@@ -82,6 +82,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return;
     }
 
+    // Request all permissions immediately on launch
+    await PermissionService.requestAllPermissions();
+    if (!mounted) return;
+
     if (!_isDiscreetMode && !widget.ignoreDelay) {
       // Shorter splash delay on low-end
       await Future.delayed(const Duration(milliseconds: 400));
@@ -116,10 +120,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     }
 
     print('SafeShell: SPLASH_STATE: Onboarding is complete. Proceeding to Auth check...');
-
-    // Request all permissions on launch
-    await PermissionService.requestAllPermissions();
-    if (!mounted) return;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     await auth.checkAuth();
