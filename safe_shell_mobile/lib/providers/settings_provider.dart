@@ -59,11 +59,15 @@ class SettingsProvider extends ChangeNotifier {
     _biometricsEnabled = prefs.getBool('biometric_enabled') ?? false;
     _allowScreenshots = prefs.getBool('allow_screenshots') ?? false;
     
-    // Sync Anti-Uninstall with Native Admin status
-    _antiUninstallEnabled = await _channel.invokeMethod<bool>('isDeviceAdmin') ?? false;
+    // Sync Anti-Uninstall with Native Admin status (safe – channel may not be ready)
+    try {
+      _antiUninstallEnabled = await _channel.invokeMethod<bool>('isDeviceAdmin') ?? false;
+    } catch (_) {}
 
     // Apply screenshot setting on load
-    await _channel.invokeMethod('toggleScreenshot', {'allow': _allowScreenshots});
+    try {
+      await _channel.invokeMethod('toggleScreenshot', {'allow': _allowScreenshots});
+    } catch (_) {}
 
     notifyListeners();
   }
