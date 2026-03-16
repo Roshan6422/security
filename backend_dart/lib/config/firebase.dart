@@ -92,7 +92,8 @@ class FirebaseConfig {
     print('[FIREBASE] Found FIREBASE_SERVICE_ACCOUNT_BASE64 env variable');
 
     try {
-      final cleanBase64 = base64Key.replaceAll(RegExp(r'\s|"'), '');
+      // Robust cleaning: remove everything EXCEPT valid Base64 characters
+      final cleanBase64 = base64Key.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
       print('[FIREBASE] Base64 length: ${base64Key.length} -> Cleaned length: ${cleanBase64.length}');
 
       final decodedBytes = base64Decode(cleanBase64);
