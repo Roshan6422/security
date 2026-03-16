@@ -200,8 +200,8 @@ Router authRouter() {
 
       final user = await userRepo.findOne({'email': email});
       if (user == null) {
-        // We return 200 even if user not found for security (privacy)
-        return Response.ok(jsonEncode({'message': 'If an account exists, an OTP has been sent.'}), headers: {'content-type': 'application/json'});
+        // User requested explicit error instead of silent fail
+        return Response(404, body: jsonEncode({'message': 'Sorry, this email address not found'}), headers: {'content-type': 'application/json'});
       }
 
       final otp = (_random.nextInt(900000) + 100000).toString();
