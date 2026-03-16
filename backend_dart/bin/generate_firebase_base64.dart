@@ -32,6 +32,13 @@ void main() async {
       final testJwt = JWT({'test': 'verify'});
       testJwt.sign(RSAPrivateKey(privateKey), algorithm: JWTAlgorithm.RS256);
       print('✅ RSA INTEGRITY VERIFIED: Your local key is mathematically valid.');
+      
+      final cleanedKey = privateKey.toString().replaceAll(RegExp(r'-----.*-----|\s'), '');
+      print('\n--- KEY STATISTICS ---');
+      print('Private Key Field Length: ${privateKey.toString().length}');
+      print('Base64 Content Length:   ${cleanedKey.length}');
+      print('----------------------\n');
+      
     } catch (e) {
       print('❌ RSA VERIFICATION FAILED: $e');
       print('\nThis key is mathematically invalid (e.g. truncated or manually edited).');

@@ -129,9 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (mounted) {
           SoundEffects.unlockApp();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MainShell()),
-          );
+          // Navigation is now handled reactively by AuthWrapper in main.dart
+          // Navigator.of(context).pushReplacement(...) removed
         }
       } catch (e) {
         if (mounted) {
@@ -237,9 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 await Provider.of<AuthProvider>(context, listen: false).signInWithGoogle();
                                 if (mounted) {
                                   SoundEffects.unlockApp();
-                                  Navigator.of(context).pushReplacement(
-                                    MaterialPageRoute(builder: (_) => const MainShell()),
-                                  );
+                                  // Navigation is now handled reactively by AuthWrapper in main.dart
                                 }
                               } catch (e) {
                                 if (mounted) {

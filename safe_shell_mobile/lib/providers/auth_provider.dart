@@ -63,9 +63,21 @@ class AuthProvider with ChangeNotifier {
          await logout();
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('AuthProvider: checkAuth Error: $e');
-    }
     notifyListeners();
+  }
+
+  Future<void> refreshUser() async {
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser != null) {
+      final doc = await _firestore.collection('users').doc(currentUser.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        data['_id'] = currentUser.uid;
+        _user = User.fromJson(data);
+        await _storage.write(key: _profileCacheKey, value: jsonEncode(data));
+        notifyListeners();
+      }
+    }
   }
 
   Future<void> login(String email, String password) async {

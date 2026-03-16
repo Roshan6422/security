@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../../core/theme.dart';
-
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../security/key_manager.dart';
 import '../main_shell.dart';
 
@@ -47,11 +47,12 @@ class _KeySetupScreenState extends State<KeySetupScreen>
     setState(() => _saving = true);
     await _km.generateAndStoreKey();
     if (!mounted) return;
+    
+    // Refresh auth provider to reflect the "userKey set" state
+    await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+    
     setState(() => _saving = false);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainShell()),
-    );
+    // Navigation is now handled reactively by AuthWrapper
   }
 
   Future<void> _manualSave() async {
@@ -59,11 +60,12 @@ class _KeySetupScreenState extends State<KeySetupScreen>
       setState(() => _saving = true);
       await _km.storeManualKey(_manual.text.trim());
       if (!mounted) return;
+      
+      // Refresh auth provider to reflect the "userKey set" state
+      await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+      
       setState(() => _saving = false);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainShell()),
-      );
+      // Navigation is now handled reactively by AuthWrapper
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

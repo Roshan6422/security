@@ -81,12 +81,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     HapticFeedback.heavyImpact();
     final auth = Provider.of<AuthProvider>(context, listen: false);
     auth.logout();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    // No manual navigation needed. AuthWrapper will rebuild and show LoginScreen.
   }
 
   @override

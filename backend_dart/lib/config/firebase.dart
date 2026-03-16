@@ -32,7 +32,11 @@ class FirebaseConfig {
     if (base64Key == null || base64Key.isEmpty) return null;
     try {
       final cleanBase64 = base64Key.replaceAll(RegExp(r'\s|"'), '');
-      return jsonDecode(utf8.decode(base64Decode(cleanBase64)));
+      final Map<String, dynamic> decoded = jsonDecode(utf8.decode(base64Decode(cleanBase64)));
+      if (decoded['private_key'] is String) {
+        decoded['private_key'] = _cleanPrivateKey(decoded['private_key'] as String);
+      }
+      return decoded;
     } catch (_) {
       return null;
     }
@@ -43,6 +47,35 @@ class FirebaseConfig {
 
   /// The Messaging instance, or `null` when running in-memory.
   static Messaging? get messaging => _app != null ? Messaging(_app!) : null;
+
+  /// Robust cleaner for PEM private keys.
+  static String _cleanPrivateKey(String key) {
+    if (key.isEmpty) return key;
+
+    // 1. Handle common escaping issues from environment variables
+    key = key.replaceAll(r'\\n', '\n');
+    key = key.replaceAll(r'\n', '\n');
+    key = key.replaceAll(r'\r', '');
+    key = key.trim();
+
+    // 2. Extract base64 content and remove any invalid characters (like spaces/newlines)
+    const header = '-----BEGIN PRIVATE KEY-----';
+    const footer = '-----END PRIVATE KEY-----';
+
+    if (key.contains(header) && key.contains(footer)) {
+      final start = key.indexOf(header) + header.length;
+      final end = key.indexOf(footer);
+      String content = key.substring(start, end);
+      
+      // Remove EVERYTHING that is not valid Base64 (A-Z, a-z, 0-9, +, /, =)
+      content = content.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
+      
+      // Reconstruct exactly
+      return '$header\n$content\n$footer';
+    }
+
+    return key;
+  }
 
   /// Attempts to initialise Firebase from the Base64-encoded service
   /// account key in the environment. Logs diagnostic information and
@@ -65,9 +98,7 @@ class FirebaseConfig {
       final decodedBytes = base64Decode(cleanBase64);
       final decodedJson = utf8.decode(decodedBytes);
       print('[FIREBASE] Decoded JSON length: ${decodedJson.length}');
-      print('[FIREBASE] JSON Start: ${decodedJson.substring(0, 40)}...');
-      print('[FIREBASE] JSON End: ...${decodedJson.substring(decodedJson.length - 40)}');
-
+      
       // Validate JSON
       final Map<String, dynamic> serviceAccount =
           jsonDecode(decodedJson) as Map<String, dynamic>;
@@ -79,22 +110,21 @@ class FirebaseConfig {
       }
 
       print('[FIREBASE] Server Time (UTC): ${DateTime.now().toUtc().toIso8601String()}');
-      
-      // DIAGNOSTIC: Log all keys (not values)
       print('[FIREBASE] Service Account Keys: ${serviceAccount.keys.toList()}');
 
-      // Ensure private key handles literal \n correctly and remove any \r or extra spaces
+      // Sanitize the private key
       if (serviceAccount['private_key'] is String) {
-        String key = serviceAccount['private_key'] as String;
-        key = key.replaceAll(r'\n', '\n');
-        key = key.replaceAll(r'\r', '');
-        key = key.trim();
+        final rawKey = serviceAccount['private_key'] as String;
+        print('[FIREBASE] Raw private_key field length: ${rawKey.length}');
         
-        // Ensure it has the correct header/footer
-        if (!key.contains('-----BEGIN PRIVATE KEY-----')) {
-          print('⚠️ [FIREBASE] Private key missing standard PEM header');
+        final key = _cleanPrivateKey(rawKey);
+        print('[FIREBASE] Cleaned private_key length: ${key.length}');
+
+        // Look for common truncation clues
+        if (key.length < 1500) {
+          print('⚠️ [FIREBASE] WARNING: Private key seems unusually short (${key.length} chars).');
         }
-        
+
         // DIAGNOSTIC: Try to sign a test JWT to see if the key is valid
         try {
           final testJwt = JWT({'test': 'diag'});
@@ -102,12 +132,13 @@ class FirebaseConfig {
           print('✅ [FIREBASE] Diagnostic: Private key confirmed as a valid RSA PEM string.');
         } catch (e) {
           print('❌ [FIREBASE] Diagnostic: Private key is NOT a valid RSA string! Error: $e');
+          print('   Hint: This usually means the key was truncated or corrupted during copy-paste.');
+          print('   The PEM content (base64) length is: ${key.replaceAll(RegExp(r'---.*---|\s'), '').length}');
         }
 
         serviceAccount['private_key'] = key;
-        print('[FIREBASE] Private Key Cleaned. New Length: ${key.length}');
         
-        // Log masked header/footer
+        // Log masked tags for confirmation
         final header = key.length > 20 ? key.substring(0, 25).replaceAll('\n', '[NL]') : 'short';
         final footer = key.length > 20 ? key.substring(key.length - 25).replaceAll('\n', '[NL]') : 'short';
         print('[FIREBASE] Private Key Tags: $header...$footer');
