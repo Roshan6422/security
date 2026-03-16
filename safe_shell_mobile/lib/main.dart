@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/theme.dart';
@@ -15,13 +16,18 @@ import 'screens/auth/app_lock_screen.dart';
 import 'security/key_manager.dart';
 import 'utils/device_performance.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'services/fcm_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Register FCM background handler BEFORE Firebase.initializeApp
+  // This is required for Firebase Messaging to work when app is terminated.
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   // Turbo: run all initializations in parallel
   await Future.wait([
     _initFirebase(),

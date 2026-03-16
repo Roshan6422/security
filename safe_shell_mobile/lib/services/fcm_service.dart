@@ -5,6 +5,33 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+/// MUST be a top-level function — Firebase Messaging background handler
+/// runs in a separate isolate and cannot reference class-level statics.
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  if (kDebugMode) print('Handling a background message: ${message.messageId}');
+  if (message.data.containsKey('command')) {
+    _handleFcmCommand(message.data);
+  } else if (message.data['type'] == 'COMMAND') {
+    _handleFcmCommand(message.data);
+  }
+}
+
+/// Top-level command handler shared by both foreground and background handlers.
+void _handleFcmCommand(Map<String, dynamic> data) async {
+  final command = data['command'] ?? data['type'];
+  if (kDebugMode) print('Executing Command: $command');
+
+  if (command == 'panic_lock') {
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (kDebugMode) print('Remote Panic Lock executed: User signed out.');
+    } catch (e) {
+      if (kDebugMode) print('Remote sign out failed: $e');
+    }
+  }
+}
+
 class FCMService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
@@ -46,8 +73,8 @@ class FCMService {
       // Foreground Message Handler
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-      // Background Message Handler
-      FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
+      // Background Message Handler — MUST be a top-level function
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     } else {
       if (kDebugMode) print('User declined or has not accepted permission');
     }
@@ -77,19 +104,9 @@ class FCMService {
 
     // Handle Commands
     if (message.data.containsKey('command')) {
-      _handleCommand(message.data);
+      _handleFcmCommand(message.data);
     } else if (message.data['type'] == 'COMMAND') {
-      _handleCommand(message.data);
-    }
-  }
-
-  @pragma('vm:entry-point')
-  static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    if (kDebugMode) print('Handling a background message: ${message.messageId}');
-    if (message.data.containsKey('command')) {
-      _handleCommand(message.data);
-    } else if (message.data['type'] == 'COMMAND') {
-      _handleCommand(message.data);
+      _handleFcmCommand(message.data);
     }
   }
 
@@ -113,21 +130,4 @@ class FCMService {
     );
   }
 
-  static void _handleCommand(Map<String, dynamic> data) async {
-    final command = data['command'] ?? data['type'];
-    if (kDebugMode) print('Executing Command: $command');
-    
-    if (command == 'panic_lock') {
-      try {
-        final auth = FirebaseAuth.instance;
-        await auth.signOut();
-        // Since this is static, we can't easily navigate directly. 
-        // But the next time the app is opened, it will see the user is logged out.
-        // If we wanted immediate effect while app is open, we'd need a stream or global key.
-        if (kDebugMode) print('Remote Panic Lock executed: User signed out.');
-      } catch (e) {
-        if (kDebugMode) print('Remote sign out failed: $e');
-      }
-    }
-  }
 }
