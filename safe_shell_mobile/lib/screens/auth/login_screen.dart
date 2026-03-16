@@ -147,6 +147,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
 
 
+  String _generatePassword() {
+    // Generate a strong random password
+    const chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890!@#\$%^&*()_+';
+    final random = List.generate(16, (index) => chars[(chars.length * (DateTime.now().microsecondsSinceEpoch % 1000) / 1000).floor() % chars.length]).join();
+    return 'G${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}$random'.substring(0, 16) + '!\$A1';
+  }
+
   // Removed legacy server config UI
 
   @override
@@ -233,10 +240,21 @@ class _LoginScreenState extends State<LoginScreen> {
                           OutlinedButton.icon(
                             onPressed: () async {
                               try {
-                                await Provider.of<AuthProvider>(context, listen: false).signInWithGoogle();
-                                if (mounted) {
+                                final details = await Provider.of<AuthProvider>(context, listen: false).getGoogleAccountDetails();
+                                if (details != null && mounted) {
+                                  setState(() {
+                                    _emailController.text = details['email']!;
+                                    _passwordController.text = _generatePassword();
+                                    _obscurePassword = false; // Show it so they can copy it
+                                  });
                                   SoundEffects.unlockApp();
-                                  // Navigation is now handled reactively by AuthWrapper in main.dart
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Auto-filled! Please copy the generated password.'),
+                                      backgroundColor: AppColors.primary,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
                                 }
                               } catch (e) {
                                 if (mounted) {
@@ -254,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               height: 18,
                               errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
                             ),
-                            label: const Text('Sign in with Google'),
+                            label: const Text('Auto-fill with Google'),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 54),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

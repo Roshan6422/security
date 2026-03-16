@@ -252,18 +252,42 @@ class AuthProvider with ChangeNotifier {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final userData = jsonDecode(response.body);
-        await _handleLoginResponse(userData, 'google_sso_no_password');
+        await _handleLoginResponse(userData, 'google_sso');
       } else {
-        throw Exception('Google backend sync failed: ${response.body}');
+        throw Exception('Backend Google sync failed');
       }
 
     } catch (e) {
-      if (kDebugMode) debugPrint('AuthProvider: Google Sign-in Error: $e');
-      rethrow;
+      // Rollback if any part of the Google sign-in fails after Firebase auth
+      if (_firebaseAuth.currentUser != null) {
+        try {
+          await _firebaseAuth.currentUser!.delete();
+        } catch (_) {}
+      }
+      throw Exception('Google Sign-In failed: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Extracts email and name from Google without signing into Firebase.
+  /// Used for auto-filling the registration/login form.
+  Future<Map<String, String>?> getGoogleAccountDetails() async {
+    try {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser != null) {
+        // Sign out immediately so we don't hold the session, we just wanted the data
+        await _googleSignIn.signOut();
+        return {
+          'email': googleUser.email,
+          'name': googleUser.displayName ?? '',
+        };
+      }
+    } catch (e) {
+      print('Google account picker failed: $e');
+    }
+    return null;
   }
 
   String? _lastOtp;
