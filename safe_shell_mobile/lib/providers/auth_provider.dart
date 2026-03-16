@@ -163,16 +163,8 @@ class AuthProvider with ChangeNotifier {
       final idToken = await cred.user?.getIdToken();
       if (idToken == null) throw Exception('Failed to get auth token');
 
-      // Create Firestore Profile (Local fallback/client-side access)
-      await _firestore.collection('users').doc(cred.user!.uid).set({
-        'name': name,
-        'email': email,
-        'role': 'user',
-        'subscriptionStatus': 'free',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // Sync with Koyeb Backend
+      // The backend will handle creating the user profile document in Firestore.
+      // We only sync with Koyeb Backend here.
       final response = await NetworkService.client.post(
         Uri.parse('${AppConstants.baseUrl}/auth/firebase-register'),
         headers: {'Content-Type': 'application/json'},
@@ -192,11 +184,10 @@ class AuthProvider with ChangeNotifier {
     } on auth.FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Registration failed');
     } catch (e) {
-      // Rollback: if backend sync fails, delete the Firebase user so they aren't stuck
+      // Rollback: if backend sync fails, delete the Firebase auth user so they aren't stuck
       if (cred != null && cred.user != null) {
         try {
           await cred.user!.delete();
-          await _firestore.collection('users').doc(cred.user!.uid).delete();
         } catch (_) {
           // Ignore rollback errors
         }
