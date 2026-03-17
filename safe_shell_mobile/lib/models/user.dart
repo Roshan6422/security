@@ -7,7 +7,7 @@ class User {
   final String? recoveryKey;
   String? userKey;
   final String? subscriptionStatus;
-  final String? subscriptionExpiry;
+  final String? photoUrl;
 
   User({
     required this.id,
@@ -19,6 +19,7 @@ class User {
     this.userKey,
     this.subscriptionStatus,
     this.subscriptionExpiry,
+    this.photoUrl,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -32,6 +33,7 @@ class User {
       userKey: json['userKey'],
       subscriptionStatus: json['subscriptionStatus'],
       subscriptionExpiry: json['subscriptionExpiry'],
+      photoUrl: json['photoUrl'],
     );
   }
 
@@ -46,6 +48,7 @@ class User {
       'userKey': userKey,
       'subscriptionStatus': subscriptionStatus,
       'subscriptionExpiry': subscriptionExpiry,
+      'photoUrl': photoUrl,
     };
   }
 }

@@ -11,6 +11,9 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/custom_text_field.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -115,14 +118,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'name': _nameController.text,
           'email': _emailController.text,
         });
+
+        // Update local provider state too
+        if (mounted) {
+          Provider.of<AuthProvider>(context, listen: false).updateProfileData(
+            name: _nameController.text,
+            email: _emailController.text,
+          );
+        }
       }
       if (mounted) {
         HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('? Profile updated'), backgroundColor: Color(0xFF10B981)));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Profile updated'), backgroundColor: Color(0xFF10B981)));
         _fetchProfile();
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+      
+      if (image == null) return;
+
+      setState(() => _isLoading = true);
+      
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      // Upload to Firebase Storage
+      final storageRef = FirebaseStorage.instance.ref().child('profile_photos').child('$uid.jpg');
+      await storageRef.putFile(File(image.path));
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      // Update Firestore
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'photoUrl': downloadUrl,
+      });
+
+      // Update AuthProvider
+      if (mounted) {
+        await Provider.of<AuthProvider>(context, listen: false).updateProfileData(photoUrl: downloadUrl);
+        _fetchProfile();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Photo updated!'), backgroundColor: Color(0xFF10B981)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.redAccent));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -275,21 +323,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Column(
       children: [
-        // Gradient avatar ring
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6), Color(0xFF10B981)],
-            ),
-          ),
-          child: CircleAvatar(
-            radius: 45,
-            backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
-            child: Text(initial, style: TextStyle(color: isLight ? AppColors.primary : Colors.white, fontSize: 36, fontWeight: FontWeight.w800)),
+        // Gradient avatar ring with edit capability
+        GestureDetector(
+          onTap: _pickAndUploadPhoto,
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF4DA3FF), Color(0xFF8B5CF6), Color(0xFF10B981)],
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 45,
+                  backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+                  backgroundImage: _userData?['photoUrl'] != null 
+                    ? NetworkImage(_userData!['photoUrl']) 
+                    : null,
+                  child: _userData?['photoUrl'] == null 
+                    ? Text(initial, style: TextStyle(color: isLight ? AppColors.primary : Colors.white, fontSize: 36, fontWeight: FontWeight.w800))
+                    : null,
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: isLight ? Colors.white : AppColors.darkBackground, width: 2),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),

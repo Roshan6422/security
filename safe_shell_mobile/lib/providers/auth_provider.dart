@@ -405,4 +405,25 @@ class AuthProvider with ChangeNotifier {
     
     notifyListeners();
   }
+
+  Future<void> updateProfileData({String? name, String? email, String? photoUrl}) async {
+    if (_user == null) return;
+    
+    _user = User(
+      id: _user!.id,
+      name: name ?? _user!.name,
+      email: email ?? _user!.email,
+      role: _user!.role,
+      token: _user!.token,
+      recoveryKey: _user!.recoveryKey,
+      userKey: _user!.userKey,
+      subscriptionStatus: _user!.subscriptionStatus,
+      subscriptionExpiry: _user!.subscriptionExpiry,
+      photoUrl: photoUrl ?? _user!.photoUrl,
+    );
+    
+    // Cache profile for offline/turbo startup
+    await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
+    notifyListeners();
+  }
 }
