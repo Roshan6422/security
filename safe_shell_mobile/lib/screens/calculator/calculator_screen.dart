@@ -58,9 +58,13 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   void _unlockVault() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const AuthWrapper()),
-    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+      );
+    }
   }
 
   void _evaluate() {
