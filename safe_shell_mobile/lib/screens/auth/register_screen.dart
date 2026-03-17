@@ -326,53 +326,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 );
                               },
                             ),
-                            const SizedBox(height: 16),
-                            // Google Auto-Fill Button
-                            OutlinedButton.icon(
-                              onPressed: () async {
-                                try {
-                                  final details = await Provider.of<AuthProvider>(context, listen: false).getGoogleAccountDetails();
-                                  if (details != null && mounted) {
-                                    setState(() {
-                                      _nameController.text = details['name']!;
-                                      _emailController.text = details['email']!;
-                                      _passwordController.text = _generatePassword();
-                                      _obscurePassword = false; // Show it so they can verify/copy it
-                                    });
-                                    _calculateStrength(); // Update meter
-                                    HapticFeedback.lightImpact();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Auto-filled! Please copy the generated password.'),
-                                        backgroundColor: Color(0xFF4DA3FF),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(e.toString().replaceAll('Exception: ', '')),
-                                        backgroundColor: AppColors.error,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: Image.network(
-                                'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                                height: 18,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
-                              ),
-                              label: const Text('Auto-fill with Google'),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 54),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                side: BorderSide(color: Colors.white.withOpacity(0.1)),
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
                           ],
                       ),
                     ),

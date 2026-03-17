@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -282,12 +283,22 @@ class AuthProvider with ChangeNotifier {
         return {
           'email': googleUser.email,
           'name': googleUser.displayName ?? '',
+          'id': googleUser.id,
         };
       }
     } catch (e) {
       print('Google account picker failed: $e');
     }
     return null;
+  }
+
+  /// Generates a deterministic password based on email and googleId.
+  /// This ensures that the same Google account always results in the same password.
+  String generateDeterministicPassword(String email, String googleId) {
+    final bytes = utf8.encode('$email:$googleId:SafeShellSalt2024');
+    final hash = sha256.convert(bytes).toString();
+    // Complex password: S@fe + 10 chars hash + ! + digit
+    return 'G@${hash.substring(0, 10).toUpperCase()}1z!';
   }
 
   String? _lastOtp;

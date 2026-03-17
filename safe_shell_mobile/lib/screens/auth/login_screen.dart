@@ -254,14 +254,43 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           
-                          // Google Sign-In Button
+                          // Google Auto-Auth Button
                           OutlinedButton.icon(
                             onPressed: () async {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
                               try {
-                                await Provider.of<AuthProvider>(context, listen: false).signInWithGoogle();
-                                if (mounted) {
-                                  SoundEffects.unlockApp();
-                                  // Navigation is now handled reactively by AuthWrapper
+                                final details = await auth.getGoogleAccountDetails();
+                                if (details == null || !mounted) return;
+
+                                final email = details['email']!;
+                                final fullName = details['name']!;
+                                final googleId = details['id']!;
+                                
+                                // Take first 3 letters for username as requested
+                                String username = fullName.trim();
+                                if (username.length > 3) {
+                                  username = username.substring(0, 3);
+                                }
+                                
+                                final password = auth.generateDeterministicPassword(email, googleId);
+
+                                try {
+                                  await auth.login(email, password);
+                                  if (mounted) SoundEffects.unlockApp();
+                                } catch (e) {
+                                  // If user not found, try registering
+                                  if (e.toString().contains('user-not-found') || 
+                                      e.toString().contains('INVALID_LOGIN_CREDENTIALS') ||
+                                      e.toString().contains('404')) {
+                                    
+                                    await auth.register(username, email, password);
+                                    if (mounted) {
+                                      SoundEffects.unlockApp();
+                                      await _showRegistrationSuccessDialog(context);
+                                    }
+                                  } else {
+                                    rethrow;
+                                  }
                                 }
                               } catch (e) {
                                 if (mounted) {
@@ -305,6 +334,96 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showRegistrationSuccessDialog(BuildContext context) async {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final userKey = user?.userKey ?? 'N/A';
+    final recoveryKey = user?.recoveryKey ?? 'N/A';
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0D1520),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Column(
+          children: [
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(colors: [const Color(0xFF10B981).withOpacity(0.2), const Color(0xFF10B981).withOpacity(0.05)]),
+              ),
+              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
+            ),
+            const SizedBox(height: 12),
+            const Text('Account Created! ??', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Save these keys securely!', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13)),
+            const SizedBox(height: 20),
+            _keyDisplay('Your User Key', userKey, Icons.tag_rounded),
+            const SizedBox(height: 12),
+            _keyDisplay('Recovery Key', recoveryKey, Icons.vpn_key_rounded),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4DA3FF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(ctx); },
+              child: const Text('I saved my keys', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _keyDisplay(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF4DA3FF), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
+              );
+            },
+            child: Icon(Icons.copy_rounded, color: Colors.white.withOpacity(0.3), size: 18),
           ),
         ],
       ),
