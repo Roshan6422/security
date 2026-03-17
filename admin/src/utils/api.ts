@@ -7,7 +7,7 @@ export const getBaseUrl = () => {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
     // Updated for local IP connectivity
-    if (isLocal) return "http://localhost:8000";
+    if (isLocal) return "http://localhost:8001";
 
     // Fallback or explicit IP
     return "https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app";

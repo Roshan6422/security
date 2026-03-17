@@ -211,9 +211,10 @@ class ModelRepository<T extends FirestoreModel> {
   Future<List<T>> find([
     Map<String, dynamic> query = const {},
     Map<String, String> sortOptions = const {},
+    int? limit,
   ]) async {
     if (!FirebaseConfig.isInitialized) {
-      return _memFind(query);
+      return _memFind(query, limit);
     }
 
     var ref = FirebaseConfig.db!.collection(collectionName)
@@ -224,6 +225,9 @@ class ModelRepository<T extends FirestoreModel> {
     for (final entry in sortOptions.entries) {
       ref = ref.orderBy(entry.key,
           descending: entry.value == 'desc');
+    }
+    if (limit != null) {
+      ref = ref.limit(limit);
     }
     final snapshot = await ref.get();
     return snapshot.docs.map((doc) {
@@ -299,7 +303,7 @@ class ModelRepository<T extends FirestoreModel> {
     return null;
   }
 
-  List<T> _memFind(Map<String, dynamic> query) {
+  List<T> _memFind(Map<String, dynamic> query, [int? limit]) {
     final col = _getMemoryCollection(collectionName);
     final results = <T>[];
 
@@ -315,6 +319,7 @@ class ModelRepository<T extends FirestoreModel> {
         }
       }
       if (match) results.add(_fromMap({...entry.value, '_id': entry.key}));
+      if (limit != null && results.length >= limit) break;
     }
     return results;
   }

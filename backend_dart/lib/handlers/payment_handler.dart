@@ -91,7 +91,7 @@ Router paymentRouter() {
             headers: {'content-type': 'application/json'});
       }
       
-      final payments = await paymentRepo.find();
+      final payments = await paymentRepo.find(limit: 100);
       return Response.ok(
           jsonEncode(payments.map((p) => p.toJson()).toList()),
           headers: {'content-type': 'application/json'});

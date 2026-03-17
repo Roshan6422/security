@@ -25,7 +25,9 @@ import java.io.File
 
 class MainActivity: FlutterFragmentActivity() {
     private val CHANNEL = "com.safeshell.safe_shell_mobile/stealth"
+    private val USB_CHANNEL = "com.safeshell.safe_shell_mobile/usb"
     private var pendingLockTarget: String? = null
+    private var usbDetector: UsbDetector? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,8 +55,46 @@ class MainActivity: FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // METHOD CHANNEL
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
+                "encrypt" -> {
+                    val bytes = call.arguments as? ByteArray
+                    if (bytes != null) {
+                        try {
+                            result.success(KeystoreHelper.encrypt(bytes))
+                        } catch (e: Exception) {
+                            result.error("ENCRYPTION_FAILED", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Data is null", null)
+                    }
+                }
+                "decrypt" -> {
+                    val bytes = call.arguments as? ByteArray
+                    if (bytes != null) {
+                        try {
+                            result.success(KeystoreHelper.decrypt(bytes))
+                        } catch (e: Exception) {
+                            result.error("DECRYPTION_FAILED", e.message, null)
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Data is null", null)
+                    }
+                }
+                "enableStealth" -> {
+                    StealthLauncher.enable(this)
+                    result.success(null)
+                }
+                "disableStealth" -> {
+                    StealthLauncher.disable(this)
+                    result.success(null)
+                }
+                "requestAdmin" -> {
+                    requestDeviceAdmin()
+                    result.success(null)
+                }
                 "toggleStealthMode" -> {
                     val enable = call.argument<Boolean>("enable") ?: false
                     toggleStealthMode(enable)
@@ -149,48 +189,19 @@ class MainActivity: FlutterFragmentActivity() {
                         result.success(true)
                     }
                 }
-                // --- NEW SECURITY HANDLERS ---
-                "hwEncrypt" -> {
-                    val data = call.argument<ByteArray>("data")
-                    if (data != null) {
-                        try {
-                            result.success(EncryptionModule.encrypt(data))
-                        } catch (e: Exception) {
-                            result.error("ENCRYPTION_FAILED", e.message, null)
-                        }
-                    } else {
-                        result.error("INVALID_ARGUMENT", "Data is null", null)
-                    }
-                }
-                "hwDecrypt" -> {
-                    val ciphertext = call.argument<String>("ciphertext")
-                    val iv = call.argument<String>("iv")
-                    if (ciphertext != null && iv != null) {
-                        try {
-                            result.success(EncryptionModule.decrypt(ciphertext, iv))
-                        } catch (e: Exception) {
-                            result.error("DECRYPTION_FAILED", e.message, null)
-                        }
-                    } else {
-                        result.error("INVALID_ARGUMENT", "Ciphertext or IV is null", null)
-                    }
-                }
+                // --- LEGACY SECURITY HANDLERS (REMOVED) ---
                 "isDeviceAdmin" -> {
                     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
-                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
+                    val componentName = ComponentName(this, AdminReceiver::class.java)
                     result.success(dpm.isAdminActive(componentName))
                 }
                 "requestDeviceAdmin" -> {
-                    val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
-                    intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
-                    intent.putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "SafeShell requires Device Admin to prevent unauthorized uninstallation.")
-                    startActivity(intent)
+                    requestDeviceAdmin()
                     result.success(true)
                 }
                 "deactivateDeviceAdmin" -> {
                     val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
-                    val componentName = ComponentName(this, SafeShellDeviceAdminReceiver::class.java)
+                    val componentName = ComponentName(this, AdminReceiver::class.java)
                     dpm.removeActiveAdmin(componentName)
                     result.success(true)
                 }
@@ -199,39 +210,65 @@ class MainActivity: FlutterFragmentActivity() {
                     val deviceList = usbManager.deviceList
                     result.success(deviceList.isNotEmpty())
                 }
-                // --- DELETED DUPLICATE HANDLERS (toggleStealthMode, toggleScreenshot) ---
 
                 else -> result.notImplemented()
             }
         }
+
+        // EVENT CHANNEL – USB events
+        io.flutter.plugin.common.EventChannel(flutterEngine.dartExecutor.binaryMessenger, USB_CHANNEL).setStreamHandler(
+            object : io.flutter.plugin.common.EventChannel.StreamHandler {
+                private var eventSink: io.flutter.plugin.common.EventChannel.EventSink? = null
+                override fun onListen(arguments: Any?, events: io.flutter.plugin.common.EventChannel.EventSink?) {
+                    eventSink = events
+                    usbDetector = UsbDetector(this@MainActivity,
+                        object : UsbDetector.UsbListener {
+                            override fun onUsbConnected(device: android.hardware.usb.UsbDevice) {
+                                eventSink?.success(
+                                    mapOf(
+                                        "type" to "connected",
+                                        "deviceName" to device.deviceName,
+                                        "vendorId" to device.vendorId,
+                                        "productId" to device.productId
+                                    )
+                                )
+                            }
+
+                            override fun onUsbDisconnected(device: android.hardware.usb.UsbDevice) {
+                                eventSink?.success(
+                                    mapOf(
+                                        "type" to "disconnected",
+                                        "deviceName" to device.deviceName
+                                    )
+                                )
+                            }
+                        })
+                    usbDetector?.register()
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    usbDetector?.unregister()
+                    eventSink = null
+                }
+            })
     }
 
-    private var usbReceiver: UsbBroadcastReceiver? = null
-
-    override fun onStart() {
-        super.onStart()
-        val engine = flutterEngine ?: return
-        val channel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
-        usbReceiver = UsbBroadcastReceiver(channel)
-        val filter = android.content.IntentFilter().apply {
-            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_ATTACHED)
-            addAction(android.hardware.usb.UsbManager.ACTION_USB_DEVICE_DETACHED)
-            addAction("android.hardware.usb.action.USB_STATE")
+    private fun requestDeviceAdmin() {
+        val adminComponent = ComponentName(this, AdminReceiver::class.java)
+        val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+            putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+            putExtra(
+                android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                "Enable anti‑uninstall protection for SafeShell"
+            )
         }
-        registerReceiver(usbReceiver, filter)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        usbReceiver?.let {
-            unregisterReceiver(it)
-        }
+        startActivityForResult(intent, 1001)
     }
 
     private fun toggleStealthMode(enable: Boolean) {
         val pm = packageManager
-        val defaultComponent = ComponentName(this, "com.safeshell.safe_shell_mobile.MainActivity")
-        val calculatorComponent = ComponentName(this, "com.safeshell.safe_shell_mobile.CalculatorActivityAlias")
+        val defaultComponent = ComponentName(this, "${this.packageName}.MainActivity")
+        val calculatorComponent = ComponentName(this, "${this.packageName}.CalculatorActivityAlias")
 
         if (enable) {
             // Enable calculator alias, Disable default

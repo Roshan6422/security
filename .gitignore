@@ -8,11 +8,13 @@ build_log.txt
 gradle_err.txt
 
 # Node (Admin)
-admin/node_modules/
-admin/dist/
-admin/.env
-!admin/.env.example
 admin/serviceAccountKey.json
+admin/node_modules/
+backend_dart/service_account.json
+backend_dart/node_modules/
+*.txt
+*.log
+!README.md
 
 # Flutter/Dart (Mobile & Backend)
 backend_dart/.env

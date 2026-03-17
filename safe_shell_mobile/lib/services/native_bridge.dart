@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
+import 'package:safe_shell_mobile/models/usb_event.dart';
 
 /// Unified Flutter ↔ Native bridge for all platform channel calls.
 /// Channel: com.safeshell.safe_shell_mobile/stealth (legacy name, handles all native ops)
@@ -7,38 +8,45 @@ class NativeBridge {
   static const MethodChannel _channel =
       MethodChannel('com.safeshell.safe_shell_mobile/stealth');
 
+  static const EventChannel _usbEventChannel =
+      EventChannel('com.safeshell.safe_shell_mobile/usb');
+
   // ─────────── ENCRYPTION (AES-GCM via Android Keystore) ───────────
 
   /// Encrypts raw bytes using hardware-backed AES-GCM.
-  /// Returns a map with 'ciphertext' and 'iv' as Base64 strings.
-  static Future<Map<String, String>> encrypt(Uint8List data) async {
-    final result = await _channel.invokeMethod<Map>('hwEncrypt', {'data': data});
-    return {
-      'ciphertext': result!['ciphertext'] as String,
-      'iv': result['iv'] as String,
-    };
+  /// Returns consolidated bytes (iv + ciphertext).
+  static Future<Uint8List> encrypt(Uint8List plain) async {
+    final result = await _channel.invokeMethod<Uint8List>(
+      'encrypt',
+      plain,
+    );
+    return result!;
   }
 
-  /// Decrypts AES-GCM ciphertext using hardware-backed key.
-  /// Takes Base64-encoded ciphertext and iv strings.
-  static Future<Uint8List> decrypt(String ciphertext, String iv) async {
+  /// Decrypts AES-GCM consolidated bytes (iv + ciphertext).
+  static Future<Uint8List> decrypt(Uint8List cipher) async {
     final result = await _channel.invokeMethod<Uint8List>(
-      'hwDecrypt',
-      {'ciphertext': ciphertext, 'iv': iv},
+      'decrypt',
+      cipher,
     );
     return result!;
   }
 
   // ─────────── STEALTH MODE ───────────
 
-  /// Enable stealth mode — hides SafeShell icon and shows Calculator alias.
+  /// Enable stealth mode — hides SafeShell icon and shows decoy app.
   static Future<void> enableStealth() async {
-    await _channel.invokeMethod('toggleStealthMode', {'enable': true});
+    await _channel.invokeMethod('enableStealth');
   }
 
   /// Disable stealth mode — restores SafeShell icon.
   static Future<void> disableStealth() async {
-    await _channel.invokeMethod('toggleStealthMode', {'enable': false});
+    await _channel.invokeMethod('disableStealth');
+  }
+
+  /// Toggle stealth mode (LEGACY) — switches between app aliases.
+  static Future<void> toggleStealthMode(bool enable) async {
+    await _channel.invokeMethod('toggleStealthMode', {'enable': enable});
   }
 
   // ─────────── DEVICE ADMIN (Anti-Uninstall) ───────────
@@ -50,6 +58,11 @@ class NativeBridge {
   }
 
   /// Request device admin to enable anti-uninstall protection.
+  static Future<void> requestAdmin() async {
+    await _channel.invokeMethod('requestAdmin');
+  }
+
+  /// Request device admin (LEGACY).
   static Future<void> requestDeviceAdmin() async {
     await _channel.invokeMethod('requestDeviceAdmin');
   }
@@ -60,6 +73,13 @@ class NativeBridge {
   }
 
   // ─────────── USB DETECTION ───────────
+
+  /// Stream of USB connection events.
+  static Stream<UsbEvent> get usbEvents {
+    return _usbEventChannel
+        .receiveBroadcastStream()
+        .map((dynamic ev) => UsbEvent.fromMap(Map<String, dynamic>.from(ev)));
+  }
 
   /// Check current USB connection status.
   static Future<bool> isUsbConnected() async {

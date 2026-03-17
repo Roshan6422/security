@@ -34,6 +34,84 @@ bool _checkPassword(String password, String hash) {
 Router authRouter() {
   final router = Router();
 
+  // POST /register (Standard Email/Password)
+  router.post('/register', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+      final email = body['email'] as String?;
+      final password = body['password'] as String?;
+      final name = body['name'] as String? ?? 'Admin User';
+
+      if (email == null || password == null) {
+        return Response(400, body: jsonEncode({'message': 'Email and password required'}), headers: {'content-type': 'application/json'});
+      }
+
+      var existing = await userRepo.findOne({'email': email});
+      if (existing != null) {
+        return Response(409, body: jsonEncode({'message': 'User already exists'}), headers: {'content-type': 'application/json'});
+      }
+
+      // Hash password and save
+      final hashedPassword = _hashPassword(password);
+      final user = await userRepo.create({
+        'email': email,
+        'password': hashedPassword,
+        'name': name,
+        'role': 'user', // Default to user, promote later
+        'subscriptionStatus': 'free',
+        'isSuspended': false,
+      });
+
+      return Response(201, body: jsonEncode({
+        'message': 'User registered successfully',
+        'user': {
+          'id': user.id,
+          'email': user.email,
+          'name': user.name,
+          'role': user.role,
+        }
+      }), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Registration error: $e'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // POST /login (Standard Email/Password)
+  router.post('/login', (Request request) async {
+    try {
+      final body = jsonDecode(await request.readAsString());
+      final email = body['email'] as String?;
+      final password = body['password'] as String?;
+
+      if (email == null || password == null) {
+        return Response(400, body: jsonEncode({'message': 'Email and password required'}), headers: {'content-type': 'application/json'});
+      }
+
+      final user = await userRepo.findOne({'email': email});
+      if (user == null) {
+        return Response(401, body: jsonEncode({'message': 'Invalid credentials'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (user.isSuspended) {
+        return Response(403, body: jsonEncode({'message': 'Account suspended'}), headers: {'content-type': 'application/json'});
+      }
+
+      if (user.password == null || !_checkPassword(password, user.password!)) {
+        return Response(401, body: jsonEncode({'message': 'Invalid credentials'}), headers: {'content-type': 'application/json'});
+      }
+
+      return Response.ok(jsonEncode({
+        'token': _generateToken(user.id!),
+        'id': user.id,
+        'email': user.email,
+        'name': user.name,
+        'role': user.role,
+      }), headers: {'content-type': 'application/json'});
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Login error: $e'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
   // POST /firebase-login
   router.post('/firebase-login', (Request request) async {
     try {
@@ -173,17 +251,23 @@ Router authRouter() {
       final secret = body['secret'] as String?;
       final email = body['email'] as String?;
 
-      if (secret != Env.adminSecret) {
-        // ✅ Only env secret
-        return Response(401,
-            body: jsonEncode({'message': 'Unauthorized'}),
-            headers: {'content-type': 'application/json'});
+      if (email == null) {
+        return Response(400, body: jsonEncode({'message': 'Email required'}), headers: {'content-type': 'application/json'});
       }
-      // ... rest same
+
+      final user = await userRepo.findOne({'email': email});
+      if (user == null) {
+        return Response(404, body: jsonEncode({'message': 'User not found'}), headers: {'content-type': 'application/json'});
+      }
+
+      user.role = 'admin';
+      await user.save();
+
+      return Response.ok(jsonEncode({'message': 'User promoted to admin successfully'}), headers: {'content-type': 'application/json'});
     } catch (e, stackTrace) {
       print('make-admin error: $e\n$stackTrace');
       return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
+          body: jsonEncode({'message': 'Server error: $e'}),
           headers: {'content-type': 'application/json'});
     }
   });

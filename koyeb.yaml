@@ -7,7 +7,7 @@ routes:
   - path: /
     port: 8000
 regions:
-  - fra
+  - sin
 instance_types:
   - free
 build:

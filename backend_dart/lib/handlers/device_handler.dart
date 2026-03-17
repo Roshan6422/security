@@ -89,10 +89,7 @@ sr.Router deviceRouter() {
       final fcmToken = body['fcmToken'] as String? ?? body['token'] as String?;
 
       // Check if this device model already registered for this user
-      final allDevices = await _deviceRepo.find();
-      final existing = allDevices.where(
-        (d) => d.userId == user.id && d.model == model,
-      ).toList();
+      final existing = await _deviceRepo.find({'userId': user.id, 'model': model});
 
       DeviceEntry device;
       if (existing.isNotEmpty) {
@@ -145,10 +142,7 @@ sr.Router deviceRouter() {
   router.get('/list', (s.Request request) async {
     try {
       final user = getAuthUser(request);
-      final allDevices = await _deviceRepo.find();
-      final userDevices = allDevices
-          .where((d) => d.userId == user.id)
-          .toList();
+      final userDevices = await _deviceRepo.find({'userId': user.id});
 
       userDevices.sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
 

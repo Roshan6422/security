@@ -85,18 +85,17 @@ Router auditRouter() {
       final limit = int.tryParse(
               request.url.queryParameters['limit'] ?? '50') ?? 50;
 
-      // ✅ Ideally server-side filtered query
-      final allEntries = await _auditRepo.find();
-      var userEntries = allEntries
-          .where((e) => e.userId == userId)
-          .toList();
-
+      // ✅ Server-side filtered query
+      final query = {'userId': userId};
       if (typeFilter != null && typeFilter.isNotEmpty) {
-        userEntries =
-            userEntries.where((e) => e.type == typeFilter).toList();
+        query['type'] = typeFilter;
       }
-
-      userEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      
+      final userEntries = await _auditRepo.find(
+        query,
+        sortOptions: {'timestamp': 'desc'},
+        limit: 1000, // Fetch up to 1000 recent entries to paginate over
+      );
 
       // ✅ Pagination
       final startIndex = (page - 1) * limit;
@@ -154,12 +153,13 @@ Router auditRouter() {
       final now = DateTime.now();
 
       String previousHash = '';
-      final allEntries = await _auditRepo.find();
-      final userEntries =
-          allEntries.where((e) => e.userId == userId).toList();
-      userEntries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      if (userEntries.isNotEmpty) {
-        previousHash = userEntries.last.hash;
+      final lastEntries = await _auditRepo.find(
+        {'userId': userId},
+        sortOptions: {'timestamp': 'desc'},
+        limit: 1,
+      );
+      if (lastEntries.isNotEmpty) {
+        previousHash = lastEntries.first.hash;
       }
 
       final chainInput =
@@ -207,11 +207,10 @@ Router auditRouter() {
             headers: {'content-type': 'application/json'});
       }
 
-      final allEntries = await _auditRepo.find();
-      final userEntries =
-          allEntries.where((e) => e.userId == userId).toList();
-      userEntries
-          .sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final userEntries = await _auditRepo.find(
+        {'userId': userId},
+        sortOptions: {'timestamp': 'asc'},
+      );
 
       bool verified = true;
       String? brokenAtId;
