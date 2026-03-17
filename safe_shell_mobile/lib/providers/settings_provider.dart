@@ -166,12 +166,13 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> toggleDiscreetMode(bool enable) async {
     _discreetMode = enable;
+    notifyListeners();
+    
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('discreet_mode', enable);
     
     // Let it persist before invoking native method which might kill the process
     await _channel.invokeMethod('toggleStealthMode', {'enable': enable});
-    notifyListeners();
   }
 
   Future<void> toggleBiometrics(bool enable) async {
