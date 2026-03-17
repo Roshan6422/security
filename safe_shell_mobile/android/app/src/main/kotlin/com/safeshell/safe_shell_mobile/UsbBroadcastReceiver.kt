@@ -7,10 +7,7 @@ import android.hardware.usb.UsbManager
 import android.util.Log
 import io.flutter.plugin.common.MethodChannel
 
-class UsbBroadcastReceiver(private var channel: MethodChannel? = null) : BroadcastReceiver() {
-    // Default constructor for system manifest registration
-    constructor() : this(null)
-
+class UsbBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val prefs = context.getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
@@ -36,8 +33,13 @@ class UsbBroadcastReceiver(private var channel: MethodChannel? = null) : Broadca
             // Persist state so Flutter can read it on boot
             prefs.edit().putBoolean("usb_connected", isConnected).apply()
             
-            // Try to report to Flutter if channel is active
-            channel?.invokeMethod("onUsbStatusChanged", mapOf("connected" to isConnected))
+            // Try to report to Flutter via static channel
+            try {
+                MainActivity.stealthChannel?.invokeMethod("onUsbStatusChanged", mapOf("connected" to isConnected))
+                Log.d("SafeShellUSB", "Reported to Flutter: $isConnected")
+            } catch (e: Exception) {
+                Log.e("SafeShellUSB", "Failed to report to Flutter: ${e.message}")
+            }
         }
     }
 }

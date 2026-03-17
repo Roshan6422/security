@@ -24,10 +24,13 @@ import java.io.FileInputStream
 import java.io.File
 
 class MainActivity: FlutterFragmentActivity() {
-    private val CHANNEL = "com.safeshell.safe_shell_mobile/stealth"
-    private val USB_CHANNEL = "com.safeshell.safe_shell_mobile/usb"
     private var pendingLockTarget: String? = null
-    private var usbDetector: UsbDetector? = null
+
+    companion object {
+        var stealthChannel: MethodChannel? = null
+        private const val CHANNEL = "com.safeshell.safe_shell_mobile/stealth"
+        private const val USB_CHANNEL = "com.safeshell.safe_shell_mobile/usb"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +60,10 @@ class MainActivity: FlutterFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         
         // METHOD CHANNEL
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        stealthChannel = channel
+        
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "encrypt" -> {
                     val bytes = call.arguments as? ByteArray
@@ -215,41 +221,13 @@ class MainActivity: FlutterFragmentActivity() {
             }
         }
 
-        // EVENT CHANNEL – USB events
+        // EVENT CHANNEL – USB events (Kept for manual stream if needed, but UsbBroadcastReceiver handles main logic)
         io.flutter.plugin.common.EventChannel(flutterEngine.dartExecutor.binaryMessenger, USB_CHANNEL).setStreamHandler(
             object : io.flutter.plugin.common.EventChannel.StreamHandler {
-                private var eventSink: io.flutter.plugin.common.EventChannel.EventSink? = null
                 override fun onListen(arguments: Any?, events: io.flutter.plugin.common.EventChannel.EventSink?) {
-                    eventSink = events
-                    usbDetector = UsbDetector(this@MainActivity,
-                        object : UsbDetector.UsbListener {
-                            override fun onUsbConnected(device: android.hardware.usb.UsbDevice) {
-                                eventSink?.success(
-                                    mapOf(
-                                        "type" to "connected",
-                                        "deviceName" to device.deviceName,
-                                        "vendorId" to device.vendorId,
-                                        "productId" to device.productId
-                                    )
-                                )
-                            }
-
-                            override fun onUsbDisconnected(device: android.hardware.usb.UsbDevice) {
-                                eventSink?.success(
-                                    mapOf(
-                                        "type" to "disconnected",
-                                        "deviceName" to device.deviceName
-                                    )
-                                )
-                            }
-                        })
-                    usbDetector?.register()
+                    // Manual real-time listener if requested by Flutter
                 }
-
-                override fun onCancel(arguments: Any?) {
-                    usbDetector?.unregister()
-                    eventSink = null
-                }
+                override fun onCancel(arguments: Any?) {}
             })
     }
 
