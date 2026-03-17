@@ -40,6 +40,14 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     _initializedScreens = List.generate(_screens.length, (index) => index == 0);
     WidgetsBinding.instance.addObserver(this);
     FileRecoveryService().restoreLegacyFiles();
+    
+    // Check for auto-lock on boot
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+       final settings = Provider.of<SettingsProvider>(context, listen: false);
+       if (await settings.shouldLockNow()) {
+          _lockApp();
+       }
+    });
   }
 
   @override
@@ -52,27 +60,20 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final lockSeconds = settings.autoLockSeconds;
 
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      _pausedAt = DateTime.now();
-      if (lockSeconds > 0) {
-        _autoLockTimer?.cancel();
-        _autoLockTimer = Timer(Duration(seconds: lockSeconds), _lockApp);
-      }
+      settings.recordBackgroundTime();
     } else if (state == AppLifecycleState.resumed) {
-      _autoLockTimer?.cancel();
-      
       // Refresh security states (USB, Admin status) on resume
       settings.checkAdminStatus();
       
-      if (_pausedAt != null && lockSeconds > 0) {
-        final elapsed = DateTime.now().difference(_pausedAt!).inSeconds;
-        if (elapsed >= lockSeconds) {
+      settings.shouldLockNow().then((shouldLock) {
+        if (shouldLock) {
           _lockApp();
+        } else {
+          settings.clearBackgroundTime();
         }
-      }
-      _pausedAt = null;
+      });
     }
   }
 

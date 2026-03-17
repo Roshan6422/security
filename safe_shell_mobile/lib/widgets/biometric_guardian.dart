@@ -25,6 +25,11 @@ class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Check on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndAuthenticate();
+    });
   }
 
   @override

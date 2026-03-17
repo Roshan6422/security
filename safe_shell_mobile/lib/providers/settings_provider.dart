@@ -59,6 +59,16 @@ class SettingsProvider extends ChangeNotifier {
     _biometricsEnabled = prefs.getBool('biometric_enabled') ?? false;
     _allowScreenshots = prefs.getBool('allow_screenshots') ?? false;
     
+    // Check if we should auto-lock right now (on boot)
+    final lastPaused = prefs.getInt('last_paused_at') ?? 0;
+    if (lastPaused > 0 && _autoLockSeconds > 0) {
+      final elapsed = (DateTime.now().millisecondsSinceEpoch - lastPaused) ~/ 1000;
+      if (elapsed >= _autoLockSeconds) {
+        // We don't notify here because we want the consumer (MainShell) to check
+        debugPrint('SettingsProvider: Auto-lock detected on startup ($elapsed s elapsed)');
+      }
+    }
+    
     // Sync Anti-Uninstall with Native Admin status (safe – channel may not be ready)
     try {
       _antiUninstallEnabled = await _channel.invokeMethod<bool>('isDeviceAdmin') ?? false;
@@ -84,7 +94,39 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAutoLockSeconds(int seconds) async {
     _autoLockSeconds = seconds;
     await _storage.write(key: 'auto_lock_seconds', value: seconds.toString());
+    
+    // Clear last paused time if disabling
+    if (seconds == 0) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_paused_at');
+    }
+    
     notifyListeners();
+  }
+
+  /// Records the current time when app backgrounds
+  Future<void> recordBackgroundTime() async {
+    if (_autoLockSeconds <= 0) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_paused_at', DateTime.now().millisecondsSinceEpoch);
+    debugPrint('SettingsProvider: Recorded background time');
+  }
+
+  /// Clears background time (called on successful user activity or resume within window)
+  Future<void> clearBackgroundTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_paused_at');
+  }
+
+  /// Returns true if the app should lock based on saved background time
+  Future<bool> shouldLockNow() async {
+    if (_autoLockSeconds <= 0) return false;
+    final prefs = await SharedPreferences.getInstance();
+    final lastPaused = prefs.getInt('last_paused_at') ?? 0;
+    if (lastPaused == 0) return false;
+
+    final elapsed = (DateTime.now().millisecondsSinceEpoch - lastPaused) ~/ 1000;
+    return elapsed >= _autoLockSeconds;
   }
 
   Future<void> toggleUsbDetection(bool enable) async {
