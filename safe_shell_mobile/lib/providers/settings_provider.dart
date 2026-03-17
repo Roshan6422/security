@@ -179,6 +179,7 @@ class SettingsProvider extends ChangeNotifier {
     _biometricsEnabled = enable;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('biometric_enabled', enable);
+    await _storage.write(key: 'biometric_enabled', value: enable.toString());
     notifyListeners();
   }
 

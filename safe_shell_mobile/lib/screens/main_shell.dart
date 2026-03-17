@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_bottom_nav.dart';
-// ✅ Fix 1: Removed unused import
-// import '../widgets/biometric_guardian.dart';
+import '../widgets/biometric_guardian.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import 'home/dashboard_screen.dart';
@@ -89,13 +88,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     return Scaffold(
       extendBody: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: List.generate(_screens.length, (index) {
-          return _initializedScreens[index] 
-              ? _screens[index] 
-              : const SizedBox.shrink();
-        }),
+      body: BiometricGuardian(
+        child: IndexedStack(
+          index: _currentIndex,
+          children: List.generate(_screens.length, (index) {
+            return _initializedScreens[index] 
+                ? _screens[index] 
+                : const SizedBox.shrink();
+          }),
+        ),
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
