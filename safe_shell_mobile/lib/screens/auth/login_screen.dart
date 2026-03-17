@@ -35,21 +35,39 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _checkBiometrics();
+    _loadSavedEmail();
+    _checkBiometricsAndAutoAuth();
   }
 
-  Future<void> _checkBiometrics() async {
+  Future<void> _loadSavedEmail() async {
+    final email = await _storage.read(key: 'bio_email');
+    if (email != null && mounted) {
+      _emailController.text = email;
+    }
+  }
+
+  Future<void> _checkBiometricsAndAutoAuth() async {
     if (kDebugMode) debugPrint('LoginScreen: Checking biometrics...');
     try {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
       final canCheck = await _localAuth.canCheckBiometrics;
       final biometricEnabled = await _storage.read(key: 'biometric_enabled');
       
-      if (kDebugMode) debugPrint('LoginScreen: BioSupport=$isDeviceSupported, CanCheck=$canCheck, Enabled=$biometricEnabled');
+      final isBioReady = isDeviceSupported && canCheck && biometricEnabled == 'true';
       
-      setState(() {
-        _canCheckBiometrics = isDeviceSupported && canCheck && biometricEnabled == 'true';
-      });
+      if (mounted) {
+        setState(() {
+          _canCheckBiometrics = isBioReady;
+        });
+      }
+
+      // Auto-trigger authentication if enabled
+      if (isBioReady) {
+        // Delay slightly to ensure UI is ready
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _authenticate();
+        });
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('LoginScreen: Biometric Check Error: $e');
     }
