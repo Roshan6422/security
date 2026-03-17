@@ -135,6 +135,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           backgroundColor: value ? Colors.blue : null,
         ),
       );
+
+      if (value) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CalculatorScreen(),
+          ),
+        );
+      }
     }
   }
 
