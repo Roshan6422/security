@@ -42,6 +42,11 @@ class MainActivity: FlutterFragmentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        stealthChannel = null
+        super.onDestroy()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val target = intent.getStringExtra("LOCK_TARGET")
@@ -139,9 +144,13 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(hasUsageStatsPermission())
                 }
                 "requestUsagePermission" -> {
-                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                    startActivity(intent)
-                    result.success(true)
+                    try {
+                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("ACTIVITY_NOT_FOUND", "Usage access settings not available", null)
+                    }
                 }
                 "isUsbConnected" -> {
                     val prefs = getSharedPreferences("safe_shell_prefs", Context.MODE_PRIVATE)
@@ -189,10 +198,13 @@ class MainActivity: FlutterFragmentActivity() {
                         startActivity(intent)
                         result.success(true)
                     } catch (e: Exception) {
-                        // Fallback if the package URI intent fails
-                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                        startActivity(intent)
-                        result.success(true)
+                        try {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e2: Exception) {
+                            result.error("ACTIVITY_NOT_FOUND", "Settings not available", null)
+                        }
                     }
                 }
                 // --- LEGACY SECURITY HANDLERS (REMOVED) ---

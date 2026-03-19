@@ -20,6 +20,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
+  bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
@@ -96,47 +97,76 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     final contentHintColor = isLight ? Colors.black26 : Colors.white30;
     final iconColor = isLight ? AppColors.textPrimary : Colors.white;
 
-    return Scaffold(
-      backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
-      appBar: AppBar(
-        title: Text(widget.note != null ? 'Edit Note' : 'New Note', style: AppTextStyles.heading.copyWith(color: iconColor)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: _isLoading ? CircularProgressIndicator(color: iconColor) : Icon(Icons.save, color: iconColor),
-            onPressed: _isLoading ? null : _saveNote,
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _titleController,
-              style: AppTextStyles.subheading.copyWith(fontSize: 20, color: iconColor),
-              decoration: InputDecoration(
-                hintText: 'Title',
-                hintStyle: TextStyle(color: hintColor),
-                border: InputBorder.none,
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+            title: Text('Discard Changes?', style: TextStyle(color: iconColor)),
+            content: Text('You have unsaved changes. Are you sure you want to discard them?', style: TextStyle(color: iconColor.withOpacity(0.7))),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
               ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Discard', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+        if (shouldPop == true && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
+        appBar: AppBar(
+          title: Text(widget.note != null ? 'Edit Note' : 'New Note', style: AppTextStyles.heading.copyWith(color: iconColor)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: _isLoading ? CircularProgressIndicator(color: iconColor) : Icon(Icons.save, color: iconColor),
+              onPressed: _isLoading ? null : _saveNote,
             ),
-            const Divider(color: Colors.white24),
-            Expanded(
-              child: TextField(
-                controller: _contentController,
-                style: AppTextStyles.body.copyWith(color: iconColor),
-                maxLines: null,
-                expands: true,
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _titleController,
+                onChanged: (_) => setState(() => _hasUnsavedChanges = true),
+                style: AppTextStyles.subheading.copyWith(fontSize: 20, color: iconColor),
                 decoration: InputDecoration(
-                  hintText: 'Type your note here...',
-                  hintStyle: TextStyle(color: contentHintColor),
+                  hintText: 'Title',
+                  hintStyle: TextStyle(color: hintColor),
                   border: InputBorder.none,
                 ),
               ),
-            ),
-          ],
+              const Divider(color: Colors.white24),
+              Expanded(
+                child: TextField(
+                  controller: _contentController,
+                  onChanged: (_) => setState(() => _hasUnsavedChanges = true),
+                  style: AppTextStyles.body.copyWith(color: iconColor),
+                  maxLines: null,
+                  expands: true,
+                  decoration: InputDecoration(
+                    hintText: 'Type your note here...',
+                    hintStyle: TextStyle(color: contentHintColor),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

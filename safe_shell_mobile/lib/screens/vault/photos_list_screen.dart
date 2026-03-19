@@ -600,6 +600,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
               builder: (context, localPath) => Image.file(
                 File(localPath),
                 fit: BoxFit.cover,
+                cacheWidth: 400, // Prevent OOM by strictly bounding decode pixel size
               ),
             ),
           ),

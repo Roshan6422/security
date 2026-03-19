@@ -23,6 +23,7 @@ import 'services/fcm_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final ValueNotifier<int> globalInteractionNotifier = ValueNotifier(0);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -102,6 +103,13 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.dark,
+        builder: (context, child) {
+          return Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => globalInteractionNotifier.value++,
+            child: child!,
+          );
+        },
         home: const AppLockListenerWrapper(child: SplashScreen()),
         navigatorObservers: [routeObserver],
       ),
@@ -165,12 +173,12 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
     if (connected) {
       if (!settings.usbAppsLocked) {
         await settings.onUsbConnected();
-        if (mounted) _showUsbProtectionDialog(context);
+        if (context.mounted) _showUsbProtectionDialog(context);
       }
     } else {
       if (settings.usbAppsLocked) {
         await settings.onUsbDisconnected();
-        _showUsbDisconnectedSnackbar(context);
+        if (context.mounted) _showUsbDisconnectedSnackbar(context);
       }
     }
   }
@@ -298,14 +306,20 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    globalInteractionNotifier.addListener(_onGlobalInteraction);
     _resetInactivityTimer(force: true);
   }
 
   @override
   void dispose() {
+    globalInteractionNotifier.removeListener(_onGlobalInteraction);
     WidgetsBinding.instance.removeObserver(this);
     _inactivityTimer?.cancel();
     super.dispose();
+  }
+
+  void _onGlobalInteraction() {
+    _resetInactivityTimer(force: true);
   }
 
   @override
@@ -401,49 +415,45 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
           child = const MainShell();
         }
 
-        return Listener(
-          onPointerDown: (_) => _resetInactivityTimer(force: true),
-          behavior: HitTestBehavior.translucent,
-          child: Stack(
-            children: [
-              child,
-              // Global Countdown Overlay (only show if authenticated, as LoginScreen has its own)
-              if (auth.isAuthenticated && _remainingSeconds > 0 && _remainingSeconds <= 30)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 10,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.timer_outlined, color: Colors.amberAccent, size: 14),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Locking in ${_remainingSeconds}s',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
+        return Stack(
+          children: [
+            child,
+            // Global Countdown Overlay (only show if authenticated, as LoginScreen has its own)
+            if (auth.isAuthenticated && _remainingSeconds > 0 && _remainingSeconds <= 30)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Colors.amberAccent, size: 14),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Locking in ${_remainingSeconds}s',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         );
       },
     );

@@ -183,10 +183,10 @@ class FirebaseConfig {
           .timeout(const Duration(seconds: 5));
       print('✅ Firestore connection verified');
     } catch (e) {
-      print('❌ Firestore connection test failed: $e');
-      print('⚠️  Falling back to IN-MEMORY mode (data will not persist).');
-      _initialized = false;
-      _db = null;
+      print('❌ Firestore connection test failed (or timed out): $e');
+      print('⚠️  WARNING: Network is unstable. gRPC will auto-reconnect when available.');
+      print('✅ Keeping Production DB initialized.');
+      // REMOVED: Do not set _initialized = false or _db = null. gRPC auto-reconnects.
     }
   }
 }

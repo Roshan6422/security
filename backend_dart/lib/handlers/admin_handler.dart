@@ -85,6 +85,8 @@ Router adminRouter() {
           jsonEncode(users.map((u) {
             final json = u.toJson();
             json.remove('password');
+            json.remove('resetOtp');
+            json.remove('resetOtpExpire');
             return json;
           }).toList()),
           headers: {'content-type': 'application/json'});

@@ -315,6 +315,10 @@ Router authRouter() {
       }
 
       final user = await userRepo.findOne({'email': email});
+
+      // Defeat brute force bots by injecting artificial latency (500ms)
+      await Future.delayed(const Duration(milliseconds: 500));
+
       if (user == null || user.resetOtp != otp) {
         return Response(400, body: jsonEncode({'message': 'Invalid OTP'}), headers: {'content-type': 'application/json'});
       }

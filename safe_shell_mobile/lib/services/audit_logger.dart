@@ -9,9 +9,9 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Uploaded',
-      detail: fileName,
+      detail: 'An encrypted $fileType was uploaded',
       fileType: fileType,
-      fileUrl: fileUrl,
+      fileUrl: null, // REDACTED for zero-knowledge privacy
     );
   }
 
@@ -20,7 +20,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Deleted',
-      detail: fileName,
+      detail: 'A $fileType was moved to recycle bin',
       fileType: fileType,
     );
   }
@@ -30,7 +30,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Permanently Deleted',
-      detail: fileName,
+      detail: 'A $fileType was permanently deleted',
       fileType: fileType,
     );
   }
@@ -40,9 +40,9 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Viewed',
-      detail: fileName,
+      detail: 'A $fileType was opened',
       fileType: fileType,
-      fileUrl: fileUrl,
+      fileUrl: null, // REDACTED for zero-knowledge privacy
     );
   }
 
@@ -51,7 +51,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Restored',
-      detail: fileName,
+      detail: 'A $fileType was restored',
       fileType: fileType,
     );
   }
@@ -73,17 +73,17 @@ class AuditLogger {
 
   /// Log a note creation.
   static void logNoteCreate(String noteTitle) {
-    _log(type: 'file', action: 'Note Created', detail: noteTitle, fileType: 'note');
+    _log(type: 'file', action: 'Note Created', detail: 'A secure note was created', fileType: 'note');
   }
 
   /// Log a note update.
   static void logNoteUpdate(String noteTitle) {
-    _log(type: 'file', action: 'Note Updated', detail: noteTitle, fileType: 'note');
+    _log(type: 'file', action: 'Note Updated', detail: 'A secure note was updated', fileType: 'note');
   }
 
   /// Log a note deletion.
   static void logNoteDelete(String noteTitle) {
-    _log(type: 'file', action: 'Note Deleted', detail: noteTitle, fileType: 'note');
+    _log(type: 'file', action: 'Note Deleted', detail: 'A secure note was deleted', fileType: 'note');
   }
 
   /// Log a backup event.
