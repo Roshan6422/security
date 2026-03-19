@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../subscription/subscription_screen.dart';
+import 'subscription_screen.dart';
 import '../../main.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/file_recovery_service.dart';
@@ -552,7 +552,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               SoundEffects.tap();
                               _toggleBiometric(v);
                             },
-                            isPremiumLocked: !_isPremium,
                         ),
                         const SizedBox(height: 8),
                         _toggleTile(
@@ -563,8 +562,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Color(0xFFF59E0B), (v) {
                           SoundEffects.tap();
                           _toggleScreenshot(v);
-                        },
-                        isPremiumLocked: !_isPremium),
+                        }),
                         const SizedBox(height: 8),
                         _toggleTile(
                             Icons.calculate_rounded,
@@ -596,7 +594,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.usbDetectionEnabled,
                           settings.usbAppsLocked ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
                           (v) => settings.toggleUsbDetection(v),
-                          isPremiumLocked: !_isPremium,
                         ),
                         const SizedBox(height: 8),
                         _toggleTile(
