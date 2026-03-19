@@ -562,7 +562,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Color(0xFFF59E0B), (v) {
                           SoundEffects.tap();
                           _toggleScreenshot(v);
-                        }),
+                        },
+                        isPremiumLocked: !_isPremium),
                         const SizedBox(height: 8),
                         _toggleTile(
                             Icons.calculate_rounded,
@@ -572,8 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Color(0xFF10B981), (v) {
                           SoundEffects.tap();
                           _toggleDiscreetMode(v);
-                        },
-                        isPremiumLocked: !_isPremium),
+                        }),
                       ],
                     );
                   }
@@ -616,7 +616,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SoundEffects.tap();
                   HapticFeedback.selectionClick();
                   _changePinFlow();
-                }, isPremiumLocked: !_isPremium),
+                }),
                 const SizedBox(height: 24),
 
                 // Tools Section
