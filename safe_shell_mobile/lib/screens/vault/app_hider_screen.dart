@@ -435,49 +435,12 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
       ),
     );
   }
-
-  Future<void> _toggleHideApp(SystemApp app) async {
-    HapticFeedback.lightImpact();
-    if (app.isHidden) {
-      // Unhide
-      final success = await _service.unhideApp(app.packageName);
-      if (success) {
-        setState(() => app.isHidden = false);
-        _service.saveHiddenApps(_hiddenApps);
-        if (mounted) {
-          PremiumSnackbar.show(context, message: '${app.name} is now visible in launcher', emoji: '', color: Colors.blueAccent);
-        }
-      } else {
-        if (mounted) {
-          PremiumSnackbar.show(context, message: 'Failed to unhide ${app.name}', emoji: '', color: Colors.redAccent);
-        }
-      }
-    } else {
-      // Hide
-      final success = await _service.hideApp(app.packageName);
-      if (success) {
-        setState(() => app.isHidden = true);
-        _service.saveHiddenApps(_hiddenApps);
-        if (mounted) {
-          PremiumSnackbar.show(context, message: '${app.name} hidden from launcher', emoji: '', color: const Color(0xFF10B981));
-        }
-      } else {
-        if (mounted) {
-          PremiumSnackbar.show(context, message: 'Failed to hide ${app.name}', emoji: '', color: Colors.redAccent);
-        }
-      }
-    }
-  }
-
   String _getStatusLabel(SystemApp app) {
-    if (app.isHidden && app.isLocked) return 'HIDDEN + LOCKED';
-    if (app.isHidden) return 'HIDDEN';
     if (app.isLocked) return 'LOCKED';
     return 'PROTECTED';
   }
 
   Color _getStatusColor(SystemApp app, bool isLight) {
-    if (app.isHidden) return const Color(0xFFF59E0B);
     if (app.isLocked) return AppColors.primary;
     return isLight ? Colors.grey : Colors.white.withOpacity(0.5);
   }
@@ -510,9 +473,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: isLight ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))] : [],
                     border: Border.all(
-                      color: app.isHidden
-                          ? const Color(0xFFF59E0B).withOpacity(0.3)
-                          : isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                      color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
                     ),
                   ),
                   child: Stack(
@@ -525,7 +486,7 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
                                     child: Opacity(
-                                      opacity: app.isHidden ? 0.5 : 1.0,
+                                      opacity: 1.0,
                                       child: Image.memory(base64Decode(app.iconBase64), width: 44, height: 44),
                                     ),
                                   )
@@ -566,19 +527,6 @@ class _AppHiderScreenState extends State<AppHiderScreen> {
                           child: Icon(
                             app.isLocked ? Icons.lock_rounded : Icons.lock_open_rounded,
                             color: app.isLocked ? AppColors.primary : (isLight ? Colors.grey.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
-                            size: 15,
-                          ),
-                        ),
-                      ),
-                      // Hide toggle  top left
-                      Positioned(
-                        top: 6,
-                        left: 6,
-                        child: GestureDetector(
-                          onTap: () => _toggleHideApp(app),
-                          child: Icon(
-                            app.isHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                            color: app.isHidden ? const Color(0xFFF59E0B) : (isLight ? Colors.grey.withOpacity(0.3) : Colors.white.withOpacity(0.2)),
                             size: 15,
                           ),
                         ),

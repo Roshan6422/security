@@ -16,6 +16,8 @@ import '../../services/encryption_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../subscription/subscription_screen.dart';
 import '../../main.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/file_recovery_service.dart';
@@ -60,6 +62,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final idx = _lockOptions.indexOf(seconds);
     if (idx == -1) return '${seconds}s';
     return _lockLabels[idx];
+  }
+
+  bool get _isPremium {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    return user?.subscriptionStatus == 'premium';
+  }
+
+  void _showPremiumRequired() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: const [
+            Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 28),
+            SizedBox(width: 10),
+            Text('Pro Feature', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'This feature is exclusive to SafeShell Pro users. Upgrade your plan to unlock advanced security controls.',
+          style: TextStyle(color: Colors.white70, height: 1.4, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Maybe Later', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+            },
+            child: const Text('Upgrade to Pro', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _setAutoLock(int seconds) async {
@@ -505,7 +551,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             (v) {
                               SoundEffects.tap();
                               _toggleBiometric(v);
-                            }),
+                            },
+                            isPremiumLocked: !_isPremium,
+                        ),
                         const SizedBox(height: 8),
                         _toggleTile(
                             Icons.screenshot_rounded,
@@ -515,7 +563,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Color(0xFFF59E0B), (v) {
                           SoundEffects.tap();
                           _toggleScreenshot(v);
-                        }),
+                        },
+                        isPremiumLocked: !_isPremium),
                         const SizedBox(height: 8),
                         _toggleTile(
                             Icons.calculate_rounded,
@@ -525,7 +574,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Color(0xFF10B981), (v) {
                           SoundEffects.tap();
                           _toggleDiscreetMode(v);
-                        }),
+                        },
+                        isPremiumLocked: !_isPremium),
                       ],
                     );
                   }
@@ -546,6 +596,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.usbDetectionEnabled,
                           settings.usbAppsLocked ? const Color(0xFFEF4444) : const Color(0xFFF59E0B),
                           (v) => settings.toggleUsbDetection(v),
+                          isPremiumLocked: !_isPremium,
                         ),
                         const SizedBox(height: 8),
                         _toggleTile(
@@ -555,6 +606,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.antiUninstallEnabled,
                           const Color(0xFFEF4444),
                           (v) => settings.toggleAntiUninstall(v),
+                          isPremiumLocked: !_isPremium,
                         ),
                       ],
                     );
@@ -567,7 +619,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   SoundEffects.tap();
                   HapticFeedback.selectionClick();
                   _changePinFlow();
-                }),
+                }, isPremiumLocked: !_isPremium),
                 const SizedBox(height: 24),
 
                 // Tools Section
@@ -799,64 +851,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _toggleTile(IconData icon, String title, String subtitle, bool value,
-      Color color, ValueChanged<bool>? onChanged) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: const Color(0xFF161B22),
-        border: Border.all(color: color.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(colors: [
-                color.withOpacity(0.2),
-                color.withOpacity(0.05)
-              ]),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13)),
-                Text(subtitle,
-                    style: TextStyle(
-                        color: Colors.white.withOpacity(0.25),
-                        fontSize: 11)),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: (v) {
-              HapticFeedback.selectionClick();
-              if (onChanged != null) onChanged(v);
-            },
-            activeThumbColor: color,
-            activeTrackColor: color.withOpacity(0.3),
-            inactiveThumbColor: Colors.white.withOpacity(0.4),
-            inactiveTrackColor: Colors.white.withOpacity(0.06),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionTile(IconData icon, String title, String subtitle, Color color,
-      VoidCallback onTap) {
+      Color color, ValueChanged<bool>? onChanged, {bool isPremiumLocked = false}) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isPremiumLocked ? () { HapticFeedback.selectionClick(); _showPremiumRequired(); } : null,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -882,11 +879,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13)),
+                  Row(
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                      if (isPremiumLocked) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('PRO', style: TextStyle(color: Colors.amber, fontSize: 8, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ],
+                  ),
                   Text(subtitle,
                       style: TextStyle(
                           color: Colors.white.withOpacity(0.25),
@@ -894,8 +906,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded,
-                color: color.withOpacity(0.2), size: 20),
+            if (isPremiumLocked)
+              const Icon(Icons.lock_rounded, color: Colors.amber, size: 20)
+            else
+              Switch(
+                value: value,
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  if (onChanged != null) onChanged(v);
+                },
+                activeThumbColor: color,
+                activeTrackColor: color.withOpacity(0.3),
+                inactiveThumbColor: Colors.white.withOpacity(0.4),
+                inactiveTrackColor: Colors.white.withOpacity(0.06),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionTile(IconData icon, String title, String subtitle, Color color,
+      VoidCallback onTap, {bool isPremiumLocked = false}) {
+    return GestureDetector(
+      onTap: isPremiumLocked ? () { HapticFeedback.selectionClick(); _showPremiumRequired(); } : onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: const Color(0xFF161B22),
+          border: Border.all(color: color.withOpacity(0.06)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.05)
+                ]),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                      if (isPremiumLocked) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('PRO', style: TextStyle(color: Colors.amber, fontSize: 8, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.25),
+                          fontSize: 11)),
+                ],
+              ),
+            ),
+            if (isPremiumLocked)
+              const Icon(Icons.lock_rounded, color: Colors.amber, size: 20)
+            else
+              Icon(Icons.chevron_right_rounded,
+                  color: color.withOpacity(0.2), size: 20),
           ],
         ),
       ),

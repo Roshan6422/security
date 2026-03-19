@@ -264,9 +264,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   //  SKELETON LOADING
   // -----------------------------------------------
   Widget _buildSkeletonLoading() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
         children: [
           const SizedBox(height: 40),
           // Avatar skeleton
@@ -291,6 +293,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           _shimmerBox(200, double.infinity),
         ],
+      ),
       ),
     );
   }

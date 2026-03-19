@@ -5,6 +5,9 @@ import '../../widgets/glass_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'payment_success_screen.dart';
+import '../../providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -46,10 +49,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('?? Payment successful! Premium features unlocked.'), backgroundColor: Colors.green),
+      // CRITICAL BUG FIX: Refresh the provider so the app knows we are now PRO
+      // without requiring a full app restart.
+      await Provider.of<AuthProvider>(context, listen: false).refreshUser();
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const PaymentSuccessScreen()),
       );
-      Navigator.pop(context, true);
       
     } catch (e) {
       if (mounted) {

@@ -335,6 +335,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildStorageCard(Color textColor, Color subColor) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final user = context.select<AuthProvider, model.User?>((a) => a.user);
+    final isPremium = user?.subscriptionStatus == 'premium';
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -359,15 +361,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.secondary],
+                    gradient: LinearGradient(
+                      colors: isPremium 
+                          ? [AppColors.primary, AppColors.secondary] 
+                          : [Colors.grey.shade600, Colors.grey.shade800],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.25),
+                        color: isPremium ? AppColors.primary.withOpacity(0.25) : Colors.black26,
                         blurRadius: 15,
                         spreadRadius: -2,
                       ),
@@ -376,10 +380,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 14),
+                      Icon(isPremium ? Icons.auto_awesome_rounded : Icons.star_border_rounded, color: Colors.white, size: 14),
                       const SizedBox(width: 8),
                       Text(
-                        'PREMIUM ELITE'.toUpperCase(),
+                        isPremium ? 'PRO PLAN' : 'FREE PLAN',
                         style: const TextStyle(
                           color: Colors.white, 
                           fontSize: 10, 

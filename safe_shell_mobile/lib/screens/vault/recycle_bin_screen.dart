@@ -156,8 +156,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Delete ${_selectedIds.length} Items?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
-        content: Text('These items will be permanently removed. This cannot be undone.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+        title: Text('Delete ${_selectedIds.length} Items?', style: AppTextStyles.heading.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textPrimary : Colors.white)),
+        content: Text('These items will be permanently removed. This cannot be undone.', style: AppTextStyles.body.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
@@ -185,8 +185,8 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Empty Recycle Bin?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
-        content: Text('All items will be permanently deleted.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+        title: Text('Empty Recycle Bin?', style: AppTextStyles.heading.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textPrimary : Colors.white)),
+        content: Text('All items will be permanently deleted.', style: AppTextStyles.body.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Empty', style: TextStyle(color: Colors.red))),

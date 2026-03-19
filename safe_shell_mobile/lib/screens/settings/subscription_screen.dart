@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../widgets/primary_button.dart';
 import '../../providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../subscription/payment_success_screen.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -264,11 +265,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment Successful! You are now a Pro.'), backgroundColor: Colors.green),
-        );
         context.read<AuthProvider>().checkAuth(); // refresh user status
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PaymentSuccessScreen()),
+        );
       }
     } catch (e) {
       if (mounted) {

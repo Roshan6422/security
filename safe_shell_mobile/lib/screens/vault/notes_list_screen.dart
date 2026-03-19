@@ -102,8 +102,8 @@ class _NotesListScreenState extends State<NotesListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('Delete ${_selectedIds.length} Notes?', style: AppTextStyles.heading.copyWith(color: AppColors.textPrimary)),
-        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+        title: Text('Delete ${_selectedIds.length} Notes?', style: AppTextStyles.heading.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textPrimary : Colors.white)),
+        content: Text('Items will be moved to Recycle Bin.', style: AppTextStyles.body.copyWith(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white70)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
