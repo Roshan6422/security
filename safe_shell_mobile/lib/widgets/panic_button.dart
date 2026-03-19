@@ -95,6 +95,11 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
     await SoundEffects.lockApp();
 
     if (!mounted) return;
+    
+    // PURGE RAM CACHE: Destroy decrypted image bitmaps from the Flutter Engine memory
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     auth.logout();
     Navigator.of(context).pushAndRemoveUntil(
