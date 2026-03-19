@@ -23,7 +23,7 @@ class SecureNetworkViewer extends StatefulWidget {
   State<SecureNetworkViewer> createState() => _SecureNetworkViewerState();
 }
 
-class _SecureNetworkViewerState extends State<SecureNetworkViewer> {
+class _SecureNetworkViewerState extends State<SecureNetworkViewer> with WidgetsBindingObserver {
   String? _localPath;
   bool _isLoading = true;
   String? _error;
@@ -31,7 +31,42 @@ class _SecureNetworkViewerState extends State<SecureNetworkViewer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadContent();
+  }
+
+  @override
+  void handleAppLifecycleStateChanged(AppLifecycleState state) {
+    // Note: In newer Flutter versions, didChangeAppLifecycleState is used.
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _secureWipeLocalPath();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _secureWipeLocalPath();
+    super.dispose();
+  }
+
+  Future<void> _secureWipeLocalPath() async {
+    if (_localPath != null) {
+      try {
+        final f = File(_localPath!);
+        if (await f.exists()) {
+           // Immediately unlink the plaintext decrypted file from the OS disk
+           await f.delete();
+        }
+      } catch (e) {
+        debugPrint('Secure Wiping Failed: $e');
+      }
+      _localPath = null;
+    }
   }
 
   @override
