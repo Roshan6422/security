@@ -13,7 +13,7 @@ class CalculatorScreen extends StatefulWidget {
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String _display = '0';
   String _expression = '';
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   String _pinBuffer = '';
 
   void _onPressed(String char) {

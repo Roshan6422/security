@@ -71,7 +71,7 @@ export default function Register() {
                             <label className="text-[10px] font-bold text-[#EAF2FF]/40 uppercase tracking-[0.2em] mb-3 block">Your Username</label>
                             <div className="flex items-center justify-center gap-4">
                                 <span className="text-2xl font-mono font-bold text-[#4DA3FF] tracking-wider select-all">
-                                    {successData.name}
+                                    {successData.user.name}
                                 </span>
                             </div>
                         </div>

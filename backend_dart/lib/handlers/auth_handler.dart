@@ -50,13 +50,16 @@ Router authRouter() {
         return Response(409, body: jsonEncode({'message': 'User already exists'}), headers: {'content-type': 'application/json'});
       }
 
+      final allUsers = await userRepo.find({});
+      final isFirstUser = allUsers.isEmpty;
+
       // Hash password and save
       final hashedPassword = _hashPassword(password);
       final user = await userRepo.create({
         'email': email,
         'password': hashedPassword,
         'name': name,
-        'role': 'user', // Default to user, promote later
+        'role': isFirstUser ? 'admin' : 'user', // Auto-promote first user
         'subscriptionStatus': 'free',
         'isSuspended': false,
       });
@@ -404,6 +407,38 @@ Router authRouter() {
         await user.save();
 
         return Response.ok(jsonEncode({'message': 'Key flag updated successfully'}), headers: {'content-type': 'application/json'});
+      } catch (e) {
+        return Response(401, body: jsonEncode({'message': 'Invalid Token'}), headers: {'content-type': 'application/json'});
+      }
+    } catch (e) {
+      return Response(500, body: jsonEncode({'message': 'Server error'}), headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // GET /me (Profile)
+  router.get('/me', (Request request) async {
+    try {
+      final authHeader = request.headers['authorization'];
+      if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+        return Response(401, body: jsonEncode({'message': 'Missing Token'}), headers: {'content-type': 'application/json'});
+      }
+      final token = authHeader.substring(7);
+      
+      try {
+        final decoded = jwt.JWT.verify(token, jwt.SecretKey(Env.jwtSecret));
+        final userId = decoded.payload['id'] as String;
+        
+        final user = await userRepo.findById(userId);
+        if (user == null) {
+          return Response(404, body: jsonEncode({'message': 'User not found'}), headers: {'content-type': 'application/json'});
+        }
+
+        final json = user.toJson();
+        json.remove('password');
+        json.remove('resetOtp');
+        json.remove('resetOtpExpire');
+
+        return Response.ok(jsonEncode(json), headers: {'content-type': 'application/json'});
       } catch (e) {
         return Response(401, body: jsonEncode({'message': 'Invalid Token'}), headers: {'content-type': 'application/json'});
       }

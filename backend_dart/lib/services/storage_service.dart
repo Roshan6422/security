@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:mime/mime.dart';
+import 'package:path/path.dart' as p;
 import '../config/firebase.dart';
 import '../config/env.dart';
 

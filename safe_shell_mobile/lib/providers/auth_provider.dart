@@ -14,7 +14,7 @@ import '../services/network_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -157,12 +157,18 @@ class AuthProvider with ChangeNotifier {
       final idToken = await cred.user?.getIdToken();
       if (idToken == null) throw Exception('Failed to get auth token');
 
-      // Sync with Koyeb Backend
+      final url = Uri.parse('${AppConstants.baseUrl}/auth/firebase-login');
+      debugPrint('AuthProvider: Syncing with Backend: $url');
+      debugPrint('AuthProvider: Body: ${jsonEncode({'idToken': idToken})}');
+
       final response = await NetworkService.client.post(
-        Uri.parse('${AppConstants.baseUrl}/auth/firebase-login'),
+        url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': idToken}),
       ).timeout(NetworkService.defaultTimeout);
+
+      debugPrint('AuthProvider: Backend Response Status: ${response.statusCode}');
+      debugPrint('AuthProvider: Backend Response Body: ${response.body}');
 
       if (response.statusCode != 200) {
         // If not found in backend but exists in Firebase, try auto-registering in backend
@@ -218,14 +224,21 @@ class AuthProvider with ChangeNotifier {
 
       // The backend will handle creating the user profile document in Firestore.
       // We only sync with Koyeb Backend here.
+      final url = Uri.parse('${AppConstants.baseUrl}/auth/firebase-register');
+      debugPrint('AuthProvider: Registering with Backend: $url');
+      debugPrint('AuthProvider: Body: ${jsonEncode({'idToken': idToken, 'name': name})}');
+
       final response = await NetworkService.client.post(
-        Uri.parse('${AppConstants.baseUrl}/auth/firebase-register'),
+        url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'idToken': idToken,
           'name': name,
         }),
       ).timeout(NetworkService.defaultTimeout);
+
+      debugPrint('AuthProvider: Register Backend Response Status: ${response.statusCode}');
+      debugPrint('AuthProvider: Register Backend Response Body: ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final userData = jsonDecode(response.body);

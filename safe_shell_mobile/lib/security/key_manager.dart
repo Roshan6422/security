@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class KeyManager {
   static const _kVaultKey = 'vault_key_base64';
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
   Future<bool> hasKey() async => (await _storage.read(key: _kVaultKey)) != null;
 

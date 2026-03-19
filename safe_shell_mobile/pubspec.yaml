@@ -75,7 +75,6 @@ dependencies:
 
   http_parser: any
   in_app_purchase: ^3.2.3
-  google_mobile_ads: ^7.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

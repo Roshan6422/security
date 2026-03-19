@@ -31,9 +31,9 @@ Router adminRouter() {
   router.get('/stats', (Request request) async {
     try {
       // Fetch counts and recent items more efficiently
-      final users = await userRepo.find(limit: 100); // Sample for stats
-      final payments = await paymentRepo.find(limit: 100);
-      final tickets = await supportTicketRepo.find(limit: 100);
+      final users = await userRepo.find({}, {}, 100); // Sample for stats
+      final payments = await paymentRepo.find({}, {}, 100);
+      final tickets = await supportTicketRepo.find({}, {}, 100);
 
       final totalUsers = users.length; // Note: In production, use count() API
       final totalRevenue = payments.fold<double>(0, (acc, p) => acc + (p.amount as num).toDouble());
@@ -80,7 +80,7 @@ Router adminRouter() {
   // GET /users
   router.get('/users', (Request request) async {
     try {
-      final users = await userRepo.find(limit: 100);
+      final users = await userRepo.find({}, {}, 100);
       return Response.ok(
           jsonEncode(users.map((u) {
             final json = u.toJson();
@@ -100,8 +100,8 @@ Router adminRouter() {
   // GET /payments
   router.get('/payments', (Request request) async {
     try {
-      final payments = await paymentRepo.find(limit: 100);
-      final users = await userRepo.find(limit: 100);
+      final payments = await paymentRepo.find({}, {}, 100);
+      final users = await userRepo.find({}, {}, 100);
       final userMap = {for (var u in users) u.id: u};
 
       return Response.ok(
@@ -128,9 +128,9 @@ Router adminRouter() {
   // GET /tickets
   router.get('/tickets', (Request request) async {
     try {
-      final tickets = await supportTicketRepo.find(limit: 100);
+      final tickets = await supportTicketRepo.find({}, {}, 100);
       // Fetch users efficiently - only once
-      final users = await userRepo.find(limit: 100);
+      final users = await userRepo.find({}, {}, 100);
       final userMap = {for (var u in users) u.id: u};
 
       return Response.ok(

@@ -15,7 +15,7 @@ class BiometricGuardian extends StatefulWidget {
 
 class _BiometricGuardianState extends State<BiometricGuardian> with WidgetsBindingObserver {
   final LocalAuthentication _auth = LocalAuthentication();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   bool _isLocked = false;
   
   // We don't cache _isEnabled permanently because it might change in Settings

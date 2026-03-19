@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   final bool _testingConnection = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   bool _canCheckBiometrics = false;
   
   // Lockout State

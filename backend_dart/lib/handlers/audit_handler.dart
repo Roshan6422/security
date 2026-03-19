@@ -93,8 +93,8 @@ Router auditRouter() {
       
       final userEntries = await _auditRepo.find(
         query,
-        sortOptions: {'timestamp': 'desc'},
-        limit: 1000, // Fetch up to 1000 recent entries to paginate over
+        {'timestamp': 'desc'},
+        1000, // Fetch up to 1000 recent entries to paginate over
       );
 
       // ✅ Pagination
@@ -155,8 +155,8 @@ Router auditRouter() {
       String previousHash = '';
       final lastEntries = await _auditRepo.find(
         {'userId': userId},
-        sortOptions: {'timestamp': 'desc'},
-        limit: 1,
+        {'timestamp': 'desc'},
+        1,
       );
       if (lastEntries.isNotEmpty) {
         previousHash = lastEntries.first.hash;
@@ -209,7 +209,7 @@ Router auditRouter() {
 
       final userEntries = await _auditRepo.find(
         {'userId': userId},
-        sortOptions: {'timestamp': 'asc'},
+        {'timestamp': 'asc'},
       );
 
       bool verified = true;

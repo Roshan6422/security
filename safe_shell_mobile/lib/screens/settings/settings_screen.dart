@@ -35,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   final bool _discreetMode = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   final bool _canUseBiometrics = false;
   final bool _allowScreenshots = false;
 

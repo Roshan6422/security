@@ -133,8 +133,6 @@ class FirebaseConfig {
           print('✅ [FIREBASE] Diagnostic: Private key confirmed as a valid RSA PEM string.');
         } catch (e) {
           print('❌ [FIREBASE] Diagnostic: Private key is NOT a valid RSA string! Error: $e');
-          print('   Hint: This usually means the key was truncated or corrupted during copy-paste.');
-          print('   The PEM content (base64) length is: ${key.replaceAll(RegExp(r'---.*---|\s'), '').length}');
         }
 
         serviceAccount['private_key'] = key;
@@ -163,8 +161,9 @@ class FirebaseConfig {
 
       // Verify Firestore connection
       await _verifyConnection();
-    } catch (e) {
+    } catch (e, stack) {
       print('[FIREBASE] Failed to initialize: $e');
+      print('[FIREBASE] Stack trace: $stack');
       print('⚠️  Firebase not initialized. Using IN-MEMORY mode.');
       _initialized = false;
       _db = null;
@@ -186,7 +185,6 @@ class FirebaseConfig {
       print('❌ Firestore connection test failed (or timed out): $e');
       print('⚠️  WARNING: Network is unstable. gRPC will auto-reconnect when available.');
       print('✅ Keeping Production DB initialized.');
-      // REMOVED: Do not set _initialized = false or _db = null. gRPC auto-reconnects.
     }
   }
 }

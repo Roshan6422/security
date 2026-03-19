@@ -20,7 +20,6 @@ import 'utils/device_performance.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/fcm_service.dart';
-import 'services/ad_helper.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -38,7 +37,6 @@ void main() async {
     _initFirebase(),
     DevicePerformance.init(),
     _restoreStealthMode(),
-    AdHelper.initGoogleMobileAds(),
   ]);
 
   // Lock orientation to portrait — avoids layout recalculation on rotate

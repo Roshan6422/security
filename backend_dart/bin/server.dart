@@ -28,7 +28,7 @@ Future<void> main() async {
 
   // ── Initialize Firebase ────────────────────────────────────────────
   print('ℹ️  Available Environment Variables: ${Platform.environment.keys.join(", ")}');
-  await FirebaseConfig.initialize();
+  // await FirebaseConfig.initialize();
 
   // ── Ensure uploads directory exists ────────────────────────────────
   final uploadsDir = Directory(Env.uploadsPath);
@@ -113,6 +113,7 @@ Future<void> main() async {
 
   // ── Start server ──────────────────────────────────────────────────
   final port = Env.port;
+  print('DEBUG: Attempting to bind to 0.0.0.0:$port');
   final server = await shelf_io.serve(handler, '0.0.0.0', port);
   server.autoCompress = true;
 

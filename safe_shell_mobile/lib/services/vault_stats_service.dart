@@ -81,7 +81,7 @@ class VaultStats {
 
 class VaultStatsService {
   static const _cacheKey = 'vault_stats_cache';
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
   // Cache SharedPreferences to avoid repeated platform-channel round-trips
   static SharedPreferences? _prefs;
