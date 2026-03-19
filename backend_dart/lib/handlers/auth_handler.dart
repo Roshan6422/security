@@ -175,7 +175,7 @@ Router authRouter() {
     } catch (e, stackTrace) {
       print('firebase-login error: $e\n$stackTrace'); // ✅ Logging
       return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
+          body: jsonEncode({'message': 'Server error', 'error': e.toString()}),
           headers: {'content-type': 'application/json'});
     }
   });
@@ -240,7 +240,7 @@ Router authRouter() {
     } catch (e, stackTrace) {
       print('firebase-register error: $e\n$stackTrace');
       return Response(500,
-          body: jsonEncode({'message': 'Server error'}),
+          body: jsonEncode({'message': 'Server error', 'error': e.toString()}),
           headers: {'content-type': 'application/json'});
     }
   });
