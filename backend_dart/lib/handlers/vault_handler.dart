@@ -13,6 +13,7 @@ import 'package:http_parser/http_parser.dart';
 import '../middleware/auth_middleware.dart';
 import '../models/vault_item.dart';
 import '../services/storage_service.dart';
+import '../config/env.dart';
 
 const _uuid = Uuid();
 const _maxFileSize = 50 * 1024 * 1024; // 50MB
@@ -334,7 +335,8 @@ Router vaultRouter() {
       String firebaseUrl;
       
       try {
-        firebaseUrl = await StorageService.uploadFile(tempPath, storagePath);
+        final origin = request.requestedUri.origin;
+        firebaseUrl = await StorageService.uploadFile(tempPath, storagePath, requestOrigin: origin);
       } finally {
         final tempFile = File(tempPath);
         if (await tempFile.exists()) await tempFile.delete();
@@ -543,6 +545,23 @@ Router vaultRouter() {
       return Response.internalServerError(
           body: jsonEncode({'message': 'Server error'}),
           headers: {'content-type': 'application/json'});
+    }
+  });
+
+  // GET /file/<filename> - Serve local files
+  router.get('/file/<name>', (Request request, String name) async {
+    try {
+      final sanitized = _sanitizeFilename(name);
+      final file = File(p.join(Env.uploadsPath, sanitized));
+      
+      if (!await file.exists()) {
+        return Response.notFound(jsonEncode({'message': 'File not found'}));
+      }
+
+      final contentType = lookupMimeType(file.path) ?? 'application/octet-stream';
+      return Response.ok(file.openRead(), headers: {'content-type': contentType});
+    } catch (e) {
+      return Response.internalServerError(body: jsonEncode({'message': 'Error serving file: $e'}));
     }
   });
 

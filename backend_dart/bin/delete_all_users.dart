@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:backend_dart/config/firebase.dart';
 import 'package:backend_dart/config/env.dart';
-import 'package:dotenv/dotenv.dart';
 
 void main() async {
   print('🛑 CRITICAL: DELETING ALL USERS 🛑');

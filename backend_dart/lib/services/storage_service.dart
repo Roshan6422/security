@@ -2,15 +2,23 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:googleapis_auth/auth_io.dart';
+import 'package:mime/mime.dart';
 import '../config/firebase.dart';
+import '../config/env.dart';
 
 class StorageService {
   static const _scopes = ['https://www.googleapis.com/auth/devstorage.read_write'];
 
-  static Future<String> uploadFile(String localPath, String remotePath) async {
+  static Future<String> uploadFile(String localPath, String remotePath, {String? requestOrigin}) async {
+    // Check if we should use local storage
+    if (Env.storageMode == 'local') {
+      return _uploadLocal(localPath, remotePath, requestOrigin);
+    }
+
     final serviceAccount = FirebaseConfig.serviceAccount;
     if (serviceAccount == null) {
-      throw Exception('Firebase service account not configured');
+      print('[STORAGE] No service account found, falling back to LOCAL storage.');
+      return _uploadLocal(localPath, remotePath, requestOrigin);
     }
 
     final client = await clientViaServiceAccount(
@@ -19,47 +27,73 @@ class StorageService {
     );
 
     try {
-      final bucketName = serviceAccount['project_id'] + '.firebasestorage.app'; // Default bucket name pattern
-      // Some older projects use .appspot.com
-      final fallbackBucket = serviceAccount['project_id'] + '.appspot.com';
+      final projectId = serviceAccount['project_id'];
+      final envBucket = Env.firebaseStorageBucket;
+      final bucketName = envBucket ?? '$projectId.firebasestorage.app';
+      final fallbackBucket = '$projectId.appspot.com';
       
       final file = File(localPath);
       final bytes = await file.readAsBytes();
       
       final encodedPath = Uri.encodeComponent(remotePath);
+      final mimeType = lookupMimeType(localPath) ?? 'application/octet-stream';
       
-      // Try primary bucket
-      var uploadUrl = 'https://firebasestorage.googleapis.com/v0/b/$bucketName/o?name=$encodedPath';
+      print('[STORAGE] Attempting Firebase upload to bucket: $bucketName');
+      
+      var uploadUrl = 'https://firebasestorage.googleapis.com/v0/b/$bucketName/o?name=$encodedPath&uploadType=media';
       var response = await client.post(
         Uri.parse(uploadUrl),
         body: bytes,
-        headers: {'Content-Type': _detectMimeType(localPath)},
-      );
+        headers: {'Content-Type': mimeType},
+      ).timeout(const Duration(seconds: 60));
 
-      if (response.statusCode != 200) {
-        // Try fallback bucket
-        uploadUrl = 'https://firebasestorage.googleapis.com/v0/b/$fallbackBucket/o?name=$encodedPath';
+      if (response.statusCode != 200 && envBucket == null) {
+        print('[STORAGE] Primary bucket failed (${response.statusCode}). Trying fallback: $fallbackBucket');
+        uploadUrl = 'https://firebasestorage.googleapis.com/v0/b/$fallbackBucket/o?name=$encodedPath&uploadType=media';
         response = await client.post(
           Uri.parse(uploadUrl),
           body: bytes,
-          headers: {'Content-Type': _detectMimeType(localPath)},
-        );
+          headers: {'Content-Type': mimeType},
+        ).timeout(const Duration(seconds: 60));
       }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final name = data['name'];
         final bucket = data['bucket'];
-        final downloadToken = data['downloadTokens'] ?? '';
+        final String rawTokens = data['downloadTokens'] ?? '';
+        final downloadToken = rawTokens.split(',').first;
         
-        // Final public URL
+        print('[STORAGE] Firebase upload successful! Bucket: $bucket');
         return 'https://firebasestorage.googleapis.com/v0/b/$bucket/o/${Uri.encodeComponent(name)}?alt=media&token=$downloadToken';
       } else {
-        throw Exception('Failed to upload to Firebase Storage: ${response.statusCode} - ${response.body}');
+        print('[STORAGE] Firebase failed (${response.statusCode}). Falling back to LOCAL storage.');
+        return _uploadLocal(localPath, remotePath, requestOrigin);
       }
+    } catch (e) {
+      print('[STORAGE] Firebase exception: $e. Falling back to LOCAL storage.');
+      return _uploadLocal(localPath, remotePath, requestOrigin);
     } finally {
       client.close();
     }
+  }
+
+  static Future<String> _uploadLocal(String localPath, String remotePath, String? requestOrigin) async {
+    final uploadsDir = Directory(Env.uploadsPath);
+    if (!await uploadsDir.exists()) await uploadsDir.create(recursive: true);
+
+    // Use a unique name for local storage
+    final fileName = p.basename(remotePath);
+    
+    // Copy file to local uploads directory
+    final destinationPath = p.join(uploadsDir.path, fileName);
+    await File(localPath).copy(destinationPath);
+
+    print('[STORAGE] Saved locally to $destinationPath');
+
+    // Generate URL
+    final baseUrl = Env.storageBaseUrl ?? requestOrigin ?? 'http://localhost:${Env.port}';
+    return '$baseUrl/api/vault/file/$fileName';
   }
 
   static Future<void> deleteFile(String remotePath) async {
@@ -89,19 +123,5 @@ class StorageService {
     } finally {
       client.close();
     }
-  }
-
-  static String _detectMimeType(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    const mimeTypes = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'pdf': 'application/pdf',
-      'mp4': 'video/mp4',
-      'mp3': 'audio/mpeg',
-    };
-    return mimeTypes[ext] ?? 'application/octet-stream';
   }
 }

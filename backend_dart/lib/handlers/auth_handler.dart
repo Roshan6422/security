@@ -8,7 +8,6 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../config/env.dart';
 import '../config/firebase.dart';
-import '../middleware/auth_middleware.dart';
 import '../models/user.dart';
 
 import 'dart:math';

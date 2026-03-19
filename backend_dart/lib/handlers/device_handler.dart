@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:shelf/shelf.dart' as s;
 import 'package:shelf_router/shelf_router.dart' as sr;
-import 'package:uuid/uuid.dart';
 import 'package:dart_firebase_admin/messaging.dart' as fcm;
 
 import '../config/firebase.dart';

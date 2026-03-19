@@ -58,4 +58,16 @@ class Env {
   /// Uploads directory path.
   static String get uploadsPath =>
       _get('UPLOADS_PATH') ?? 'data/uploads';
+
+  /// Storage mode: 'firebase' (default) or 'local'
+  static String get storageMode =>
+      _get('STORAGE_MODE') ?? 'firebase';
+
+  /// Base URL for the backend (used for local storage links)
+  static String? get storageBaseUrl =>
+      _get('STORAGE_BASE_URL');
+
+  /// Optional: Custom Firebase Storage bucket (overrides default project-id based naming)
+  static String? get firebaseStorageBucket =>
+      _get('FIREBASE_STORAGE_BUCKET');
 }
