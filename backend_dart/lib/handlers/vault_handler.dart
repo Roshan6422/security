@@ -363,7 +363,7 @@ Router vaultRouter() {
     } catch (e, stackTrace) {
       print('Vault upload error: $e\n$stackTrace');
       return Response.internalServerError(
-          body: jsonEncode({'message': 'Server error'}),
+          body: jsonEncode({'message': 'Server error', 'error': e.toString()}),
           headers: {'content-type': 'application/json'});
     }
   });
