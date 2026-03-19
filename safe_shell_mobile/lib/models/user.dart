@@ -9,6 +9,7 @@ class User {
   final String? subscriptionStatus;
   final String? subscriptionExpiry;
   final String? photoUrl;
+  final bool isSuspended;
 
   User({
     required this.id,
@@ -21,6 +22,7 @@ class User {
     this.subscriptionStatus,
     this.subscriptionExpiry,
     this.photoUrl,
+    this.isSuspended = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class User {
       subscriptionStatus: json['subscriptionStatus'],
       subscriptionExpiry: json['subscriptionExpiry'],
       photoUrl: json['photoUrl'],
+      isSuspended: json['isSuspended'] ?? false,
     );
   }
 
@@ -50,6 +53,7 @@ class User {
       'subscriptionStatus': subscriptionStatus,
       'subscriptionExpiry': subscriptionExpiry,
       'photoUrl': photoUrl,
+      'isSuspended': isSuspended,
     };
   }
 }

@@ -101,18 +101,18 @@ class VaultStatsService {
     } catch (_) {}
 
     _fetchFresh().then((fresh) {
-      if (onRefresh != null) onRefresh(fresh);
+      if (onRefresh != null && fresh != null) onRefresh(fresh);
     });
 
     return cached ?? VaultStats.empty();
   }
 
-  Future<VaultStats> fetchFresh() => _fetchFresh();
+  Future<VaultStats?> fetchFresh() => _fetchFresh();
 
-  Future<VaultStats> _fetchFresh() async {
+  Future<VaultStats?> _fetchFresh() async {
     try {
       final token = await _storage.read(key: AppConstants.keyToken);
-      if (token == null) return VaultStats.empty();
+      if (token == null) return null;
 
       final response = await NetworkService.client.get(
         Uri.parse('${AppConstants.baseUrl}/vault/stats'),
@@ -132,11 +132,11 @@ class VaultStatsService {
         return stats;
       } else {
         debugPrint('VaultStatsService: Backend error ${response.statusCode}');
-        return VaultStats.empty();
+        return null;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('VaultStatsService Error: $e');
-      return VaultStats.empty();
+      if (kDebugMode) debugPrint('VaultStatsService Error (Offline?): $e');
+      return null;
     }
   }
 }

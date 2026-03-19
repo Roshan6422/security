@@ -16,18 +16,95 @@ class NoteEditorScreen extends StatefulWidget {
   State<NoteEditorScreen> createState() => _NoteEditorScreenState();
 }
 
-class _NoteEditorScreenState extends State<NoteEditorScreen> {
+class _NoteEditorScreenState extends State<NoteEditorScreen> with WidgetsBindingObserver {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
   bool _hasUnsavedChanges = false;
+  String? _currentNoteId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.note != null) {
+      _currentNoteId = widget.note!['_id'];
       _titleController.text = widget.note!['name'] ?? '';
       _contentController.text = widget.note!['content'] ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (_hasUnsavedChanges && _titleController.text.isNotEmpty) {
+       _autoSaveNote(); // Final background best-effort save
+    }
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_hasUnsavedChanges && _titleController.text.isNotEmpty) {
+        _autoSaveNote();
+      }
+    }
+  }
+
+  Future<void> _autoSaveNote({bool silent = true}) async {
+    if (!_hasUnsavedChanges || _titleController.text.isEmpty) return;
+    try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: AppConstants.keyToken);
+      if (token == null) return;
+
+      final body = {
+        'name': _titleController.text,
+        'content': _contentController.text,
+        'type': 'note',
+        'size': '${_contentController.text.length} B',
+      };
+
+      http.Response response;
+      if (_currentNoteId != null) {
+        response = await NetworkService.client.put(
+          Uri.parse('${AppConstants.baseUrl}/vault/$_currentNoteId'),
+          headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        );
+      } else {
+        response = await NetworkService.client.post(
+          Uri.parse('${AppConstants.baseUrl}/vault'),
+          headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (mounted) setState(() => _hasUnsavedChanges = false);
+        final noteName = _titleController.text;
+        
+        if (_currentNoteId == null) {
+          AuditLogger.logNoteCreate(noteName);
+          try {
+            final data = jsonDecode(response.body);
+            if (data['document'] != null && data['document']['_id'] != null) {
+              _currentNoteId = data['document']['_id'];
+            }
+          } catch (_) {}
+        } else {
+          AuditLogger.logNoteUpdate(noteName);
+        }
+      } else if (!silent) {
+        throw Exception('Failed to save note: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -38,55 +115,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
     }
 
     setState(() => _isLoading = true);
-    try {
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: AppConstants.keyToken);
-      if (token == null) throw Exception('Session expired');
-
-      final body = {
-        'name': _titleController.text,
-        'content': _contentController.text,
-        'type': 'note',
-        'size': '${_contentController.text.length} B',
-      };
-
-      http.Response response;
-      if (widget.note != null) {
-        response = await NetworkService.client.put(
-          Uri.parse('${AppConstants.baseUrl}/vault/${widget.note!['_id']}'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(body),
-        );
-      } else {
-        response = await NetworkService.client.post(
-          Uri.parse('${AppConstants.baseUrl}/vault'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(body),
-        );
-      }
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final noteName = _titleController.text;
-        if (widget.note != null) {
-          AuditLogger.logNoteUpdate(noteName);
-        } else {
-          AuditLogger.logNoteCreate(noteName);
-        }
-        if (mounted) Navigator.pop(context, true);
-      } else {
-        throw Exception('Failed to save note: ${response.body}');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        setState(() => _isLoading = false);
-      }
+    await _autoSaveNote(silent: false);
+    if (mounted) {
+       setState(() => _isLoading = false);
+       if (!_hasUnsavedChanges) {
+         Navigator.pop(context, true);
+       }
     }
   }
 

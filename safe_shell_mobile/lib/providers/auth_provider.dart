@@ -47,6 +47,11 @@ class AuthProvider with ChangeNotifier {
             data['token'] = token;
             _user = User.fromJson(data);
             
+            if (_user!.isSuspended) {
+              await logout();
+              return;
+            }
+
             // Update cache
             await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
             
@@ -93,6 +98,12 @@ class AuthProvider with ChangeNotifier {
           }
 
           _user = User.fromJson(data);
+          
+          if (_user!.isSuspended) {
+             await logout();
+             return;
+          }
+
           await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
           notifyListeners();
         }
@@ -417,6 +428,13 @@ class AuthProvider with ChangeNotifier {
     }
     
     _user = User.fromJson(userData);
+    
+    if (_user!.isSuspended) {
+      _user = null;
+      await _firebaseAuth.signOut();
+      throw Exception('Your account has been suspended by an administrator.');
+    }
+
     await _storage.write(key: AppConstants.keyToken, value: token);
     
     // Cache profile for offline/turbo startup
