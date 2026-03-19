@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/encryption_service.dart';
 import 'package:open_filex/open_filex.dart';
 import '../services/network_service.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
 
 class FileViewer {
-  static Future<void> openFile(BuildContext context, String url, String filename) async {
+  static Future<void> openFile(BuildContext context, String url, String filename, {String? vaultId}) async {
     final fullUrl = url;
     
     // For web URL (optional fallback)
@@ -21,6 +18,20 @@ class FileViewer {
 
     // Download and Open Logic
     try {
+      // 1. Check for PERMANENT local vault file first
+      if (vaultId != null) {
+        final localVaultPath = await EncryptionService.getLocalVaultPath(vaultId);
+        final localVaultFile = File(localVaultPath);
+        if (await localVaultFile.exists()) {
+          final decryptedPath = await EncryptionService.decryptFile(localVaultPath);
+          final result = await OpenFilex.open(decryptedPath);
+          if (result.type != ResultType.done && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open local file: ${result.message}')));
+          }
+          return;
+        }
+      }
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -41,7 +52,16 @@ class FileViewer {
         final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
         
         // Cleanup encrypted
-        if (await tempEncFile.exists()) await tempEncFile.delete();
+        if (await tempEncFile.exists()) {
+           // Also save to permanent local vault (for hybrid storage)
+          if (vaultId != null) {
+            final localVaultPath = await EncryptionService.getLocalVaultPath(vaultId);
+            if (!await File(localVaultPath).exists()) {
+               await tempEncFile.copy(localVaultPath);
+            }
+          }
+          await tempEncFile.delete();
+        }
 
         final result = await OpenFilex.open(decryptedPath);
         if (result.type != ResultType.done) {

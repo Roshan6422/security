@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'dart:io';
-import 'package:path/path.dart' as p;
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/audit_logger.dart';
@@ -137,11 +134,21 @@ class _VideosListScreenState extends State<VideosListScreen> {
         }
 
         try {
-          await VaultEncryptionHelper.encryptAndUpload(file.path, 'video');
+          await VaultEncryptionHelper.encryptAndUpload(
+            file.path, 
+            'video',
+            customFileName: asset.title,
+          );
           successCount++;
         } catch (e) {
           debugPrint('Upload failed for ${asset.id}: $e');
           failCount++;
+          if (mounted) {
+            final errorMsg = e.toString().replaceAll('Exception: ', '');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Upload failed for ${asset.title}: $errorMsg'), backgroundColor: Colors.redAccent),
+            );
+          }
         }
       }
         
@@ -158,7 +165,10 @@ class _VideosListScreenState extends State<VideosListScreen> {
       }
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $errorMsg'), backgroundColor: Colors.redAccent));
+      }
     }
   }
 
@@ -167,25 +177,36 @@ class _VideosListScreenState extends State<VideosListScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete from Gallery?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Should we delete the ${assets.length} original video${assets.length > 1 ? 's' : ''} from your gallery?\n\nThey are now safely encrypted in your vault.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep Originals'),
+      builder: (ctx) {
+        final isLight = Theme.of(ctx).brightness == Brightness.light;
+        return AlertDialog(
+          backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Delete from Gallery?', 
+            style: AppTextStyles.heading.copyWith(color: isLight ? AppColors.textPrimary : Colors.white)
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            'The ${assets.length} video${assets.length > 1 ? 's are' : ' is'} now safely encrypted in your vault. Do you want to delete the original${assets.length > 1 ? 's' : ''} from your gallery?',
+            style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70)
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -271,13 +292,19 @@ class _VideosListScreenState extends State<VideosListScreen> {
       builder: (_) => const Center(child: CircularProgressIndicator())
     );
 
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: AppConstants.keyToken);
+
     int successCount = 0;
     for (final id in _selectedIds) {
       final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
       if (item != null && item['url'] != null) {
         try {
            final url = item['url'];
-           final response = await NetworkService.client.get(Uri.parse(url));
+           final response = await NetworkService.client.get(
+             Uri.parse(url),
+             headers: token != null ? {'Authorization': 'Bearer $token'} : {},
+           );
            if (response.statusCode == 200) {
              final tempDir = await getTemporaryDirectory();
              final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
@@ -288,7 +315,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
              final decryptedPath = await EncryptionService.decryptFile(tempEncPath);
              final decryptedFile = File(decryptedPath);
              
-             final result = await PhotoManager.editor.saveVideo(
+             await PhotoManager.editor.saveVideo(
                 decryptedFile,
                 title: item['name'] ?? 'video_$id',
              );
@@ -297,7 +324,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
              if (await tempEncFile.exists()) await tempEncFile.delete();
              if (await decryptedFile.exists()) await decryptedFile.delete();
 
-             if (result != null) successCount++;
+             successCount++;
            }
         } catch (e) {
           debugPrint('Save error: $e');
@@ -382,7 +409,8 @@ class _VideosListScreenState extends State<VideosListScreen> {
                                FileViewer.openFile(
                                 context, 
                                 item['url'], 
-                                item['name'] ?? 'video_${item['_id']}.mp4'
+                                item['name'] ?? 'video_${item['_id']}.mp4',
+                                vaultId: item['_id'].toString(),
                               );
                             }
                           }

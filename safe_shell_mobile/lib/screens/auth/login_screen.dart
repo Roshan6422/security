@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../providers/settings_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:safe_shell_mobile/utils/sound_effects.dart';
@@ -10,10 +12,11 @@ import 'package:flutter/services.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/premium_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../main_shell.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../settings/privacy_policy_screen.dart';
+import '../../security/key_manager.dart';
+import '../../services/audit_logger.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,16 +30,29 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
-  bool _testingConnection = false;
+  final bool _testingConnection = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final _storage = const FlutterSecureStorage();
   bool _canCheckBiometrics = false;
+  
+  // Lockout State
+  int _failedAttempts = 0;
+  int _lockoutSeconds = 0;
+  Timer? _lockoutTimer;
 
   @override
   void initState() {
     super.initState();
     _loadSavedEmail();
     _checkBiometricsAndAutoAuth();
+  }
+
+  @override
+  void dispose() {
+    _lockoutTimer?.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSavedEmail() async {
@@ -74,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _authenticate() async {
+    if (_lockoutSeconds > 0) return;
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: 'Authenticate to access SafeShell Vault',
@@ -120,6 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login({bool isBiometric = false}) async {
+    if (_lockoutSeconds > 0) return;
+
     if (kDebugMode) debugPrint('LoginScreen: Login attempt (Biometric: $isBiometric)');
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
@@ -139,6 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
           password,
         );
         
+        // Reset failures on success
+        _failedAttempts = 0;
+
         // Save credentials for biometrics if successful and not already using biometrics (or update them)
         if (!isBiometric) {
            await _storage.write(key: 'bio_email', value: _emailController.text);
@@ -148,9 +170,14 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           SoundEffects.unlockApp();
           // Navigation is now handled reactively by AuthWrapper in main.dart
-          // Navigator.of(context).pushReplacement(...) removed
         }
       } catch (e) {
+        _failedAttempts++;
+        AuditLogger.logLoginFailure(email);
+        if (_failedAttempts >= 3) {
+          _startLockout();
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -163,13 +190,37 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _startLockout() {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    // Use auto-lock time as lockout duration, minimum 30s as requested
+    int duration = settings.autoLockSeconds > 0 ? settings.autoLockSeconds : 30;
+    
+    setState(() {
+      _lockoutSeconds = duration;
+    });
+
+    _lockoutTimer?.cancel();
+    _lockoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_lockoutSeconds > 0) {
+            _lockoutSeconds--;
+          } else {
+            _lockoutTimer?.cancel();
+            _failedAttempts = 0;
+          }
+        });
+      }
+    });
+  }
+
 
 
   String _generatePassword() {
     // Generate a strong random password
     const chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890!@#\$%^&*()_+';
     final random = List.generate(16, (index) => chars[(chars.length * (DateTime.now().microsecondsSinceEpoch % 1000) / 1000).floor() % chars.length]).join();
-    return 'G${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}$random'.substring(0, 16) + '!\$A1';
+    return '${'G${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}$random'.substring(0, 16)}!\$A1';
   }
 
   // Removed legacy server config UI
@@ -186,11 +237,51 @@ class _LoginScreenState extends State<LoginScreen> {
           // 2. Main Content
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo with pulsing glow
+                  // Session Timer Display
+                  Consumer<SettingsProvider>(
+                    builder: (context, settings, _) {
+                      final secs = settings.remainingSeconds;
+                      if (secs <= 0) return const SizedBox.shrink();
+                      
+                      final minutes = secs ~/ 60;
+                      final seconds = secs % 60;
+                      final timeStr = "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+                      
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.timer_outlined, color: AppColors.primary, size: 16),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Session locks in ',
+                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
+                            ),
+                            Text(
+                              timeStr,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   _buildGlowingLogo(),
                   
                   const SizedBox(height: 24),
@@ -219,7 +310,28 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Welcome Back',
                             style: AppTextStyles.heading.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 8),
+                          if (_lockoutSeconds > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.lock_clock, color: Colors.redAccent, size: 14),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Locked out: ${_lockoutSeconds}s',
+                                    style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 16),
                           CustomTextField(
                             controller: _emailController,
                             label: 'Email',
@@ -246,8 +358,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Consumer<AuthProvider>(
                             builder: (context, auth, child) {
                               return PremiumButton(
-                                text: 'Login',
-                                onPressed: () => _login(),
+                                text: _lockoutSeconds > 0 ? 'Locked out (${_lockoutSeconds}s)' : 'Login',
+                                onPressed: _lockoutSeconds > 0 ? null : () => _login(),
                                 isLoading: auth.isLoading,
                               );
                             },
@@ -256,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           
                           // Google Auto-Auth Button
                           OutlinedButton.icon(
-                            onPressed: () async {
+                            onPressed: _lockoutSeconds > 0 ? null : () async {
                               final auth = Provider.of<AuthProvider>(context, listen: false);
                               try {
                                 final details = await auth.getGoogleAccountDetails();
@@ -276,7 +388,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 try {
                                   await auth.login(email, password);
-                                  if (mounted) SoundEffects.unlockApp();
+                                  if (mounted) {
+                                    SoundEffects.unlockApp();
+                                    // Navigation handled reactively by AuthWrapper
+                                  }
                                 } catch (e) {
                                   // If user not found, try registering
                                   if (e.toString().contains('user-not-found') || 
@@ -286,6 +401,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     await auth.register(username, email, password);
                                     if (mounted) {
                                       SoundEffects.unlockApp();
+                                      // Show keys, then automate transition on dismiss
                                       await _showRegistrationSuccessDialog(context);
                                     }
                                   } else {
@@ -318,7 +434,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           
                           if (_canCheckBiometrics) ...[
                             const SizedBox(height: 20),
-                            _BiometricRippleButton(onTap: _authenticate),
+                            _BiometricRippleButton(
+                              onTap: _lockoutSeconds > 0 ? null : () => _authenticate(),
+                            ),
                           ],
                           const SizedBox(height: 24),
                         ],
@@ -384,7 +502,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              onPressed: () { HapticFeedback.lightImpact(); Navigator.pop(ctx); },
+              onPressed: () async { 
+                HapticFeedback.lightImpact(); 
+                Navigator.pop(ctx);
+                
+                // Automate Key Setup for Google Users to go straight to Home
+                try {
+                  final km = KeyManager();
+                  await km.generateAndStoreKey();
+                  if (context.mounted) {
+                    await Provider.of<AuthProvider>(context, listen: false).setUserKeyFlag();
+                  }
+                } catch (e) {
+                  debugPrint('Auto-Key Setup failed: $e');
+                }
+              },
               child: const Text('I saved my keys', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
             ),
           ),
@@ -547,15 +679,15 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class _BiometricRippleButton extends StatelessWidget {
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   const _BiometricRippleButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
+      onTap: onTap == null ? null : () {
         HapticFeedback.mediumImpact();
-        onTap();
+        onTap!();
       },
       child: Container(
         width: 52, height: 52,

@@ -48,23 +48,28 @@ class AuthProvider with ChangeNotifier {
             _user = User.fromJson(data);
             
             // Update cache
-            await _storage.write(key: _profileCacheKey, value: jsonEncode(doc.data()!));
+            await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
             
             if (_user?.recoveryKey != null) {
               await _storage.write(key: 'saved_recovery_key', value: _user!.recoveryKey!);
             }
-            FCMService.initialize(); // fire-and-forget, don't block auth
+            FCMService.initialize();
           } else {
-             await logout();
+            // User exists in Firebase but not in Firestore. Possible sync delay or deleted on server.
+            // Don't log out immediately if we have a token; keep trying or let it stay on "profile loading"
+            if (kDebugMode) debugPrint('AuthProvider: Firestore doc not found for ${currentUser.uid}');
           }
         } catch (e) {
-          await logout();
+          // Firestore fetch failed (e.g. timeout/network). 
+          // Don't log out if we already have the user from cache or Firebase.
+          if (kDebugMode) debugPrint('AuthProvider: Firestore refresh error: $e');
         }
       } else {
-         await logout();
+         // DEFINITIVELY unauthenticated: missing either token or Firebase user
+         if (token != null || _user != null) await logout();
       }
     } catch (e) {
-      // Auth check failed, just notify
+      if (kDebugMode) debugPrint('AuthProvider: Grand checkAuth error: $e');
     }
     notifyListeners();
   }
@@ -72,13 +77,27 @@ class AuthProvider with ChangeNotifier {
   Future<void> refreshUser() async {
     final currentUser = _firebaseAuth.currentUser;
     if (currentUser != null) {
-      final doc = await _firestore.collection('users').doc(currentUser.uid).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        data['_id'] = currentUser.uid;
-        _user = User.fromJson(data);
-        await _storage.write(key: _profileCacheKey, value: jsonEncode(data));
-        notifyListeners();
+      try {
+        final doc = await _firestore.collection('users').doc(currentUser.uid).get();
+        if (doc.exists) {
+          final data = doc.data()!;
+          data['_id'] = currentUser.uid;
+          
+          // CRITICAL: Preserve the JWT token which is NOT in Firestore
+          final existingToken = _user?.token ?? await _storage.read(key: AppConstants.keyToken);
+          data['token'] = existingToken;
+
+          // CRITICAL: Preserve userKey if it was recently set locally but Firestore cache hasn't updated
+          if (_user?.userKey != null && data['userKey'] == null) {
+            data['userKey'] = _user!.userKey;
+          }
+
+          _user = User.fromJson(data);
+          await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
+          notifyListeners();
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('AuthProvider: refreshUser error: $e');
       }
     }
   }
@@ -87,30 +106,30 @@ class AuthProvider with ChangeNotifier {
     final currentUser = _firebaseAuth.currentUser;
     if (currentUser != null) {
       try {
-        final idToken = await currentUser.getIdToken();
-        if (idToken == null) throw Exception('No auth token available');
+        final token = _user?.token ?? await _storage.read(key: AppConstants.keyToken);
+        if (token == null) throw Exception('No auth token available');
         
         final response = await NetworkService.client.post(
           Uri.parse('${AppConstants.baseUrl}/auth/set-key-flag'),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${_user?.token ?? ''}', 
+            'Authorization': 'Bearer $token', 
           },
         ).timeout(NetworkService.defaultTimeout);
 
         if (response.statusCode == 200) {
-          // If successful, simulate the refresh locally to update UI immediately
+          // If successful, update locally first to prevent UI flickering/redirection traps
           if (_user != null) {
-            _user!.userKey = 'local_secured';
+            _user!.userKey = 'secured_managed'; // any non-null string
             await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
             notifyListeners();
           }
-          await refreshUser(); // Optional server re-fetch
+          // Do not call refreshUser() here as it causes a race condition with Firestore cache
         } else {
-          print('Failed to set key flag on backend: ${response.statusCode}');
+          debugPrint('Failed to set key flag on backend: ${response.statusCode}');
         }
       } catch (e) {
-        print('Error setting key flag: $e');
+        debugPrint('Error setting key flag: $e');
       }
     }
   }
@@ -244,9 +263,9 @@ class AuthProvider with ChangeNotifier {
       final idToken = await userCredential.user?.getIdToken();
       if (idToken == null) throw Exception('Google sign-in failed to get token');
 
-      // Sync with Koyeb Backend (Handles auto-registration on server)
+      // Sync with Koyeb Backend: firebase-login handles auto-registration (JIT provisioning)
       final response = await NetworkService.client.post(
-        Uri.parse('${AppConstants.baseUrl}/auth/google'),
+        Uri.parse('${AppConstants.baseUrl}/auth/firebase-login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': idToken}),
       ).timeout(NetworkService.defaultTimeout);

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../utils/file_viewer.dart';
 import '../../utils/sound_effects.dart';
@@ -16,7 +13,6 @@ import '../../services/audit_logger.dart';
 import '../../services/network_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/foundation.dart';
 
 class DocumentsListScreen extends StatefulWidget {
   const DocumentsListScreen({super.key});
@@ -134,11 +130,21 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         if (platformFile.path == null) continue;
         
         try {
-          await VaultEncryptionHelper.encryptAndUpload(platformFile.path!, 'document');
+          await VaultEncryptionHelper.encryptAndUpload(
+            platformFile.path!, 
+            'document',
+            customFileName: platformFile.name,
+          );
           successCount++;
         } catch (e) {
           debugPrint('Upload failed for ${platformFile.name}: $e');
           failCount++;
+          if (mounted) {
+            final errorMsg = e.toString().replaceAll('Exception: ', '');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Upload failed for ${platformFile.name}: $errorMsg'), backgroundColor: Colors.redAccent),
+            );
+          }
         }
       }
 
@@ -155,7 +161,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       }
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $errorMsg'), backgroundColor: Colors.redAccent));
+      }
     }
   }
 
@@ -164,25 +173,36 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Originals?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Should we delete the ${files.length} original document${files.length > 1 ? 's' : ''} from your device?\n\nThey are now safely encrypted in your vault.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep Originals'),
+      builder: (ctx) {
+        final isLight = Theme.of(ctx).brightness == Brightness.light;
+        return AlertDialog(
+          backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Delete Originals?', 
+            style: AppTextStyles.heading.copyWith(color: isLight ? AppColors.textPrimary : Colors.white)
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            'The ${files.length} document${files.length > 1 ? 's are' : ' is'} now safely encrypted in your vault. Do you want to delete the original${files.length > 1 ? 's' : ''} from your device?',
+            style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70)
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -272,12 +292,18 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       }
     }
 
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: AppConstants.keyToken);
+
     for (final id in _selectedIds) {
       final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
       if (item != null && item['url'] != null) {
         try {
            final url = item['url'];
-           final response = await NetworkService.client.get(Uri.parse(url));
+           final response = await NetworkService.client.get(
+             Uri.parse(url),
+             headers: token != null ? {'Authorization': 'Bearer $token'} : {},
+           );
            if (response.statusCode == 200) {
              final tempDir = await getTemporaryDirectory();
              final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';
@@ -389,7 +415,8 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
                                FileViewer.openFile(
                                 context, 
                                 item['url'], 
-                                item['name'] ?? 'document'
+                                item['name'] ?? 'document',
+                                vaultId: item['_id'].toString(),
                               );
                             }
                           }

@@ -72,7 +72,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final Function(int) onTap;
 
-  const _NavItem({super.key, required this.index, required this.currentIndex, required this.icon, required this.label, required this.onTap});
+  const _NavItem({required this.index, required this.currentIndex, required this.icon, required this.label, required this.onTap});
 
   bool get _isActive => currentIndex == index;
 

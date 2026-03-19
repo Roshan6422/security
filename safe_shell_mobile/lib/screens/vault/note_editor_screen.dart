@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/constants.dart';
 import 'package:http/http.dart' as http;
 import '../../services/network_service.dart';
+import '../../services/audit_logger.dart';
 
 class NoteEditorScreen extends StatefulWidget {
   final Map<String, dynamic>? note; 
@@ -70,6 +71,12 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final noteName = _titleController.text;
+        if (widget.note != null) {
+          AuditLogger.logNoteUpdate(noteName);
+        } else {
+          AuditLogger.logNoteCreate(noteName);
+        }
         if (mounted) Navigator.pop(context, true);
       } else {
         throw Exception('Failed to save note: ${response.body}');

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../security/key_manager.dart';
-import '../main_shell.dart';
 
 class KeySetupScreen extends StatefulWidget {
   const KeySetupScreen({super.key});

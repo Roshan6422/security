@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:io';
-import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import '../../core/theme.dart';
-import '../../widgets/glass_card.dart';
 import '../../widgets/panic_button.dart';
 import '../calculator/calculator_screen.dart';
 import '../analytics/analytics_screen.dart';
@@ -14,15 +9,14 @@ import '../../widgets/text_field_m3.dart';
 import '../../widgets/primary_button.dart';
 import '../profile/profile_screen.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'privacy_policy_screen.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../../services/encryption_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../auth/login_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../main.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/file_recovery_service.dart';
 
@@ -34,14 +28,14 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _batterySaver = false;
-  bool _biometrics = false;
+  final bool _batterySaver = false;
+  final bool _biometrics = false;
 
-  bool _discreetMode = false;
+  final bool _discreetMode = false;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final _storage = const FlutterSecureStorage();
-  bool _canUseBiometrics = false;
-  bool _allowScreenshots = false;
+  final bool _canUseBiometrics = false;
+  final bool _allowScreenshots = false;
 
   // Auto-lock options in seconds (0 = off)
   static const _lockOptions = [0, 30, 60, 120, 300, 600];
@@ -313,7 +307,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            MaterialPageRoute(builder: (_) => const AuthWrapper()),
             (route) => false,
           );
         }

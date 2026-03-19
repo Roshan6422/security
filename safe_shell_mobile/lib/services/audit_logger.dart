@@ -9,7 +9,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Uploaded',
-      detail: '$fileName',
+      detail: fileName,
       fileType: fileType,
       fileUrl: fileUrl,
     );
@@ -20,7 +20,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Deleted',
-      detail: '$fileName',
+      detail: fileName,
       fileType: fileType,
     );
   }
@@ -30,7 +30,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Permanently Deleted',
-      detail: '$fileName',
+      detail: fileName,
       fileType: fileType,
     );
   }
@@ -40,7 +40,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Viewed',
-      detail: '$fileName',
+      detail: fileName,
       fileType: fileType,
       fileUrl: fileUrl,
     );
@@ -51,7 +51,7 @@ class AuditLogger {
     _log(
       type: 'file',
       action: 'File Restored',
-      detail: '$fileName',
+      detail: fileName,
       fileType: fileType,
     );
   }
@@ -59,6 +59,11 @@ class AuditLogger {
   /// Log a login event.
   static void logLogin() {
     _log(type: 'security', action: 'Login', detail: 'User logged in');
+  }
+
+  /// Log a failed login event.
+  static void logLoginFailure(String email) {
+    _log(type: 'security', action: 'Login Failed', detail: 'Failed login attempt for $email');
   }
 
   /// Log a logout event.
@@ -69,6 +74,11 @@ class AuditLogger {
   /// Log a note creation.
   static void logNoteCreate(String noteTitle) {
     _log(type: 'file', action: 'Note Created', detail: noteTitle, fileType: 'note');
+  }
+
+  /// Log a note update.
+  static void logNoteUpdate(String noteTitle) {
+    _log(type: 'file', action: 'Note Updated', detail: noteTitle, fileType: 'note');
   }
 
   /// Log a note deletion.
@@ -108,8 +118,8 @@ class AuditLogger {
         'type': type,
         'action': action,
         'detail': detail,
-        if (fileType != null) 'fileType': fileType,
-        if (fileUrl != null) 'fileUrl': fileUrl,
+        'fileType': ?fileType,
+        'fileUrl': ?fileUrl,
         'timestamp': DateTime.now().toIso8601String(),
         'ipAddress': '127.0.0.1', // Placeholder
         'deviceName': 'Mobile Device', // Placeholder

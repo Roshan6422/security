@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 
 class SupportScreen extends StatefulWidget {
@@ -33,6 +35,17 @@ class _SupportScreenState extends State<SupportScreen>
   void dispose() {
     _c.dispose();
     super.dispose();
+  }
+
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open: $url')),
+        );
+      }
+    }
   }
 
   @override
@@ -93,23 +106,26 @@ class _SupportScreenState extends State<SupportScreen>
                     offset: Offset(0, _slideUp.value),
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                      children: const [
+                      children: [
                         _SupportTile(
                           icon: Icons.chat_rounded,
-                          title: 'Live chat',
-                          subtitle: 'Connect WhatsApp / in-app chat',
+                          title: 'Live Chat',
+                          subtitle: 'Connect via WhatsApp',
+                          onTap: () => _launch('https://wa.me/94XXXXXXXXX?text=Hi%20SafeShell%20Support'),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         _SupportTile(
                           icon: Icons.email_rounded,
-                          title: 'Email support',
+                          title: 'Email Support',
                           subtitle: 'support@safeshell.app',
+                          onTap: () => _launch('mailto:support@safeshell.app?subject=SafeShell%20Support%20Request'),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         _SupportTile(
                           icon: Icons.help_center_rounded,
-                          title: 'Help center',
+                          title: 'Help Center',
                           subtitle: 'FAQs & guides',
+                          onTap: () => _launch('https://safeshell.app/help'),
                         ),
                       ],
                     ),
@@ -145,11 +161,13 @@ class _SupportTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   const _SupportTile({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   @override
@@ -159,6 +177,10 @@ class _SupportTile extends StatelessWidget {
     return _GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: ListTile(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         leading: Container(
           width: 42,
           height: 42,
@@ -188,10 +210,16 @@ class _SupportTile extends StatelessWidget {
           subtitle,
           style: TextStyle(color: cs.onSurface.withOpacity(0.7)),
         ),
+        trailing: Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 14,
+          color: cs.onSurface.withOpacity(0.3),
+        ),
       ),
     );
   }
 }
+
 
 class _GlassCard extends StatelessWidget {
   final Widget child;

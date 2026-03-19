@@ -98,8 +98,11 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
       int untrusted = 0;
       
       for (var d in devices) {
-        if (d['isTrusted'] == true) trusted++;
-        else untrusted++;
+        if (d['isTrusted'] == true) {
+          trusted++;
+        } else {
+          untrusted++;
+        }
       }
 
       if (mounted) {

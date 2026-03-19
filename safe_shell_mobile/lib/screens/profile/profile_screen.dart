@@ -1,20 +1,18 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User, AuthProvider;
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/glass_card.dart';
+import '../../models/user.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/custom_text_field.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import '../auth/login_screen.dart';
+import '../../main.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,26 +24,26 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = false;
-  Map<String, dynamic>? _userData;
+
 
   // Staggered entrance
 
 
-  // Analytics data
   int _totalFiles = 0;
   int _totalPhotos = 0;
   int _totalVideos = 0;
   int _totalDocs = 0;
   String _storageUsed = '0 B';
-  int _daysActive = 0;
+  int _daysActive = 30; // Hardcoded for now
 
   @override
   void initState() {
     super.initState();
-    _fetchProfile();
-    _fetchAnalytics(init: true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initFromProvider();
+      _fetchAnalytics(init: true);
+    });
   }
 
   @override
@@ -54,29 +52,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
 
+  bool _isInitialized = false;
 
-  Future<void> _fetchProfile() async {
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) throw Exception('User not logged in');
-
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (!doc.exists) throw Exception('Profile not found');
-      
-      final user = doc.data()!;
-      user['_id'] = uid;
-
-      if (mounted) {
-        setState(() {
-          _userData = user;
-          _nameController.text = user['name'] ?? '';
-          _emailController.text = user['email'] ?? '';
-        });
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+  void _initFromProvider() {
+    if (_isInitialized) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    if (user != null) {
+      _nameController.text = user.name;
+      _emailController.text = user.email;
+      _isInitialized = true;
     }
   }
+
+  Future<void> _refreshData() async {
+    // Only fetch analytics, AuthProvider handles profile data sync on its own
+    await _fetchAnalytics();
+  }
+
 
   Future<void> _fetchAnalytics({bool init = false}) async {
     try {
@@ -130,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Profile updated'), backgroundColor: Color(0xFF10B981)));
-        _fetchProfile();
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -164,7 +156,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Update AuthProvider
       if (mounted) {
         await Provider.of<AuthProvider>(context, listen: false).updateProfileData(photoUrl: downloadUrl);
-        _fetchProfile();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Photo updated!'), backgroundColor: Color(0xFF10B981)));
       }
     } catch (e) {
@@ -178,12 +169,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _logout() async {
     HapticFeedback.heavyImpact();
-    await _storage.deleteAll();
+    // AuthProvider.logout() handles: clear token, Firebase signOut, Google signOut
     if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
+      await Provider.of<AuthProvider>(context, listen: false).logout();
+      // Navigation is handled reactively by AuthWrapper — no manual push needed
     }
   }
 
@@ -227,32 +216,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
     HapticFeedback.lightImpact();
     Clipboard.setData(ClipboardData(text: value));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
+      SnackBar(content: Text('✅ $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    _initFromProvider(); // Catch data arriving after initState
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final user = context.watch<AuthProvider>().user;
+    
     return Scaffold(
       backgroundColor: isLight ? AppColors.background : AppColors.darkBackground,
       body: SafeArea(
-        child: _userData == null
+        child: user == null
             ? _buildSkeletonLoading()
-            : SingleChildScrollView(
+            : RefreshIndicator(
+                onRefresh: _refreshData,
+                color: AppColors.primary,
+                child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                 child: Column(
                   children: [
-                    _buildProfileHeader(),
+                    _buildProfileHeader(user),
                     const SizedBox(height: 20),
-                    _buildPremiumUpgradeCard(),
+                    _buildPremiumUpgradeCard(user),
                     const SizedBox(height: 16),
                     _buildAnalyticsGrid(),
                     const SizedBox(height: 16),
                     _buildStorageChart(),
                     const SizedBox(height: 16),
-                    _buildRecoveryKey(),
+                    _buildRecoveryKey(user),
                     const SizedBox(height: 16),
                     _buildEditForm(),
                     const SizedBox(height: 24),
@@ -260,6 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+            ),
       ),
     );
   }
@@ -314,9 +310,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // -----------------------------------------------
   //  PROFILE HEADER
   // -----------------------------------------------
-  Widget _buildProfileHeader() {
-    final name = _userData?['name'] ?? 'User';
-    final email = _userData?['email'] ?? '';
+  Widget _buildProfileHeader(User user) {
+    final name = user.name;
+    final email = user.email;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final isLight = Theme.of(context).brightness == Brightness.light;
     final secondaryColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.3);
@@ -341,10 +337,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CircleAvatar(
                   radius: 45,
                   backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
-                  backgroundImage: _userData?['photoUrl'] != null 
-                    ? NetworkImage(_userData!['photoUrl']) 
+                  backgroundImage: user.photoUrl != null 
+                    ? NetworkImage(user.photoUrl!) 
                     : null,
-                  child: _userData?['photoUrl'] == null 
+                  child: user.photoUrl == null 
                     ? Text(initial, style: TextStyle(color: isLight ? AppColors.primary : Colors.white, fontSize: 36, fontWeight: FontWeight.w800))
                     : null,
                 ),
@@ -400,9 +396,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // -----------------------------------------------
   //  PREMIUM UPGRADE CARD
   // -----------------------------------------------
-  Widget _buildPremiumUpgradeCard() {
+  Widget _buildPremiumUpgradeCard(User user) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final isPremium = _userData?['subscriptionStatus'] == 'pro';
+    final isPremium = user.subscriptionStatus == 'pro';
     
     if (isPremium) return const SizedBox.shrink();
 
@@ -606,7 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // -----------------------------------------------
   //  RECOVERY KEY
   // -----------------------------------------------
-  Widget _buildRecoveryKey() {
+  Widget _buildRecoveryKey(User user) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -616,7 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         border: Border.all(color: const Color(0xFF4DA3FF).withOpacity(0.1)),
       ),
       child: GestureDetector(
-        onTap: () => _copyToClipboard('Recovery Key', _userData?['recoveryKey'] ?? 'N/A'),
+        onTap: () => _copyToClipboard('Recovery Key', user.recoveryKey ?? 'N/A'),
         child: Row(
           children: [
             Container(
@@ -633,8 +629,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Recovery Key', style: TextStyle(color: isLight ? AppColors.primary.withOpacity(0.7) : Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 2),
-                  Text(_userData?['recoveryKey'] ?? 'N/A', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                   const SizedBox(height: 2),
+                  Text(user.recoveryKey ?? 'N/A', style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white, fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 1)),
                 ],
               ),
             ),

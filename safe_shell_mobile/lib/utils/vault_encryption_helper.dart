@@ -12,11 +12,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class VaultEncryptionHelper {
   /// Encrypts a local file and uploads it to the Koyeb Backend.
   /// The backend handles the actual upload to Firebase Storage and DB record creation.
-  static Future<String> encryptAndUpload(String originalFilePath, String folderName) async {
+  static Future<String> encryptAndUpload(String originalFilePath, String folderName, {String? customFileName}) async {
     String? encryptedPath;
     try {
       if (kDebugMode) debugPrint('EncryptionHelper: Encrypting $originalFilePath');
       
+      final originalFileName = customFileName ?? p.basename(originalFilePath);
+
       // 1. Encrypt the file using pure Dart Cryptography
       encryptedPath = await EncryptionService.encryptFile(originalFilePath);
       
@@ -27,14 +29,16 @@ class VaultEncryptionHelper {
       if (token == null) throw Exception('Session expired. Please login again.');
 
       // 2. Upload to Backend via Multipart
-      final fileName = p.basename(encryptedPath);
       final uri = Uri.parse('${AppConstants.baseUrl}/vault/upload?type=$folderName');
       
       final request = http.MultipartRequest('POST', uri)
         ..headers['Authorization'] = 'Bearer $token'
+        ..fields['name'] = originalFileName
+        ..fields['type'] = folderName
         ..files.add(await http.MultipartFile.fromPath(
-          'file', // Field name matches backend's expectation
+          'file', 
           encryptedPath,
+          filename: originalFileName, // Send original name so backend knows the extension
           contentType: MediaType('application', 'octet-stream'),
         ));
 
@@ -43,10 +47,36 @@ class VaultEncryptionHelper {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (kDebugMode) debugPrint('EncryptionHelper: Upload successful, response: ${response.body}');
+        final String vaultId = data['_id']?.toString() ?? data['id']?.toString() ?? 'unknown';
+        
+        if (kDebugMode) debugPrint('EncryptionHelper: Upload successful, vaultId: $vaultId');
+
+        // 3. Keep local copy and rename it to have the permanent vault ID
+        final finalVaultPath = await EncryptionService.getLocalVaultPath(vaultId);
+        final encFile = File(encryptedPath);
+        if (await encFile.exists()) {
+          await encFile.rename(finalVaultPath);
+          if (kDebugMode) debugPrint('EncryptionHelper: Permanent local copy saved to $finalVaultPath');
+        }
+        
+        encryptedPath = null; // Prevent deletion in finally block
         return data['url']; // Returns the permanent download URL from backend
       } else {
-        throw Exception('Upload failed (${response.statusCode}): ${response.body}');
+        // Log the full response body for debugging
+        if (kDebugMode) debugPrint('EncryptionHelper: Upload failed with ${response.statusCode}: ${response.body}');
+        
+        String errorMessage = 'Upload failed (${response.statusCode})';
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData['message'] != null) {
+            errorMessage += ': ${errorData['message']}';
+          } else {
+            errorMessage += ': ${response.body}';
+          }
+        } catch (_) {
+          errorMessage += ': ${response.body}';
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('EncryptionHelper: Error during encrypt/upload: $e');

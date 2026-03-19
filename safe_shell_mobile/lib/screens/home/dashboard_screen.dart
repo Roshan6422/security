@@ -2,18 +2,14 @@ import 'dart:math' as math;
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:local_auth/local_auth.dart';
 import '../../services/vault_stats_service.dart';
 import '../../providers/auth_provider.dart';
@@ -24,12 +20,10 @@ import '../settings/support_screen.dart';
 import '../calculator/calculator_screen.dart';
 import '../browser/private_browser_screen.dart';
 import '../analytics/analytics_screen.dart';
-import '../auth/login_screen.dart';
+import '../../main.dart';
 
 import '../../widgets/premium_snackbar.dart';
-import '../../widgets/stat_chip.dart';
 import '../../widgets/section_card.dart';
-import '../../services/audit_logger.dart';
 import '../../utils/vault_encryption_helper.dart';
 
 
@@ -50,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const int _freePlanQuotaBytes = 5 * 1024 * 1024 * 1024;
 
   bool _isLoading = true;
-  bool _isOffline = false;
+  final bool _isOffline = false;
   int _fileCount = 0;
   int _photoCount = 0;
   int _videoCount = 0;
@@ -966,7 +960,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   await auth.logout();
                   if (context.mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      MaterialPageRoute(builder: (_) => const AuthWrapper()),
                       (route) => false,
                     );
                   }
@@ -1073,11 +1067,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final fileName = p.basename(path);
       final extension = p.extension(path).toLowerCase();
       String type = 'document';
-      if (['.jpg', '.jpeg', '.png', '.webp'].contains(extension)) type = 'photo';
-      else if (['.mp4', '.mov', '.avi'].contains(extension)) type = 'video';
-      else if (['.mp3', '.wav', '.m4a'].contains(extension)) type = 'audio';
+      if ({'.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.heic', '.heif'}.contains(extension)) {
+        type = 'photo';
+      } else if ({'.mp4', '.mov', '.avi', '.mkv', '.webm', '.3gp', '.flv', '.wmv'}.contains(extension)) {
+        type = 'video';
+      } else if ({'.mp3', '.wav', '.m4a', '.aac', '.flac', '.ogg', '.wma'}.contains(extension)) {
+        type = 'audio';
+      }
 
-      final downloadUrl = await VaultEncryptionHelper.encryptAndUpload(path, type);
+      final downloadUrl = await VaultEncryptionHelper.encryptAndUpload(
+        path, 
+        type, 
+        customFileName: fileName,
+      );
       
       // Note: Backend /vault/upload already handles Firestore registration in 'vaultItems' collection
       // and audit logging, so we don't need to do it here again.
@@ -1085,13 +1087,73 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       HapticFeedback.mediumImpact();
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(const SnackBar(content: Text('? Vault updated successfully'), backgroundColor: Colors.green));
+      messenger.showSnackBar(const SnackBar(content: Text('✅ Vault updated successfully'), backgroundColor: Colors.green));
       _fetchDashboardData();
+      
+      // ✅ Prompt to delete original from device
+      await _promptDeleteFromDevice(path);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(SnackBar(content: Text('Upload failed: $e'), backgroundColor: Colors.redAccent));
+      messenger.showSnackBar(SnackBar(
+        content: Text('Upload failed: ${e.toString().replaceAll('Exception: ', '')}'), 
+        backgroundColor: Colors.redAccent
+      ));
+    }
+  }
+
+  Future<void> _promptDeleteFromDevice(String filePath) async {
+    if (!mounted) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final isLight = Theme.of(ctx).brightness == Brightness.light;
+        return AlertDialog(
+          backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Delete Original?', 
+            style: AppTextStyles.heading.copyWith(color: isLight ? AppColors.textPrimary : Colors.white)
+          ),
+          content: Text(
+            'This file is now safely encrypted in your vault. Do you want to delete the original from your device storage?',
+            style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70)
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        final file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Original file deleted'), backgroundColor: Colors.orangeAccent)
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to delete original: $e');
+      }
     }
   }
 }

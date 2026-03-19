@@ -7,6 +7,7 @@ class User {
   final String? recoveryKey;
   String? userKey;
   final String? subscriptionStatus;
+  final String? subscriptionExpiry;
   final String? photoUrl;
 
   User({

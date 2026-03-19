@@ -1,20 +1,22 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import '../services/encryption_service.dart';
 import '../services/network_service.dart';
 
 class SecureNetworkViewer extends StatefulWidget {
   final String relativeUrl;
+  final String? vaultId;
   final Widget Function(BuildContext context, String localPath) builder;
 
   const SecureNetworkViewer({
     super.key,
     required this.relativeUrl,
     required this.builder,
+    this.vaultId,
   });
 
   @override
@@ -52,6 +54,22 @@ class _SecureNetworkViewerState extends State<SecureNetworkViewer> {
     });
 
     try {
+      // 1. Check for PERMANENT local vault file first (if vaultId is provided)
+      if (widget.vaultId != null) {
+        final localVaultPath = await EncryptionService.getLocalVaultPath(widget.vaultId!);
+        final localVaultFile = File(localVaultPath);
+        if (await localVaultFile.exists()) {
+          final decryptedPath = await EncryptionService.decryptFile(localVaultPath);
+          if (mounted) {
+            setState(() {
+              _localPath = decryptedPath;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+
       final cacheDir = await EncryptionService.getDecryptedCacheDir();
       final cacheFilename = _getCacheFilename(widget.relativeUrl);
       final cacheFile = File(p.join(cacheDir.path, cacheFilename));
@@ -89,7 +107,16 @@ class _SecureNetworkViewerState extends State<SecureNetworkViewer> {
         // 5. Move decrypted file to stable cache path
         await decryptedFile.rename(cacheFile.path);
 
-        // 6. Cleanup temp encrypted
+        // 6. IF it was a network download, also save to permanent local vault (for hybrid storage)
+        if (widget.vaultId != null) {
+          final localVaultPath = await EncryptionService.getLocalVaultPath(widget.vaultId!);
+          if (!await File(localVaultPath).exists()) {
+            await File(tempEncPath).copy(localVaultPath);
+            if (kDebugMode) debugPrint('SecureNetworkViewer: Saved background download to permanent vault: $localVaultPath');
+          }
+        }
+
+        // 7. Cleanup temp encrypted
         if (await tempEncFile.exists()) await tempEncFile.delete();
 
         if (mounted) {

@@ -74,6 +74,7 @@ dependencies:
   payhere_mobilesdk_flutter: ^3.2.2
   firebase_storage: ^12.4.10
 
+  http_parser: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

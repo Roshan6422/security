@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:cryptography/cryptography.dart';
@@ -66,15 +65,24 @@ class EncryptionService {
   /// Returns the path to the newly created encrypted file.
   static Future<String> encryptFile(String sourcePath) async {
     final file = File(sourcePath);
+    if (!await file.exists()) {
+      throw Exception('EncryptionError: Source file not found at $sourcePath');
+    }
+
+    final int originalSize = await file.length();
+    if (kDebugMode) debugPrint('EncryptionService: Encrypting file ($originalSize bytes) at $sourcePath');
+
     final clearText = await file.readAsBytes();
 
     late Uint8List finalBytes;
     // 1. Fallback to Pure Dart Cryptography for ALL platforms.
-    // hwEncrypt (KeyStore) over MethodChannel crashes on large files (videos/photos)
-    // due to TransactionTooLargeException or OutOfMemoryError in Android.
     final key = await _getOrCreateKey();
+    if (kDebugMode) debugPrint('EncryptionService: Key retrieved, starting AES-GCM encryption...');
+    
     final secretBox = await _algorithm.encrypt(clearText, secretKey: key);
     finalBytes = Uint8List.fromList(secretBox.concatenation());
+    
+    if (kDebugMode) debugPrint('EncryptionService: Encryption complete. Encrypted size: ${finalBytes.length} bytes');
 
     // 3. Prepare Vault Directory
     final appDir = await getApplicationDocumentsDirectory();
@@ -137,6 +145,14 @@ class EncryptionService {
       await cacheDir.create(recursive: true);
     }
     return cacheDir;
+  }
+
+  /// Returns the persistent path for an encrypted file in the vault.
+  static Future<String> getLocalVaultPath(String id) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final vaultDir = Directory(p.join(appDir.path, 'vault_storage'));
+    if (!await vaultDir.exists()) await vaultDir.create(recursive: true);
+    return p.join(vaultDir.path, 'vault_$id.shell');
   }
 
   /// Clears all files in the decrypted cache.

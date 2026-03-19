@@ -6,8 +6,8 @@ import '../../main.dart';
 import '../calculator/calculator_screen.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import 'login_screen.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_auth/local_auth.dart';
 import 'onboarding_screen.dart';
 import '../../utils/device_performance.dart';
@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       final app = Firebase.app();
       print('SafeShell: [RUNTIME_CONFIG] App Name: ${app.name}');
       print('SafeShell: [RUNTIME_CONFIG] Project ID: ${app.options.projectId}');
-      print('SafeShell: [RUNTIME_CONFIG] API Key Initial: ${app.options.apiKey?.substring(0, 5)}...');
+      print('SafeShell: [RUNTIME_CONFIG] API Key Initial: ${app.options.apiKey.substring(0, 5)}...');
       print('SafeShell: [RUNTIME_CONFIG] App ID: ${app.options.appId}');
     } catch (e) {
       print('SafeShell: [RUNTIME_CONFIG] Error getting configuration: $e');
@@ -71,7 +71,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _checkAuthAndNavigate() async {
     const storage = FlutterSecureStorage();
-    final isDiscreetMode = await storage.read(key: 'discreet_mode') == 'true';
+    final prefs = await SharedPreferences.getInstance();
+    final isDiscreetMode = prefs.getBool('discreet_mode') ?? false;
 
     if (mounted) setState(() => _isDiscreetMode = isDiscreetMode);
 
@@ -111,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           onSkip: () {
             print('SafeShell: CALLBACK_ONBOARDING: "Skip" triggered');
             navigatorKey.currentState?.pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginScreen())
+              MaterialPageRoute(builder: (_) => const AuthWrapper())
             );
           },
         )),

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme.dart';
+import 'package:path/path.dart' as p;
 // ✅ Fix 1: Removed unused imports
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
@@ -15,16 +16,12 @@ import 'notes_list_screen.dart';
 import 'documents_list_screen.dart';
 import 'recycle_bin_screen.dart';
 import 'app_hider_screen.dart';
-import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 // import 'package:provider/provider.dart';        // ✅ Fix 1: Unused
 // import '../../providers/settings_provider.dart'; // ✅ Fix 1: Unused
 import '../../utils/sound_effects.dart';
 import '../../main.dart';
 import '../../utils/vault_encryption_helper.dart';
-import '../../services/network_service.dart';
 import '../../services/vault_stats_service.dart';
-import '../../core/constants.dart';
 
 class VaultScreen extends StatefulWidget {
   const VaultScreen({super.key});
@@ -35,7 +32,7 @@ class VaultScreen extends StatefulWidget {
 
 class _VaultScreenState extends State<VaultScreen>
     with RouteAware, TickerProviderStateMixin {
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   final List<_VaultCategory> _categories = [
     _VaultCategory(
@@ -616,23 +613,26 @@ class _VaultScreenState extends State<VaultScreen>
 
     try {
       // ✅ Fix 5: Detect actual type from file extension
-      final fileName = filePath.split('/').last.toLowerCase();
-      final ext = fileName.split('.').last;
-      String fileType;
-      if ({'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif'}
-          .contains(ext)) {
+      final extension = p.extension(filePath).toLowerCase();
+      String fileType = 'document';
+      
+      if ({'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.heic', '.heif'}
+          .contains(extension)) {
         fileType = 'photo';
-      } else if ({'mp4', 'avi', 'mov', 'mkv', 'webm', '3gp'}
-          .contains(ext)) {
+      } else if ({'.mp4', '.avi', '.mov', '.mkv', '.webm', '.3gp', '.flv', '.wmv'}
+          .contains(extension)) {
         fileType = 'video';
-      } else if ({'mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a'}
-          .contains(ext)) {
+      } else if ({'.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma'}
+          .contains(extension)) {
         fileType = 'audio';
-      } else {
-        fileType = 'document';
       }
 
-      await VaultEncryptionHelper.encryptAndUpload(filePath, fileType);
+      final fileName = p.basename(filePath);
+      await VaultEncryptionHelper.encryptAndUpload(
+        filePath, 
+        fileType, 
+        customFileName: fileName,
+      );
 
       await _fetchStats();
 
@@ -642,32 +642,32 @@ class _VaultScreenState extends State<VaultScreen>
       final shouldDelete = await showDialog<bool>(
         context: context,
         builder: (ctx) {
-          // ✅ Fix 7: Respect theme in dialog
-          final dialogIsLight =
-              Theme.of(ctx).brightness == Brightness.light;
+          final isLight = Theme.of(ctx).brightness == Brightness.light;
           return AlertDialog(
-            backgroundColor: dialogIsLight
-                ? Colors.white
-                : AppColors.darkSurface,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            title: Text('Delete Original?',
-                style: TextStyle(
-                    color: dialogIsLight ? Colors.black : Colors.white)),
+            backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              'Delete Original?', 
+              style: AppTextStyles.heading.copyWith(color: isLight ? AppColors.textPrimary : Colors.white)
+            ),
             content: Text(
-                'Should we delete the original file from your device?\n\nIt is now safely encrypted in your vault.',
-                style: TextStyle(
-                    color: dialogIsLight
-                        ? Colors.black54
-                        : Colors.white70)),
+              'This file is now safely encrypted in your vault. Do you want to delete the original from your device?',
+              style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70)
+            ),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Keep Original')),
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Delete Now',
-                      style: TextStyle(color: Colors.redAccent))),
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Delete'),
+              ),
             ],
           );
         },
@@ -707,8 +707,8 @@ class _VaultScreenState extends State<VaultScreen>
         HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Upload failed. Please try again.'),
+          SnackBar(
+              content: Text('Upload failed: ${e.toString().replaceAll('Exception: ', '')}'),
               backgroundColor: Colors.redAccent),
         );
       }

@@ -5,7 +5,6 @@ import '../../widgets/glass_card.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../providers/auth_provider.dart';
-import 'login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

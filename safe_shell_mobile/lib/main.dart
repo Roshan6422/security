@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -14,9 +15,10 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth/key_setup_screen.dart';
 import 'screens/auth/app_lock_screen.dart';
-import 'security/key_manager.dart';
+import 'screens/calculator/calculator_screen.dart';
 import 'utils/device_performance.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/fcm_service.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -70,9 +72,9 @@ Future<void> _initFirebase() async {
 
 Future<void> _restoreStealthMode() async {
   try {
-    const storage = FlutterSecureStorage();
-    final stealthEnabled = await storage.read(key: 'discreet_mode');
-    if (stealthEnabled == 'true') {
+    final prefs = await SharedPreferences.getInstance();
+    final stealthEnabled = prefs.getBool('discreet_mode') ?? false;
+    if (stealthEnabled) {
       const channel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
       await channel.invokeMethod('toggleStealthMode', {'enable': true});
       if (kDebugMode) debugPrint('Stealth mode restored on startup');
@@ -280,21 +282,169 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
+  Timer? _inactivityTimer;
+  int _remainingSeconds = 0;
+  int _lastLimit = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _resetInactivityTimer(force: true);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      settings.recordBackgroundTime();
+      _inactivityTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      settings.shouldLockNow().then((shouldLock) {
+        if (shouldLock) {
+          _lockApp();
+        } else {
+          settings.clearBackgroundTime();
+          _resetInactivityTimer(force: true);
+        }
+      });
+    }
+  }
+
+  void _resetInactivityTimer({bool force = false}) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final limit = settings.autoLockSeconds;
+    
+    // If not forced (e.g. from build loop), only reset if limit changed
+    if (!force && limit == _lastLimit) return;
+    _lastLimit = limit;
+
+    if (limit <= 0) {
+      _inactivityTimer?.cancel();
+      if (_remainingSeconds != 0) {
+        setState(() => _remainingSeconds = 0);
+        settings.updateRemainingSeconds(0);
+      }
+      return;
+    }
+
+    _inactivityTimer?.cancel();
+    _remainingSeconds = limit;
+    settings.updateRemainingSeconds(limit);
+    
+    _inactivityTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        if (mounted) {
+          setState(() {
+            _remainingSeconds--;
+          });
+          settings.updateRemainingSeconds(_remainingSeconds);
+        }
+        if (_remainingSeconds == 0) {
+          timer.cancel();
+          _lockApp();
+        }
+      }
+    });
+  }
+
+  void _lockApp() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    if (auth.isAuthenticated) {
+      HapticFeedback.heavyImpact();
+      auth.logout();
+      // If discreet mode is on, navigate to calculator instead of login
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      if (settings.discreetMode) {
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const CalculatorScreen()),
+          (route) => false,
+        );
+      }
+    } else {
+      _resetInactivityTimer();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Turbo: No more FutureBuilder flickering. 
-    // State is already hydrated by SplashScreen or main.dart
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
+    return Consumer2<AuthProvider, SettingsProvider>(
+      builder: (context, auth, settings, _) {
+        // Automatically refresh timer if the limit changed in settings
+        // We use a post-frame callback to avoid "setState during build" errors
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _resetInactivityTimer();
+        });
+
+        Widget child;
         if (!auth.isAuthenticated) {
-          return const LoginScreen();
+          child = const LoginScreen();
+        } else if (auth.user?.userKey == null) {
+          child = const KeySetupScreen();
+        } else {
+          child = const MainShell();
         }
 
-        // Use a lightweight check for the user key (avoid secondary FutureBuilder)
-        return auth.user?.userKey != null ? const MainShell() : const KeySetupScreen();
+        return Listener(
+          onPointerDown: (_) => _resetInactivityTimer(force: true),
+          behavior: HitTestBehavior.translucent,
+          child: Stack(
+            children: [
+              child,
+              // Global Countdown Overlay (only show if authenticated, as LoginScreen has its own)
+              if (auth.isAuthenticated && _remainingSeconds > 0 && _remainingSeconds <= 30)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.timer_outlined, color: Colors.amberAccent, size: 14),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Locking in ${_remainingSeconds}s',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
       },
     );
   }

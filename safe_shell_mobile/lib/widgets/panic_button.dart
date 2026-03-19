@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../screens/auth/login_screen.dart';
+import '../main.dart';
 import '../utils/sound_effects.dart';
 
 /// A dramatic hold-to-lock panic button.
@@ -98,7 +98,7 @@ class _PanicButtonState extends State<PanicButton> with TickerProviderStateMixin
     final auth = Provider.of<AuthProvider>(context, listen: false);
     auth.logout();
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const AuthWrapper()),
       (route) => false,
     );
   }

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/theme.dart';
-import '../../widgets/glass_card.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../settings/privacy_policy_screen.dart';
@@ -69,7 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Generate a strong random password
     const chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890!@#\$%^&*()_+';
     final random = List.generate(16, (index) => chars[(chars.length * (DateTime.now().microsecondsSinceEpoch % 1000) / 1000).floor() % chars.length]).join();
-    return 'G${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}$random'.substring(0, 16) + '!\$A1';
+    return '${'G${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}$random'.substring(0, 16)}!\$A1';
   }
 
   Future<void> _register() async {

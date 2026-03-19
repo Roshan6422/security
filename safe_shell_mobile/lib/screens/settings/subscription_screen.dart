@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:payhere_mobilesdk_flutter/payhere_mobilesdk_flutter.dart';
 import '../../widgets/primary_button.dart';
 import '../../providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

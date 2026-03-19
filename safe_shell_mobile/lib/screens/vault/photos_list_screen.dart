@@ -1,10 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import '../../utils/sound_effects.dart';
 import '../../services/audit_logger.dart';
@@ -151,7 +147,11 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
         try {
           // VaultEncryptionHelper now handles backend upload and record creation
-          await VaultEncryptionHelper.encryptAndUpload(file.path, 'photo');
+          await VaultEncryptionHelper.encryptAndUpload(
+            file.path, 
+            'photo', 
+            customFileName: asset.title,
+          );
           successCount++;
         } catch (e) {
           debugPrint('Upload failed for ${asset.id}: $e');
@@ -190,25 +190,36 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete from Gallery?', style: TextStyle(color: Colors.white)),
-        content: Text(
-          'Should we delete the ${assets.length} original photo${assets.length > 1 ? 's' : ''} from your gallery?\n\nThey are now safely encrypted in your vault.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep Originals'),
+      builder: (ctx) {
+        final isLight = Theme.of(ctx).brightness == Brightness.light;
+        return AlertDialog(
+          backgroundColor: isLight ? Colors.white : AppColors.darkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Delete from Gallery?', 
+            style: AppTextStyles.heading.copyWith(color: isLight ? AppColors.textPrimary : Colors.white)
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Now', style: TextStyle(color: Colors.redAccent)),
+          content: Text(
+            'The ${assets.length} photo${assets.length > 1 ? 's are' : ' is'} now safely encrypted in your vault. Do you want to delete the original${assets.length > 1 ? 's' : ''} from your gallery?',
+            style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70)
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true) {
@@ -300,6 +311,9 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
     _showLoadingDialog('Saving to gallery...');
 
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: AppConstants.keyToken);
+
     int successCount = 0;
 
     for (final id in _selectedIds.toList()) {
@@ -308,7 +322,10 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
       try {
         final url = item['url'];
-        final response = await NetworkService.client.get(Uri.parse(url));
+        final response = await NetworkService.client.get(
+          Uri.parse(url),
+          headers: token != null ? {'Authorization': 'Bearer $token'} : {},
+        );
 
         if (response.statusCode == 200) {
           // Download is encrypted — must decrypt before saving to gallery
@@ -322,11 +339,11 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           final decryptedFile = File(decryptedPath);
           final decryptedBytes = await decryptedFile.readAsBytes();
 
-          final result = await PhotoManager.editor.saveImage(
+          await PhotoManager.editor.saveImage(
             decryptedBytes,
             filename: item['name'] ?? 'photo_$id',
           );
-          if (result != null) successCount++;
+          successCount++;
 
           // Cleanup temp files
           if (await tempEncFile.exists()) await tempEncFile.delete();
@@ -565,6 +582,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
               builder: (_) => PhotoViewerScreen(
                 imageUrl: item['url'] ?? '',
                 heroTag: id,
+                vaultId: id,
               ),
             ),
           );
@@ -578,6 +596,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
             tag: id,
             child: SecureNetworkViewer(
               relativeUrl: item['url'] ?? '',
+              vaultId: id,
               builder: (context, localPath) => Image.file(
                 File(localPath),
                 fit: BoxFit.cover,

@@ -9,13 +9,14 @@ class SettingsProvider extends ChangeNotifier {
   final _storage = const FlutterSecureStorage();
   
   int _autoLockSeconds = 0; // 0 = disabled
-  bool _isPro = false;
+  final bool _isPro = false;
   bool _usbDetectionEnabled = false;
   bool _antiUninstallEnabled = false;
   bool _usbAppsLocked = false; // tracks if apps are currently locked by USB protection
   bool _discreetMode = false;
   bool _biometricsEnabled = false;
   bool _allowScreenshots = false;
+  int _remainingSeconds = 0;
 
   // Common packages for File Manager, Gallery, Video on Android
   // These cover stock Samsung, Google, and AOSP apps
@@ -43,6 +44,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get discreetMode => _discreetMode;
   bool get biometricsEnabled => _biometricsEnabled;
   bool get allowScreenshots => _allowScreenshots;
+  int get remainingSeconds => _remainingSeconds;
 
   SettingsProvider() {
     _loadSettings();
@@ -93,6 +95,7 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAutoLockSeconds(int seconds) async {
     _autoLockSeconds = seconds;
+    _remainingSeconds = seconds;
     await _storage.write(key: 'auto_lock_seconds', value: seconds.toString());
     
     // Clear last paused time if disabling
@@ -102,6 +105,13 @@ class SettingsProvider extends ChangeNotifier {
     }
     
     notifyListeners();
+  }
+
+  void updateRemainingSeconds(int seconds) {
+    if (_remainingSeconds != seconds) {
+      _remainingSeconds = seconds;
+      notifyListeners();
+    }
   }
 
   /// Records the current time when app backgrounds

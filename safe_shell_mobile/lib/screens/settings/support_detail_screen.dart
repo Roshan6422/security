@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme.dart';
-import '../../widgets/glass_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class SupportDetailScreen extends StatefulWidget {
