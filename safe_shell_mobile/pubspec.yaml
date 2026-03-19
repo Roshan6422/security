@@ -71,10 +71,11 @@ dependencies:
   cryptography: ^2.7.0
   crypto: ^3.0.3
   photo_view: ^0.15.0
-  payhere_mobilesdk_flutter: ^3.2.2
   firebase_storage: ^12.4.10
 
   http_parser: any
+  in_app_purchase: ^3.2.3
+  google_mobile_ads: ^7.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

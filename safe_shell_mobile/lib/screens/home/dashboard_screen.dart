@@ -24,6 +24,7 @@ import '../../main.dart';
 
 import '../../widgets/premium_snackbar.dart';
 import '../../widgets/section_card.dart';
+import '../../widgets/inline_banner_ad.dart';
 import '../../utils/vault_encryption_helper.dart';
 
 
@@ -226,6 +227,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (!_isOffline) const SizedBox(height: 10),
                     _anim(1, _buildStorageCard(textColor, subColor)),        // 1: shimmer storage
                     const SizedBox(height: 16),
+                    if (context.select<AuthProvider, String?>((a) => a.user?.subscriptionStatus) != 'premium')
+                      const InlineBannerAd(),
                     _anim(2, _buildStatRow(textColor, subColor)),            // 2: count-up stats
                     const SizedBox(height: 16),
                     _anim(3, _buildQuickActions(textColor)),       // 3: quick actions
