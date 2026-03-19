@@ -68,7 +68,9 @@ class VaultEncryptionHelper {
         String errorMessage = 'Upload failed (${response.statusCode})';
         try {
           final errorData = jsonDecode(response.body);
-          if (errorData['message'] != null) {
+          if (errorData['error'] != null) {
+            errorMessage += ': ${errorData['error']}';
+          } else if (errorData['message'] != null) {
             errorMessage += ': ${errorData['message']}';
           } else {
             errorMessage += ': ${response.body}';
