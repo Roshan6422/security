@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    const storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
     final prefs = await SharedPreferences.getInstance();
     final isDiscreetMode = prefs.getBool('discreet_mode') ?? false;
 

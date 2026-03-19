@@ -11,7 +11,7 @@ class EncryptionService {
   // Use AES-GCM with 256-bit keys.
   // GCM is an Authenticated Encryption mode (AEAD), safer than CBC.
   static final _algorithm = AesGcm.with256bits();
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   static const _keyStorageKey = 'safe_shell_vault_key_v1';
   static const _nativeChannel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
 
@@ -88,6 +88,10 @@ class EncryptionService {
     final appDir = await getApplicationDocumentsDirectory();
     final vaultDir = Directory(p.join(appDir.path, 'vault_storage'));
     if (!await vaultDir.exists()) await vaultDir.create(recursive: true);
+
+    // 3b. Ensure .nomedia exists (hides vault from Gallery/File Manager apps)
+    final nomedia = File(p.join(vaultDir.path, '.nomedia'));
+    if (!await nomedia.exists()) await nomedia.create();
 
     // 4. Save
     final timestamp = DateTime.now().millisecondsSinceEpoch;

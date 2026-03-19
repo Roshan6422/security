@@ -38,7 +38,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
     setState(() => _isLoading = true);
 
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -241,7 +241,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
     if (confirmed == true) {
        try {
-        const storage = FlutterSecureStorage();
+        const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
         final token = await storage.read(key: AppConstants.keyToken);
         if (token == null) return;
 
@@ -292,7 +292,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       }
     }
 
-    const storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
     final token = await storage.read(key: AppConstants.keyToken);
 
     for (final id in _selectedIds) {

@@ -347,7 +347,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       try {
         await DefaultCacheManager().emptyCache();
-        await const FlutterSecureStorage().deleteAll();
+        await const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true)).deleteAll();
         final prefs = await SharedPreferences.getInstance();
         await prefs.clear();
 

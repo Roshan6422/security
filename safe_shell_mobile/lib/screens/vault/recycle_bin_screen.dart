@@ -28,7 +28,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
   Future<void> _fetchDeletedItems() async {
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -128,7 +128,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     if (_selectedIds.isEmpty) return;
     
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -196,7 +196,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
 
     if (confirmed == true) {
       try {
-        const storage = FlutterSecureStorage();
+        const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
         final token = await storage.read(key: AppConstants.keyToken);
         if (token == null) return;
 
@@ -221,7 +221,7 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
   Future<void> _deleteItemPermanently(dynamic item) async {
     if (item == null) return;
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 

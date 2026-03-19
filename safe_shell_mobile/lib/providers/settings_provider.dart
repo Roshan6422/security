@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const _channel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
-  final _storage = const FlutterSecureStorage();
+  final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   
   int _autoLockSeconds = 0; // 0 = disabled
   final bool _isPro = false;

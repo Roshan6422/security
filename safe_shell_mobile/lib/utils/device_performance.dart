@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class DevicePerformance {
   static bool _isLowEnd = false;
   static bool _initialized = false;
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
   /// True if device has low RAM or old Android version, or user forced it.
   static bool get isLowEnd => _isLowEnd;

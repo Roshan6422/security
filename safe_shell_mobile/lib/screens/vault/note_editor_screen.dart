@@ -57,7 +57,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> with WidgetsBinding
   Future<void> _autoSaveNote({bool silent = true}) async {
     if (!_hasUnsavedChanges || _titleController.text.isEmpty) return;
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 

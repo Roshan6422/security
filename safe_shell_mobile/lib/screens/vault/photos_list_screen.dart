@@ -40,7 +40,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     setState(() => _isLoading = true);
 
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -270,7 +270,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
     _showLoadingDialog('Deleting...');
 
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -311,7 +311,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
     _showLoadingDialog('Saving to gallery...');
 
-    const storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
     final token = await storage.read(key: AppConstants.keyToken);
 
     int successCount = 0;

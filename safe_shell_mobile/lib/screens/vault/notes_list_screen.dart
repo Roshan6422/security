@@ -32,7 +32,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
     setState(() => _isLoading = true);
 
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -113,7 +113,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
 
     if (confirmed == true) {
        try {
-        const storage = FlutterSecureStorage();
+        const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
         final token = await storage.read(key: AppConstants.keyToken);
         if (token == null) return;
 

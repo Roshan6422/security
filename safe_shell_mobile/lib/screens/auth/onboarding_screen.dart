@@ -79,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     HapticFeedback.mediumImpact();
     
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       print('SafeShell: ONBOARDING_STORAGE: Saving "true"...');
       await storage.write(key: 'onboarding_complete', value: 'true');
       print('SafeShell: ONBOARDING_STORAGE_SUCCESS: State saved');
@@ -101,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     HapticFeedback.mediumImpact();
     
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       print('SafeShell: ONBOARDING_STORAGE: Saving "true" (via skip)...');
       await storage.write(key: 'onboarding_complete', value: 'true');
       print('SafeShell: ONBOARDING_STORAGE_SUCCESS: Skip state saved');

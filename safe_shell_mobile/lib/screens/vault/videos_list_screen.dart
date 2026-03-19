@@ -37,7 +37,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
     setState(() => _isLoading = true);
 
     try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -241,7 +241,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
 
     if (confirmed == true) {
        try {
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
@@ -292,7 +292,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
       builder: (_) => const Center(child: CircularProgressIndicator())
     );
 
-    const storage = FlutterSecureStorage();
+    const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
     final token = await storage.read(key: AppConstants.keyToken);
 
     int successCount = 0;

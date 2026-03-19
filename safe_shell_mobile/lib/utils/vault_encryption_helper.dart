@@ -24,7 +24,7 @@ class VaultEncryptionHelper {
       
       if (kDebugMode) debugPrint('EncryptionHelper: Uploading encrypted file to Koyeb Backend: ${AppConstants.baseUrl}');
 
-      const storage = FlutterSecureStorage();
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) throw Exception('Session expired. Please login again.');
 

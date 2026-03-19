@@ -15,7 +15,7 @@ class AppLockScreen extends StatefulWidget {
 class _AppLockScreenState extends State<AppLockScreen> {
   final TextEditingController _pinController = TextEditingController();
   String _correctPin = "1234";
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   static const _channel = MethodChannel('com.safeshell.safe_shell_mobile/stealth');
 
   @override
