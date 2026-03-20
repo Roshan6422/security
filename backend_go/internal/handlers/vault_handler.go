@@ -654,7 +654,8 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 			break
 		}
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch items"})
+			log.Printf("Firestore Query Error (ListVaultItems): %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch items: " + err.Error()})
 			return
 		}
 		data := doc.Data()
