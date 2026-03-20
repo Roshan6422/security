@@ -273,11 +273,19 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+	
+	// Check if user exists in Firebase Auth
+	_, err := h.FirebaseSvc.Auth.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No user found with this email address"})
+		return
+	}
+
 	// Generate 6-digit OTP
 	otp := services.GenerateRandomDigits(6)
 
-	ctx := c.Request.Context()
-	_, err := h.FirebaseSvc.Firestore.Collection("reset_tokens").Doc(req.Email).Set(ctx, map[string]interface{}{
+	_, err = h.FirebaseSvc.Firestore.Collection("reset_tokens").Doc(req.Email).Set(ctx, map[string]interface{}{
 		"email":          req.Email,
 		"otp":            otp,
 		"expiresAt":      time.Now().Add(15 * time.Minute),

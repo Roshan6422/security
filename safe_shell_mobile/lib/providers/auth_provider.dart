@@ -322,13 +322,8 @@ class AuthProvider with ChangeNotifier {
         throw Exception('Backend Google sync failed');
       }
 
-    } catch (e) {
-      // Rollback if any part of the Google sign-in fails after Firebase auth
-      if (_firebaseAuth.currentUser != null) {
-        try {
-          await _firebaseAuth.currentUser!.delete();
-        } catch (_) {}
-      }
+      // Rollback is handled by logout if needed, but deleting the user is too aggressive
+      // as it might be an existing account.
       throw Exception('Google Sign-In failed: $e');
     } finally {
       _isLoading = false;
@@ -352,9 +347,9 @@ class AuthProvider with ChangeNotifier {
         };
       }
     } catch (e) {
-      print('Google account picker failed: $e');
+      debugPrint('Google account picker failed: $e');
+      rethrow;
     }
-    return null;
   }
 
   /// Generates a deterministic password based on email and googleId.

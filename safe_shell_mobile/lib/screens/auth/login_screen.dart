@@ -386,28 +386,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                 
                                 final password = auth.generateDeterministicPassword(email, googleId);
 
-                                try {
-                                  await auth.login(email, password);
-                                  if (mounted) {
-                                    SoundEffects.unlockApp();
-                                    // Navigation handled reactively by AuthWrapper
-                                  }
-                                } catch (e) {
-                                  // If user not found, try registering
-                                  if (e.toString().contains('user-not-found') || 
-                                      e.toString().contains('INVALID_LOGIN_CREDENTIALS') ||
-                                      e.toString().contains('404')) {
-                                    
-                                    await auth.register(username, email, password);
+                                  try {
+                                    await auth.login(email, password);
                                     if (mounted) {
                                       SoundEffects.unlockApp();
-                                      // Show keys, then automate transition on dismiss
-                                      await _showRegistrationSuccessDialog(context);
+                                      // Navigation handled reactively by AuthWrapper
                                     }
-                                  } else {
-                                    rethrow;
+                                  } catch (e) {
+                                    final errorStr = e.toString();
+                                    // If user not found or invalid credentials, try registering
+                                    if (errorStr.contains('user-not-found') || 
+                                        errorStr.contains('INVALID_LOGIN_CREDENTIALS') ||
+                                        errorStr.contains('wrong-password') ||
+                                        errorStr.contains('404')) {
+                                      
+                                      try {
+                                        await auth.register(username, email, password);
+                                        if (mounted) {
+                                          SoundEffects.unlockApp();
+                                          await _showRegistrationSuccessDialog(context);
+                                        }
+                                      } catch (regErr) {
+                                        // If registration also fails due to existing account from another provider
+                                        if (regErr.toString().contains('email-already-in-use')) {
+                                          throw Exception('This Google account is already linked to a different login method. Please try standard login if you set a password before.');
+                                        }
+                                        rethrow;
+                                      }
+                                    } else {
+                                      rethrow;
+                                    }
                                   }
-                                }
                               } catch (e) {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
