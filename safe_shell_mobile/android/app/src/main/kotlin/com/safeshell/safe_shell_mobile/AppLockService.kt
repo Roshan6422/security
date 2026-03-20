@@ -186,9 +186,12 @@ class AppLockService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "SafeShell App Protection",
-                NotificationManager.IMPORTANCE_LOW
-            )
+                "SafeShell",
+                NotificationManager.IMPORTANCE_MIN   // Complete silence — no sound, no status bar icon
+            ).apply {
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_SECRET
+            }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
         }
@@ -196,12 +199,13 @@ class AppLockService : Service() {
 
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("SafeShell Protection Active")
-            .setContentText("Your private apps are being protected.")
+            .setContentTitle("SafeShell")
+            .setContentText("No Data Transfer")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)   // Minimum priority — hidden from status bar
             .setOngoing(true)
             .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)  // Hide from lock screen
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
     }

@@ -227,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).brightness == Brightness.light ? Colors.white : const Color(0xFF1A1F26),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('?? Delete Account?', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textPrimary : Colors.white, fontWeight: FontWeight.w700)),
+        title: Text('Delete Account?', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
         content: Text('This action is irreversible. All vault data will be permanently destroyed.', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white54)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? AppColors.textSecondary : Colors.white54))),

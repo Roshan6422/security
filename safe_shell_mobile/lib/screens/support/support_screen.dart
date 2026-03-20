@@ -22,11 +22,16 @@ class SupportScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('How can we help?', style: AppTextStyles.display.copyWith(color: textColor, fontSize: 32)),
+            Text('How can we help?', style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            )),
             const SizedBox(height: 16),
             Text(
               'If you have questions about your account, security, or subscription, our team is here to assist you.',
-              style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70),
+              style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 40),
             _buildSupportOption(

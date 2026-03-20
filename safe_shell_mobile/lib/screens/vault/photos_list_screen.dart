@@ -88,7 +88,10 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Connection failed. Check backend status.');
+        final errMsg = e.toString().contains('TimeoutException')
+            ? 'Request timed out. Please check your connection.'
+            : 'Failed to load. Check your connection and try again.';
+        _showError(errMsg);
       }
     }
   }
