@@ -91,6 +91,7 @@ func main() {
 		api.POST("/vault/delete-batch", vaultHandler.DeleteBatch)
 		api.DELETE("/vault/:id", vaultHandler.DeleteVaultItem)
 		api.POST("/vault/restore/:id", vaultHandler.RestoreVaultItem)
+		api.POST("/vault/:id/restore", vaultHandler.RestoreVaultItem)
 		api.DELETE("/vault/empty-bin", vaultHandler.EmptyRecycleBin)
 
 		// Payment

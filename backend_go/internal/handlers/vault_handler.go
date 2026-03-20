@@ -54,10 +54,31 @@ func (h *VaultHandler) DeleteVaultItem(c *gin.Context) {
 		return
 	}
 
-	_, err = itemRef.Update(ctx, []firestore.Update{
-		{Path: "isDeleted", Value: true},
-		{Path: "updatedAt", Value: time.Now()},
-	})
+	isDeleted := c.DefaultQuery("permanent", "false") == "false"
+
+	if isDeleted {
+		_, err = itemRef.Update(ctx, []firestore.Update{
+			{Path: "isDeleted", Value: true},
+			{Path: "updatedAt", Value: time.Now()},
+		})
+	} else {
+		// Permanent Delete
+		// 1. Get data to find storage path
+		data := doc.Data()
+		storagePath, _ := data["path"].(string)
+
+		// 2. Delete from Firestore
+		_, err = itemRef.Delete(ctx)
+
+		// 3. Delete from Storage if path exists
+		if err == nil && storagePath != "" {
+			bucketName := h.FirebaseSvc.Config.StorageBucket
+			bucket, err := h.FirebaseSvc.Storage.Bucket(bucketName)
+			if err == nil {
+				_ = bucket.Object(storagePath).Delete(ctx)
+			}
+		}
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete item"})
 		return
@@ -613,11 +634,12 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 	userIdVal, _ := c.Get("userId")
 	userId := userIdVal.(string)
 	itemType := c.Query("type")
+	isDeletedQuery := c.DefaultQuery("isDeleted", "false") == "true"
 	ctx := c.Request.Context()
 
 	query := h.FirebaseSvc.Firestore.Collection("vault").
 		Where("userId", "==", userId).
-		Where("isDeleted", "==", false)
+		Where("isDeleted", "==", isDeletedQuery)
 
 	if itemType != "" {
 		query = query.Where("type", "==", itemType)
