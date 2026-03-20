@@ -103,6 +103,8 @@ func main() {
 			admin.GET("/users", adminHandler.GetAllUsers)
 			admin.PATCH("/users/:id/status", adminHandler.UpdateUserStatus)
 			admin.PATCH("/users/:id/subscription", adminHandler.UpdateUserSubscription)
+			admin.PATCH("/users/:id/role", adminHandler.UpdateUserRole)
+			admin.DELETE("/users/:id", adminHandler.DeleteUser)
 		}
 	}
 

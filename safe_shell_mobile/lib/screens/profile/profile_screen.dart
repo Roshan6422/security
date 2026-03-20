@@ -417,7 +417,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildBadge('?? AES-256', const Color(0xFF4DA3FF)),
+            _buildBadge('🔒 AES-256', const Color(0xFF4DA3FF)),
             const SizedBox(width: 8),
             _buildBadge('$_daysActive days', const Color(0xFF10B981)),
             const SizedBox(width: 8),

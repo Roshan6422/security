@@ -18,17 +18,12 @@ import 'package:backend_dart/handlers/device_handler.dart';
 import 'package:backend_dart/handlers/audit_handler.dart';
 
 Future<void> main() async {
+  print('🔥 SAFESHELL LEGENDARY 2000-PASS SYSTEM ACTIVE 🔥');
   print('🚀 Backend starting up...');
-  // Load environment variables from .env file
-  try {
-    env.load();
-  } catch (e) {
-    print('ℹ️  Note: .env file not found, using system environment variables.');
-  }
 
   // ── Initialize Firebase ────────────────────────────────────────────
   print('ℹ️  Available Environment Variables: ${Platform.environment.keys.join(", ")}');
-  // await FirebaseConfig.initialize();
+  await FirebaseConfig.initialize();
 
   // ── Ensure uploads directory exists ────────────────────────────────
   final uploadsDir = Directory(Env.uploadsPath);
@@ -62,6 +57,7 @@ Future<void> main() async {
 
   // Health check
   app.get('/api/health', (Request request) {
+    final b64 = Env.firebaseServiceAccountBase64;
     return Response.ok(
         jsonEncode({
           'status': 'OK',
@@ -69,6 +65,11 @@ Future<void> main() async {
           'firebase': FirebaseConfig.isInitialized
               ? 'connected'
               : 'in-memory mode',
+          'diag': {
+            'has_env': b64 != null,
+            'env_length': b64?.length ?? 0,
+            'project_active': FirebaseConfig.db != null,
+          }
         }),
         headers: {'content-type': 'application/json'});
   });

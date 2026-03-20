@@ -79,7 +79,17 @@ class _NotesListScreenState extends State<NotesListScreen> {
       }
     } catch (e) {
       debugPrint('Fetch error: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().contains('TimeoutException')
+                ? 'Request timed out. Check your connection.'
+                : 'Failed to load notes. Check your connection.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 

@@ -149,3 +149,65 @@ func (h *AdminHandler) UpdateUserSubscription(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User subscription updated"})
 }
+
+func (h *AdminHandler) UpdateUserRole(c *gin.Context) {
+	userId := c.Param("id")
+	var req struct {
+		Role string `json:"role"` // "admin" or "user"
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Role != "admin" && req.Role != "user" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "role must be 'admin' or 'user'"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	_, err := h.FirebaseSvc.Firestore.Collection("users").Doc(userId).Update(ctx, []firestore.Update{
+		{Path: "role", Value: req.Role},
+		{Path: "updatedAt", Value: time.Now()},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user role"})
+		return
+	}
+
+	adminId, _ := c.Get("userId")
+	h.AuditSvc.LogEvent(ctx, adminId.(string), "admin_user_role", "Updated role for user: "+userId, map[string]interface{}{"role": req.Role})
+
+	// Return updated user data
+	doc, _ := h.FirebaseSvc.Firestore.Collection("users").Doc(userId).Get(ctx)
+	var updatedUser map[string]interface{}
+	if doc != nil {
+		updatedUser = doc.Data()
+		delete(updatedUser, "recoveryKey")
+		delete(updatedUser, "userKey")
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "User role updated", "user": updatedUser})
+}
+
+func (h *AdminHandler) DeleteUser(c *gin.Context) {
+	userId := c.Param("id")
+	ctx := c.Request.Context()
+
+	// Delete from Firestore
+	_, err := h.FirebaseSvc.Firestore.Collection("users").Doc(userId).Delete(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user from database"})
+		return
+	}
+
+	// Delete from Firebase Auth
+	if authErr := h.FirebaseSvc.Auth.DeleteUser(ctx, userId); authErr != nil {
+		// Log but don't fail — user doc is already gone
+		c.JSON(http.StatusOK, gin.H{"message": "User data deleted (auth removal failed - may not exist)"})
+		return
+	}
+
+	adminId, _ := c.Get("userId")
+	h.AuditSvc.LogEvent(ctx, adminId.(string), "admin_user_delete", "Permanently deleted user: "+userId, nil)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User permanently deleted"})
+}

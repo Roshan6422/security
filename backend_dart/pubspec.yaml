@@ -1,6 +1,6 @@
 name: backend_dart
 description: SafeShell Backend - Dart/Shelf server.
-version: 1.0.0
+version: 1.0.1+legendary
 publish_to: none
 
 environment:

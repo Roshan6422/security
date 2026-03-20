@@ -86,7 +86,10 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
       debugPrint('Fetch error: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        _showError('Connection failed. Check backend status.');
+        final errMsg = e.toString().contains('TimeoutException')
+            ? 'Request timed out. Check your connection.'
+            : 'Failed to load documents. Check your connection.';
+        _showError(errMsg);
       }
     }
   }
@@ -176,7 +179,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
         if (mounted && successCount > 0) {
            SoundEffects.uploadSuccess();
            AuditLogger.logFileUpload('$successCount document(s)', 'document');
-           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Encrypted & Saved to Vault ??')));
+           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents encrypted & saved to vault ✓'), backgroundColor: const Color(0xFF10B981)));
            // Automatically delete originals
            _promptDeleteOriginals(result.files);
         }
@@ -354,7 +357,7 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
 
     if (mounted) {
        SoundEffects.unlockApp();
-       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents Saved to Downloads/SafeShell/Documents ??')));
+       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$successCount Documents saved to Downloads/SafeShell ✓'), backgroundColor: const Color(0xFF10B981)));
        setState(() {
          _isSelectionMode = false;
          _selectedIds.clear();
