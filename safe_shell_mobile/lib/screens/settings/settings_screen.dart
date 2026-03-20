@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool get _isPremium {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
-    return user?.subscriptionStatus == 'premium';
+    return user?.subscriptionStatus == 'pro';
   }
 
   void _showPremiumRequired() {

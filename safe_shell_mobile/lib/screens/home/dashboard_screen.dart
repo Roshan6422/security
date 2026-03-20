@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     int score = 60;
     if (user != null) score += 10;
     if (_fileCount > 0) score += 10;
-    if (user?.subscriptionStatus == 'premium') score += 10;
+    if (user?.subscriptionStatus == 'pro') score += 10;
     score += 10;
     return score.clamp(0, 100);
   }
@@ -337,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStorageCard(Color textColor, Color subColor) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final user = context.select<AuthProvider, model.User?>((a) => a.user);
-    final isPremium = user?.subscriptionStatus == 'premium';
+    final isPremium = user?.subscriptionStatus == 'pro';
     
     return Container(
       padding: const EdgeInsets.all(20),

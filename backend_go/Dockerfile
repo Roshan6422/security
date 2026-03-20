@@ -18,11 +18,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server/main.go
 # Run stage
 FROM alpine:latest
 
+# Copy binary from builder
 WORKDIR /app
-
-# Copy binary and credentials from builder
 COPY --from=builder /app/main .
-COPY --from=builder /app/firebase-credentials.json .
 
 # Expose port (Cloud Run/Koyeb will override this with PORT env var)
 EXPOSE 8000
