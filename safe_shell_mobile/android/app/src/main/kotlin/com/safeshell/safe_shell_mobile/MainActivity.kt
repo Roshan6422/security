@@ -32,6 +32,8 @@ class MainActivity: FlutterFragmentActivity() {
         private const val USB_CHANNEL = "com.safeshell.safe_shell_mobile/usb"
     }
 
+    private var pendingUsbPrompt = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
@@ -39,6 +41,10 @@ class MainActivity: FlutterFragmentActivity() {
         val target = intent?.getStringExtra("LOCK_TARGET")
         if (target != null) {
             pendingLockTarget = target
+        }
+        
+        if (intent?.getBooleanExtra("USB_PROMPT", false) == true) {
+            pendingUsbPrompt = true
         }
     }
 
@@ -57,6 +63,16 @@ class MainActivity: FlutterFragmentActivity() {
                 channel.invokeMethod("showAppLock", mapOf("packageName" to target))
             } else {
                 pendingLockTarget = target
+            }
+        }
+        
+        if (intent.getBooleanExtra("USB_PROMPT", false)) {
+            val engine = flutterEngine
+            if (engine != null) {
+                val channel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
+                channel.invokeMethod("onUsbStatusChanged", mapOf("connected" to true, "forceShow" to true))
+            } else {
+                pendingUsbPrompt = true
             }
         }
     }
@@ -140,6 +156,12 @@ class MainActivity: FlutterFragmentActivity() {
                         pendingLockTarget = null
                         val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
                         channel.invokeMethod("showAppLock", mapOf("packageName" to target))
+                    }
+                    
+                    if (pendingUsbPrompt) {
+                        pendingUsbPrompt = false
+                        val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+                        channel.invokeMethod("onUsbStatusChanged", mapOf("connected" to true, "forceShow" to true))
                     }
                 }
                 "toggleScreenshot" -> {

@@ -174,7 +174,8 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
         break;
       case 'onUsbStatusChanged':
         final bool connected = call.arguments['connected'] ?? false;
-        _handleUsbEvent(connected);
+        final bool forceShow = call.arguments['forceShow'] ?? false;
+        _handleForcedUsbTrigger(connected, forceShow);
         break;
     }
   }
@@ -190,6 +191,31 @@ class _AppLockListenerWrapperState extends State<AppLockListenerWrapper> {
       if (!settings.usbAppsLocked) {
         await settings.onUsbConnected();
         if (context.mounted) _showUsbProtectionDialog(context);
+      }
+    } else {
+      if (settings.usbAppsLocked) {
+        await settings.onUsbDisconnected();
+        if (context.mounted) _showUsbDisconnectedSnackbar(context);
+      }
+    }
+  }
+
+  // Support for forced UI trigger (from background/external intent)
+  Future<void> _handleForcedUsbTrigger(bool connected, bool forceShow) async {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    if (!settings.usbDetectionEnabled) return;
+
+    if (connected) {
+      // Sync state if not already locked
+      if (!settings.usbAppsLocked) {
+        await settings.onUsbConnected();
+      }
+      // Always show dialog if forced
+      if (forceShow && context.mounted) {
+        _showUsbProtectionDialog(context);
       }
     } else {
       if (settings.usbAppsLocked) {

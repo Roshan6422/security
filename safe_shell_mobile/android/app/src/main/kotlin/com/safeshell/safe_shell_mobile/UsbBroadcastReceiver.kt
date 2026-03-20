@@ -33,9 +33,24 @@ class UsbBroadcastReceiver : BroadcastReceiver() {
             // Persist state so Flutter can read it on boot
             prefs.edit().putBoolean("usb_connected", isConnected).apply()
             
+            // IF USB IS CONNECTED and USB protection is ENABLED, bring app to foreground
+            val usbDetectionEnabled = prefs.getBoolean("usb_detection", false)
+            if (isConnected && usbDetectionEnabled) {
+                Log.d("SafeShellUSB", "USB Connected & Protection Enabled -> Triggering Activity")
+                val activityIntent = Intent(context, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra("USB_PROMPT", true)
+                }
+                context.startActivity(activityIntent)
+            }
+
             // Try to report to Flutter via static channel
             try {
-                MainActivity.stealthChannel?.invokeMethod("onUsbStatusChanged", mapOf("connected" to isConnected))
+                MainActivity.stealthChannel?.invokeMethod("onUsbStatusChanged", mapOf(
+                    "connected" to isConnected,
+                    "forceShow" to (isConnected && usbDetectionEnabled)
+                ))
                 Log.d("SafeShellUSB", "Reported to Flutter: $isConnected")
             } catch (e: Exception) {
                 Log.e("SafeShellUSB", "Failed to report to Flutter: ${e.message}")
