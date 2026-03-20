@@ -15,6 +15,7 @@ import '../../widgets/custom_text_field.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import '../settings/privacy_policy_screen.dart';
+import '../settings/terms_of_service_screen.dart';
 import '../../security/key_manager.dart';
 import '../../services/audit_logger.dart';
 

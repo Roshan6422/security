@@ -104,6 +104,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
   }
 
   Widget _buildBottomBar() {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return GlassCard(
       borderRadius: 0,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),

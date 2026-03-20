@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -13,6 +14,7 @@ import '../services/network_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
   bool _isLoading = false;
   bool _isProcessingAuth = false; // Security Pass 251: Concurrency Guard
   final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
@@ -53,6 +55,8 @@ class AuthProvider with ChangeNotifier {
               await logout();
               return;
             }
+
+            _setupUserListener(currentUser.uid, token);
 
             // Update cache
             await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
@@ -436,6 +440,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _userSubscription?.cancel();
     _user = null;
     await _storage.delete(key: AppConstants.keyToken);
     await _storage.delete(key: _profileCacheKey); // Security Pass 601: Clear cache on logout
@@ -465,6 +470,8 @@ class AuthProvider with ChangeNotifier {
       throw Exception('Your account has been suspended by an administrator.');
     }
 
+    _setupUserListener(_user!.id, token);
+
     await _storage.write(key: AppConstants.keyToken, value: token);
     
     // Cache profile for offline/turbo startup
@@ -492,5 +499,39 @@ class AuthProvider with ChangeNotifier {
     // Cache profile for offline/turbo startup
     await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
     notifyListeners();
+  }
+
+  void _setupUserListener(String uid, String token) {
+    _userSubscription?.cancel();
+    _userSubscription = _firestore.collection('users').doc(uid).snapshots().listen((snapshot) async {
+      if (!snapshot.exists) {
+        if (kDebugMode) debugPrint('AuthProvider: User document deleted. Logging out.');
+        await logout();
+        return;
+      }
+
+      final data = snapshot.data()!;
+      data['_id'] = uid;
+      data['token'] = token;
+
+      // Preserve userKey if it was set locally but cache on server isn't updated
+      if (_user?.userKey != null && data['userKey'] == null) {
+        data['userKey'] = _user!.userKey;
+      }
+
+      final updatedUser = User.fromJson(data);
+
+      if (updatedUser.isSuspended) {
+        if (kDebugMode) debugPrint('AuthProvider: User suspended externally. Logging out.');
+        await logout();
+        return;
+      }
+
+      _user = updatedUser;
+      await _storage.write(key: _profileCacheKey, value: jsonEncode(_user!.toJson()));
+      notifyListeners();
+    }, onError: (error) {
+      if (kDebugMode) debugPrint('AuthProvider: Firestore snapshot error: $error');
+    });
   }
 }
