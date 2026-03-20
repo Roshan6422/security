@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -334,10 +335,12 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	}
 
 	// Security Pass 381: Atomic Upload & Record Creation
-	bucketName := "safeshell-bc471.firebasestorage.app"
+	// Mismatch Fix: Use the correct bucket name from firebase_options.dart
+	bucketName := "safeshell-app.firebasestorage.app"
 	bucket, err := h.FirebaseSvc.Storage.Bucket(bucketName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage bucket not found"})
+		log.Printf("Storage Error: Bucket %s not found: %v", bucketName, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage configuration error"})
 		return
 	}
 
