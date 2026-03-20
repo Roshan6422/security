@@ -14,4 +14,4 @@ instance_types:
 build:
   docker:
     dockerfile: backend_go/Dockerfile
-    context: backend_go/
+    context: .
