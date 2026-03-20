@@ -11,27 +11,36 @@ import { User } from '../types';
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [search, setSearch] = useState("");
     const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
             const res = await axios.get(`${getBaseUrl()}/api/admin/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUsers(res.data);
+            setLastUpdated(new Date());
         } catch (err) {
             console.error(err);
         } finally {
-            setLoading(false);
+            if (!isSilent) setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchUsers();
+
+        const interval = setInterval(() => {
+            fetchUsers(true); // Silent refresh
+        }, 60000); // 60 seconds
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleAction = async (userId: string, type: 'status' | 'subscription' | 'role', value: boolean | string) => {
@@ -101,18 +110,23 @@ export default function UsersPage() {
     return (
         <div className="space-y-6 pt-6" onClick={() => setActiveMenu(null)}>
             {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-3xl font-bold text-white tracking-tight">User Management</h2>
-                    <p className="text-slate-400 mt-1">Manage and monitor all registered users</p>
+                    <p className="text-slate-400 mt-1">Total {users.length} registered users</p>
                 </div>
-                <button
-                    onClick={(e) => { e.stopPropagation(); setShowAddModal(true); }}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-500/25 active:scale-95"
-                >
-                    <UserIcon size={18} />
-                    Add New User
-                </button>
+                <div className="flex items-center gap-4">
+                    <div className="text-slate-500 text-xs px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                        Last updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setShowAddModal(true); }}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center gap-2"
+                    >
+                        <Zap size={18} />
+                        Add User
+                    </button>
+                </div>
             </div>
 
             {/* Stats Row */}
@@ -192,7 +206,7 @@ export default function UsersPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredUsers.map((user, index) => (
+                                    filteredUsers.map((user) => (
                                         <motion.tr
                                             key={user._id}
                                             initial={{ opacity: 0, y: 10 }}

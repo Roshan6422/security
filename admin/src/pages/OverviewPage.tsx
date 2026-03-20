@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { getBaseUrl } from '../utils/api';
 
 export default function OverviewPage() {
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalRevenue: 0,
@@ -14,56 +15,65 @@ export default function OverviewPage() {
     });
     const [loading, setLoading] = useState(true);
 
+    const fetchStats = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const headers = { Authorization: `Bearer ${token}` };
+
+            // Use the new optimized stats endpoint
+            const res = await axios.get(`${getBaseUrl()}/api/admin/stats`, { headers });
+            const { totalUsers, totalRevenue, activeTickets, recentActivity, payments } = res.data;
+
+            // Calculate chart data from return payments
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (6 - i));
+                return {
+                    name: days[d.getDay()],
+                    fullName: d.toLocaleDateString(),
+                    amount: 0,
+                    rawDate: d
+                };
+            });
+
+            payments.forEach((p: any) => {
+                const pDate = new Date(p.date);
+                const dayMatch = last7Days.find(d =>
+                    d.rawDate.getDate() === pDate.getDate() &&
+                    d.rawDate.getMonth() === pDate.getMonth() &&
+                    d.rawDate.getFullYear() === pDate.getFullYear()
+                );
+                if (dayMatch) {
+                    dayMatch.amount += p.amount;
+                }
+            });
+
+            setRealChartData(last7Days);
+
+            setStats({
+                totalUsers,
+                totalRevenue,
+                activeTickets,
+                recentActivity
+            });
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error(err);
+        } finally {
+            if (!isSilent) setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const headers = { Authorization: `Bearer ${token}` };
-
-                // Use the new optimized stats endpoint
-                const res = await axios.get(`${getBaseUrl()}/api/admin/stats`, { headers });
-                const { totalUsers, totalRevenue, activeTickets, recentActivity, payments } = res.data;
-
-                // Calculate chart data from return payments
-                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                const last7Days = [...Array(7)].map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (6 - i));
-                    return {
-                        name: days[d.getDay()],
-                        fullName: d.toLocaleDateString(),
-                        amount: 0,
-                        rawDate: d
-                    };
-                });
-
-                payments.forEach((p: any) => {
-                    const pDate = new Date(p.date);
-                    const dayMatch = last7Days.find(d =>
-                        d.rawDate.getDate() === pDate.getDate() &&
-                        d.rawDate.getMonth() === pDate.getMonth() &&
-                        d.rawDate.getFullYear() === pDate.getFullYear()
-                    );
-                    if (dayMatch) {
-                        dayMatch.amount += p.amount;
-                    }
-                });
-
-                setRealChartData(last7Days);
-
-                setStats({
-                    totalUsers,
-                    totalRevenue,
-                    activeTickets,
-                    recentActivity
-                });
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStats();
+
+        const interval = setInterval(() => {
+            fetchStats(true); // Silent refresh
+        }, 30000); // 30 seconds
+
+        return () => clearInterval(interval);
     }, []);
 
     const [realChartData, setRealChartData] = useState<any[]>([]);
@@ -99,10 +109,16 @@ export default function OverviewPage() {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-slate-300"
+                    className="flex items-center gap-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium"
                 >
-                    <Calendar size={16} className="text-blue-400" />
-                    <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <div className="flex items-center gap-2 text-slate-300">
+                        <Calendar size={16} className="text-blue-400" />
+                        <span>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div className="w-px h-4 bg-white/10" />
+                    <div className="text-slate-500 text-xs">
+                        Last updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
                 </motion.div>
             </header>
 

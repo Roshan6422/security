@@ -9,6 +9,7 @@ import { SupportTicket, TicketReply } from '../types';
 export default function SupportPage() {
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [reply, setReply] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
@@ -16,22 +17,30 @@ export default function SupportPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
 
-    const fetchTickets = async () => {
+    const fetchTickets = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
         try {
             const token = localStorage.getItem('adminToken');
             const res = await axios.get(`${getBaseUrl()}/api/admin/tickets`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setTickets(res.data);
+            setLastUpdated(new Date());
         } catch (err) {
             console.error(err);
         } finally {
-            setLoading(false);
+            if (!isSilent) setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchTickets();
+
+        const interval = setInterval(() => {
+            fetchTickets(true); // Silent refresh
+        }, 60000); // 60 seconds
+
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -102,9 +111,14 @@ export default function SupportPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] gap-6 pt-6">
-            <header className="flex-shrink-0">
-                <h2 className="text-3xl font-bold text-white">Support Center</h2>
-                <p className="text-slate-400">Manage support tickets and inquiries</p>
+            <header className="flex-shrink-0 flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold text-white">Support Center</h2>
+                    <p className="text-slate-400">Manage support tickets and inquiries</p>
+                </div>
+                <div className="text-slate-500 text-xs px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                    Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
             </header>
 
             <div className="flex-1 glass-panel rounded-2xl border border-white/10 overflow-hidden flex shadow-2xl">

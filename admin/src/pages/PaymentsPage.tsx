@@ -19,6 +19,7 @@ interface BankData {
 export default function PaymentsPage() {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const [realChartData, setRealChartData] = useState<any[]>([]);
 
     // Bank account settings state
@@ -29,53 +30,61 @@ export default function PaymentsPage() {
     const [bankSaving, setBankSaving] = useState(false);
     const [bankSuccess, setBankSuccess] = useState(false);
 
+    const fetchPayments = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await axios.get(`${getBaseUrl()}/api/admin/payments`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setPayments(res.data);
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - (6 - i));
+                return { name: days[d.getDay()], amount: 0, rawDate: d };
+            });
+
+            res.data.forEach((p: Payment) => {
+                const pDate = new Date(p.date);
+                const dayMatch = last7Days.find((d: any) =>
+                    d.rawDate.getDate() === pDate.getDate() &&
+                    d.rawDate.getMonth() === pDate.getMonth() &&
+                    d.rawDate.getFullYear() === pDate.getFullYear()
+                );
+                if (dayMatch) dayMatch.amount += p.amount;
+            });
+            setRealChartData(last7Days);
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error(err);
+        } finally {
+            if (!isSilent) setLoading(false);
+        }
+    };
+
+    const fetchBankSettings = async () => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            const res = await axios.get(`${getBaseUrl()}/api/admin/bank-settings`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setBankData(res.data);
+        } catch (err) {
+            console.error('Failed to load bank settings:', err);
+        }
+    };
+
     useEffect(() => {
-        const fetchPayments = async () => {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await axios.get(`${getBaseUrl()}/api/admin/payments`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setPayments(res.data);
-
-                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                const last7Days = [...Array(7)].map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (6 - i));
-                    return { name: days[d.getDay()], amount: 0, rawDate: d };
-                });
-
-                res.data.forEach((p: Payment) => {
-                    const pDate = new Date(p.date);
-                    const dayMatch = last7Days.find(d =>
-                        d.rawDate.getDate() === pDate.getDate() &&
-                        d.rawDate.getMonth() === pDate.getMonth() &&
-                        d.rawDate.getFullYear() === pDate.getFullYear()
-                    );
-                    if (dayMatch) dayMatch.amount += p.amount;
-                });
-                setRealChartData(last7Days);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const fetchBankSettings = async () => {
-            try {
-                const token = localStorage.getItem('adminToken');
-                const res = await axios.get(`${getBaseUrl()}/api/admin/bank-settings`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setBankData(res.data);
-            } catch (err) {
-                console.error('Failed to load bank settings:', err);
-            }
-        };
-
         fetchPayments();
         fetchBankSettings();
+
+        const interval = setInterval(() => {
+            fetchPayments(true); // Silent refresh
+        }, 60000); // 60 seconds
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleSaveBank = async () => {
@@ -102,10 +111,15 @@ export default function PaymentsPage() {
                     <h2 className="text-3xl font-bold text-white tracking-tight">Payments & Transactions</h2>
                     <p className="text-slate-400 mt-1">Monitor revenue streams and financial data</p>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-all">
-                    <Download size={18} />
-                    <span className="font-medium">Export Report</span>
-                </button>
+                <div className="flex items-center gap-4">
+                    <div className="text-slate-500 text-xs px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                        Last updated: {lastUpdated.toLocaleTimeString()}
+                    </div>
+                    <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/10 transition-all">
+                        <Download size={18} />
+                        <span className="font-medium">Export Report</span>
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -323,7 +337,7 @@ export default function PaymentsPage() {
                         ) : payments.length === 0 ? (
                             <tr><td colSpan={6} className="p-8 text-center text-slate-500">No payments found</td></tr>
                         ) : (
-                            payments.map((payment, index) => (
+                            payments.map((payment) => (
                                 <motion.tr
                                     key={payment._id}
                                     initial={{ opacity: 0, y: 10 }}
