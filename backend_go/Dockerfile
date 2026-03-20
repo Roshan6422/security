@@ -20,11 +20,12 @@ FROM alpine:latest
 
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary and credentials from builder
 COPY --from=builder /app/main .
+COPY --from=builder /app/firebase-credentials.json .
 
-# Expose port (Cloud Run will override this with PORT env var)
-EXPOSE 8080
+# Expose port (Cloud Run/Koyeb will override this with PORT env var)
+EXPOSE 8000
 
 # Command to run
 CMD ["./main"]
