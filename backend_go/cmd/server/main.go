@@ -80,6 +80,7 @@ func main() {
 		api.POST("/auth/set-key-flag", authHandler.SetKeyFlag)
 
 		// Vault
+		api.GET("/vault", vaultHandler.ListVaultItems)
 		api.GET("/vault/stats", vaultHandler.GetStats)
 		api.GET("/vault/dashboard", vaultHandler.GetDashboard)
 		api.GET("/vault/recent", vaultHandler.GetRecent)

@@ -608,3 +608,37 @@ func (h *VaultHandler) DeleteBatch(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Items moved to recycle bin successfully"})
 }
+
+func (h *VaultHandler) ListVaultItems(c *gin.Context) {
+	userIdVal, _ := c.Get("userId")
+	userId := userIdVal.(string)
+	itemType := c.Query("type")
+	ctx := c.Request.Context()
+
+	query := h.FirebaseSvc.Firestore.Collection("vault").
+		Where("userId", "==", userId).
+		Where("isDeleted", "==", false)
+
+	if itemType != "" {
+		query = query.Where("type", "==", itemType)
+	}
+
+	iter := query.OrderBy("createdAt", firestore.Desc).Documents(ctx)
+
+	var items []map[string]interface{}
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch items"})
+			return
+		}
+		data := doc.Data()
+		data["_id"] = doc.Ref.ID
+		items = append(items, data)
+	}
+
+	c.JSON(http.StatusOK, items)
+}
