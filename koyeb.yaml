@@ -2,7 +2,8 @@ type: web
 name: safeshell-backend
 env:
   PORT: 8000
-  FIREBASE_SERVICE_ACCOUNT_BASE64: "" # Set in dashboard
+  BACKEND_TYPE: "GO_FINAL_V1"
+  FIREBASE_SERVICE_ACCOUNT_BASE64: ""
 routes:
   - path: /
     port: 8000
