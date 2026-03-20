@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"os"
 )
 
@@ -15,6 +16,9 @@ func NewConfig() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
+		log.Printf("No PORT environment variable found, defaulting to 8000")
+	} else {
+		log.Printf("Detected PORT from environment: %s", port)
 	}
 
 	return &Config{

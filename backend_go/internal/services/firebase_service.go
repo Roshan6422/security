@@ -24,6 +24,7 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 	ctx := context.Background()
 
 	// Load credentials
+	log.Printf("Initializing Firebase...")
 	var opt option.ClientOption
 	if cfg.FirebaseServiceAccount != "" {
 		// Attempt to decode as base64 first
@@ -32,10 +33,11 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 			// If successful, use the decoded JSON
 			opt = option.WithCredentialsJSON(decoded)
 		} else {
-			// Otherwise assume it's already a JSON string
+			log.Printf("Using credentials from environment variable (FirebaseServiceAccount)")
 			opt = option.WithCredentialsJSON([]byte(cfg.FirebaseServiceAccount))
 		}
 	} else {
+		log.Printf("WARNING: No FIREBASE_SERVICE_ACCOUNT environment variable found, attempting to use firebase-credentials.json file")
 		opt = option.WithCredentialsFile("firebase-credentials.json")
 	}
 
