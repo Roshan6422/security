@@ -1,36 +1,30 @@
-# syntax=docker/dockerfile:1
-
-# ── Build stage ──────────────────────────────────────────────────────
-FROM dart:stable AS build
+# Build stage
+FROM golang:1.23.1-alpine AS builder
 
 WORKDIR /app
 
-# Copy backend dependencies
-COPY backend_dart/pubspec.* ./
-RUN dart pub get
+# Copy go mod and sum files
+COPY backend_go/go.mod backend_go/go.sum ./
 
-# Copy backend source
-COPY backend_dart/ .
-RUN dart pub get --offline
-RUN dart compile exe bin/server.dart -o bin/server
+# Download dependencies
+RUN go mod download
 
-# ── Runtime stage ────────────────────────────────────────────────────
-FROM debian:bookworm-slim
+# Copy source code
+COPY backend_go/ .
 
-# Install minimal runtime dependencies
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server/main.go
+
+# Run stage
+FROM alpine:latest
 
 WORKDIR /app
 
-# Copy compiled binary
-COPY --from=build /app/bin/server /app/bin/server
-RUN chmod +x /app/bin/server
+# Copy binary from builder
+COPY --from=builder /app/main .
 
-# Create data directories
-RUN mkdir -p /app/data/uploads
+# Expose port (Cloud Run will override this with PORT env var)
+EXPOSE 8080
 
-EXPOSE 8000
-
-ENV PORT=8000
-
-CMD ["/app/bin/server"]
+# Command to run
+CMD ["./main"]
