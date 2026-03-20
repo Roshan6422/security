@@ -8,6 +8,7 @@ type Config struct {
 	Port                   string
 	FirebaseServiceAccount string
 	StorageMode            string // "local" or "firebase"
+	FirebaseAPIKey         string
 }
 
 func NewConfig() *Config {
@@ -20,7 +21,16 @@ func NewConfig() *Config {
 		Port:                   port,
 		FirebaseServiceAccount: getFirebaseAccount(),
 		StorageMode:            os.Getenv("STORAGE_MODE"),
+		FirebaseAPIKey:         getEnvOrDefault("FIREBASE_API_KEY", "AIzaSyDbC1yBxLYJHa1SqlkrY1xK6lo-M7VhsoQ"),
 	}
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultValue
+	}
+	return val
 }
 
 func getFirebaseAccount() string {

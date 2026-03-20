@@ -9,6 +9,10 @@ import (
 	"github.com/Roshan6422/security/backend_go/internal/services"
 	"github.com/gin-gonic/gin"
 	"os"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 )
 
 type AuthHandler struct {
@@ -36,6 +40,117 @@ func (h *AuthHandler) FirebaseLogin(c *gin.Context) {
 
 func (h *AuthHandler) FirebaseRegister(c *gin.Context) {
 	h.handleSync(c)
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email and password are required"})
+		return
+	}
+
+	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s", h.FirebaseSvc.Config.FirebaseAPIKey)
+	payload, _ := json.Marshal(map[string]interface{}{
+		"email":             req.Email,
+		"password":          req.Password,
+		"returnSecureToken": true,
+	})
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to auth service"})
+		return
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		json.Unmarshal(body, &errResp)
+		msg := errResp.Error.Message
+		if msg == "" { msg = "Authentication failed" }
+		c.JSON(resp.StatusCode, gin.H{"message": msg})
+		return
+	}
+
+	var authResp struct {
+		LocalId      string `json:"localId"`
+		IdToken      string `json:"idToken"`
+		RefreshToken string `json:"refreshToken"`
+	}
+	json.Unmarshal(body, &authResp)
+
+	// Fetch user details from Firestore
+	ctx := c.Request.Context()
+	doc, err := h.FirebaseSvc.Firestore.Collection("users").Doc(authResp.LocalId).Get(ctx)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User profile not found. Please sync first."})
+		return
+	}
+
+	userData := doc.Data()
+	userData["token"] = authResp.IdToken
+	userData["id"] = authResp.LocalId
+	userData["_id"] = authResp.LocalId
+
+	c.JSON(http.StatusOK, userData)
+}
+
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	params := (&auth.UserToCreate{}).
+		Email(req.Email).
+		Password(req.Password).
+		DisplayName(req.Name)
+
+	u, err := h.FirebaseSvc.Auth.CreateUser(ctx, params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user in Firebase: " + err.Error()})
+		return
+	}
+
+	// Create Firestore profile (Default to admin for web registration in this context)
+	recoveryKey := services.GenerateRandomString(16)
+	userData := map[string]interface{}{
+		"_id":                u.UID,
+		"id":                 u.UID,
+		"email":              req.Email,
+		"name":               req.Name,
+		"role":               "admin", // Set as admin by default for this handler
+		"subscriptionStatus": "premium",
+		"isSuspended":        false,
+		"recoveryKey":        recoveryKey,
+		"createdAt":          time.Now(),
+		"updatedAt":          time.Now(),
+	}
+
+	_, err = h.FirebaseSvc.Firestore.Collection("users").Doc(u.UID).Set(ctx, userData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user profile in Firestore"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Registration successful",
+		"user":    userData,
+	})
 }
 
 func (h *AuthHandler) handleSync(c *gin.Context) {

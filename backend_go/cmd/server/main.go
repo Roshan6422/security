@@ -65,6 +65,8 @@ func main() {
 		authPublic.POST("/forgot-password", authHandler.ForgotPassword)
 		authPublic.POST("/verify-otp", authHandler.VerifyOTP)
 		authPublic.POST("/reset-password", authHandler.ResetPassword)
+		authPublic.POST("/login", authHandler.Login)
+		authPublic.POST("/register", authHandler.Register)
 	}
 
 	// Auth Protected Routes
