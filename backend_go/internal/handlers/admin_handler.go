@@ -132,7 +132,10 @@ func (h *AdminHandler) UpdateUserSubscription(c *gin.Context) {
 	}
 
 	userData := doc.Data()
-	currentExpiry, _ := userData["subscriptionExpiry"].(time.Time)
+	var currentExpiry time.Time
+	if expiryVal, ok := userData["subscriptionExpiry"].(time.Time); ok {
+		currentExpiry = expiryVal
+	}
 
 	updates := []firestore.Update{
 		{Path: "subscriptionStatus", Value: req.Status},
