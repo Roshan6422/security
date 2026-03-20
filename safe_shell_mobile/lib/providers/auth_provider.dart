@@ -322,8 +322,7 @@ class AuthProvider with ChangeNotifier {
         throw Exception('Backend Google sync failed');
       }
 
-      // Rollback is handled by logout if needed, but deleting the user is too aggressive
-      // as it might be an existing account.
+    } catch (e) {
       throw Exception('Google Sign-In failed: $e');
     } finally {
       _isLoading = false;
