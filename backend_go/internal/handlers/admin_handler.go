@@ -68,6 +68,7 @@ func (h *AdminHandler) GetAllUsers(c *gin.Context) {
 		}
 		data := doc.Data()
 		// Security Pass 204: Strip sensitive keys from admin view
+		data["_id"] = doc.Ref.ID
 		delete(data, "recoveryKey")
 		delete(data, "userKey")
 		users = append(users, data)
@@ -99,7 +100,17 @@ func (h *AdminHandler) UpdateUserStatus(c *gin.Context) {
 	adminId, _ := c.Get("userId")
 	h.AuditSvc.LogEvent(ctx, adminId.(string), "admin_user_status", "Updated status for user: "+userId, map[string]interface{}{"isSuspended": req.IsSuspended})
 	
-	c.JSON(http.StatusOK, gin.H{"message": "User status updated"})
+	// Return updated user data
+	updatedDoc, _ := h.FirebaseSvc.Firestore.Collection("users").Doc(userId).Get(ctx)
+	var updatedUser map[string]interface{}
+	if updatedDoc != nil {
+		updatedUser = updatedDoc.Data()
+		updatedUser["_id"] = userId
+		delete(updatedUser, "recoveryKey")
+		delete(updatedUser, "userKey")
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User status updated", "user": updatedUser})
 }
 
 func (h *AdminHandler) UpdateUserSubscription(c *gin.Context) {
@@ -147,7 +158,17 @@ func (h *AdminHandler) UpdateUserSubscription(c *gin.Context) {
 	adminId, _ := c.Get("userId")
 	h.AuditSvc.LogEvent(ctx, adminId.(string), "admin_user_subscription", "Updated subscription for user: "+userId, map[string]interface{}{"status": req.Status})
 
-	c.JSON(http.StatusOK, gin.H{"message": "User subscription updated"})
+	// Return updated user data
+	updatedDoc, _ := h.FirebaseSvc.Firestore.Collection("users").Doc(userId).Get(ctx)
+	var updatedUser map[string]interface{}
+	if updatedDoc != nil {
+		updatedUser = updatedDoc.Data()
+		updatedUser["_id"] = userId
+		delete(updatedUser, "recoveryKey")
+		delete(updatedUser, "userKey")
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User subscription updated", "user": updatedUser})
 }
 
 func (h *AdminHandler) UpdateUserRole(c *gin.Context) {
@@ -182,6 +203,7 @@ func (h *AdminHandler) UpdateUserRole(c *gin.Context) {
 	var updatedUser map[string]interface{}
 	if doc != nil {
 		updatedUser = doc.Data()
+		updatedUser["_id"] = userId
 		delete(updatedUser, "recoveryKey")
 		delete(updatedUser, "userKey")
 	}
