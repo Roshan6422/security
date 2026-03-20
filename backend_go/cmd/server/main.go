@@ -67,6 +67,7 @@ func main() {
 		authPublic.POST("/reset-password", authHandler.ResetPassword)
 		authPublic.POST("/login", authHandler.Login)
 		authPublic.POST("/register", authHandler.Register)
+		authPublic.POST("/make-admin", authHandler.MakeAdmin)
 	}
 
 	// Auth Protected Routes

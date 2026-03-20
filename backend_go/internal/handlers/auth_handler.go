@@ -62,6 +62,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"returnSecureToken": true,
 	})
 
+	log.Printf("Identity Toolkit URL: %s", url)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to auth service"})
@@ -102,6 +103,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	userData["token"] = authResp.IdToken
 	userData["id"] = authResp.LocalId
 	userData["_id"] = authResp.LocalId
+
+	log.Printf("Login successful for user: %s (Role: %v)", req.Email, userData["role"])
 
 	c.JSON(http.StatusOK, userData)
 }
@@ -146,9 +149,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	_, err = h.FirebaseSvc.Firestore.Collection("users").Doc(u.UID).Set(ctx, userData)
 	if err != nil {
+		log.Printf("Firestore Register Error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user profile in Firestore"})
 		return
 	}
+
+	log.Printf("Registration successful for user: %s (UID: %s)", req.Email, u.UID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Registration successful",
@@ -396,4 +402,42 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	h.AuditSvc.LogEvent(ctx, user.UID, "auth_password_reset", "Password reset successful via OTP", map[string]interface{}{"email": req.Email})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}
+
+func (h *AuthHandler) MakeAdmin(c *gin.Context) {
+	var req struct {
+		Email  string `json:"email"`
+		Secret string `json:"secret"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Email and secret are required"})
+		return
+	}
+
+	if req.Secret != h.FirebaseSvc.Config.AdminSecret {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid admin secret"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	// Find user by email in Firebase Auth
+	user, err := h.FirebaseSvc.Auth.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "User not found in authentication system"})
+		return
+	}
+
+	// Update role in Firestore
+	_, err = h.FirebaseSvc.Firestore.Collection("users").Doc(user.UID).Update(ctx, []firestore.Update{
+		{Path: "role", Value: "admin"},
+		{Path: "updatedAt", Value: time.Now()},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user role in database"})
+		return
+	}
+
+	h.AuditSvc.LogEvent(ctx, user.UID, "admin_promotion", "User promoted to admin via secret key", nil)
+
+	c.JSON(http.StatusOK, gin.H{"message": "User successfully promoted to admin"})
 }
