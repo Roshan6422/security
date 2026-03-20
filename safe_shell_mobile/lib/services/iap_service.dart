@@ -89,7 +89,7 @@ class IAPService {
 
   Future<void> _verifySubscriptionOnBackend(PurchaseDetails purchaseDetails) async {
     final user = _authProvider?.user;
-    if (user == null || user.token.isEmpty) return;
+    if (user == null || (user.token?.isEmpty ?? true)) return;
 
     try {
       final String purchaseToken = purchaseDetails.verificationData.serverVerificationData;

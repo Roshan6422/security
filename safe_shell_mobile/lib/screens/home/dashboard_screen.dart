@@ -16,7 +16,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/user.dart' as model;
 import 'security_logs_screen.dart';
 import '../vault/vault_screen.dart';
-import '../settings/support_screen.dart';
+import '../support/support_screen.dart';
 import '../calculator/calculator_screen.dart';
 import '../browser/private_browser_screen.dart';
 import '../analytics/analytics_screen.dart';
@@ -135,6 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
+    _recentItems.clear(); // Explicit clear for memory
     super.dispose();
   }
 
@@ -1131,7 +1132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pop(ctx, true);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
@@ -1328,23 +1332,7 @@ class _ScaleTapWidget extends StatefulWidget {
   State<_ScaleTapWidget> createState() => _ScaleTapWidgetState();
 }
 
-class _ScaleTapWidgetState extends State<_ScaleTapWidget> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(duration: const Duration(milliseconds: 120), vsync: this);
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _ScaleTapWidgetState extends State<_ScaleTapWidget> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

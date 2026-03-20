@@ -1,0 +1,6 @@
+bin/
+server.exe
+firebase-credentials.json
+.git/
+.vscode/
+.gemini/

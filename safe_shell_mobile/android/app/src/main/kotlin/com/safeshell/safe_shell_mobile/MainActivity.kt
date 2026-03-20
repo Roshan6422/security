@@ -94,6 +94,26 @@ class MainActivity: FlutterFragmentActivity() {
                         result.error("INVALID_ARGUMENT", "Data is null", null)
                     }
                 }
+                "encryptStream" -> {
+                    val inputPath: String = call.argument<String>("inputPath") ?: ""
+                    val outputPath: String = call.argument<String>("outputPath") ?: ""
+                    try {
+                        KeystoreHelper.encryptStream(inputPath, outputPath)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("STREAM_ENCRYPT_FAILED", e.message, null)
+                    }
+                }
+                "decryptStream" -> {
+                    val inputPath: String = call.argument<String>("inputPath") ?: ""
+                    val outputPath: String = call.argument<String>("outputPath") ?: ""
+                    try {
+                        KeystoreHelper.decryptStream(inputPath, outputPath)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("STREAM_DECRYPT_FAILED", e.message, null)
+                    }
+                }
                 "enableStealth" -> {
                     StealthLauncher.enable(this)
                     result.success(null)
@@ -157,7 +177,7 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(prefs.getBoolean("usb_connected", false))
                 }
                 "setLockedApps" -> {
-                    val pkgList = call.argument<List<String>>("packages") ?: listOf()
+                    val pkgList: List<String> = call.argument<List<String>>("packages") ?: listOf()
                     setLockedApps(pkgList)
                     result.success(true)
                 }
@@ -192,7 +212,7 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(isMiui())
                 }
                 "requestOverlayPermission" -> {
-                    val packageName = call.argument<String>("packageName") ?: this.packageName
+                    val packageName: String = call.argument<String>("packageName") ?: this.packageName ?: ""
                     try {
                         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
                         startActivity(intent)

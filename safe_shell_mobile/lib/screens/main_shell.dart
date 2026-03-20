@@ -22,7 +22,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
-  DateTime? _pausedAt;
 
   final List<Widget> _screens = const [
     DashboardScreen(),
@@ -81,14 +80,33 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == _currentIndex) return;
+          
           debugPrint('BNAV_TAP: Navigating to index $index');
           HapticFeedback.selectionClick();
+          
           setState(() {
             _currentIndex = index;
             _initializedScreens[index] = true;
           });
+          
+          // Trigger memory optimization for background layers
+          _optimizeBackgroundMemory();
         },
       ),
     );
+  }
+
+  void _optimizeBackgroundMemory() {
+    // Phase 161: Micro-task for background memory dehydration
+    Future.microtask(() {
+      if (!mounted) return;
+      debugPrint('MEM_AUDIT: Dehydrating background screens...');
+      // Logic would typically involve notifying a MemoryController 
+      // or calling clear() on unused services. 
+      // For now, we clear the images cache when switching tabs
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    });
   }
 }

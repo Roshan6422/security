@@ -72,6 +72,22 @@ class EncryptionService {
     final int originalSize = await file.length();
     if (kDebugMode) debugPrint('EncryptionService: Encrypting file ($originalSize bytes) at $sourcePath');
 
+    // Security Pass 255/256: Native Streaming for files > 5MB
+    if (originalSize > 5 * 1024 * 1024 && !kIsWeb && Platform.isAndroid) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final vaultDir = Directory(p.join(appDir.path, 'vault_storage'));
+      if (!await vaultDir.exists()) await vaultDir.create(recursive: true);
+      
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final targetPath = p.join(vaultDir.path, 'enc_$timestamp.shell');
+      
+      await _nativeChannel.invokeMethod('encryptStream', {
+        'inputPath': sourcePath,
+        'outputPath': targetPath,
+      });
+      return targetPath;
+    }
+
     final clearText = await file.readAsBytes();
 
     late Uint8List finalBytes;
@@ -105,6 +121,21 @@ class EncryptionService {
   static Future<String> decryptFile(String encryptedPath) async {
     final encryptedFile = File(encryptedPath);
     if (!await encryptedFile.exists()) throw Exception('Encrypted file not found');
+
+    final int fileSize = await encryptedFile.length();
+
+    // Security Pass 256: Native Streaming Decryption for files > 5MB
+    if (fileSize > 5 * 1024 * 1024 && !kIsWeb && Platform.isAndroid && !encryptedPath.endsWith('.hw.shell')) {
+      final tempDir = await getTemporaryDirectory();
+      String tempFileName = p.basename(encryptedPath).replaceAll('.shell', '');
+      final tempPath = p.join(tempDir.path, 'dec_$tempFileName');
+      
+      await _nativeChannel.invokeMethod('decryptStream', {
+        'inputPath': encryptedPath,
+        'outputPath': tempPath,
+      });
+      return tempPath;
+    }
 
     final fileBytes = await encryptedFile.readAsBytes();
     late Uint8List clearText;
@@ -184,5 +215,41 @@ class EncryptionService {
   /// Clears the encryption key (Dangerous: makes all data unreadable)
   static Future<void> dangerousClearKey() async {
     await _storage.delete(key: _keyStorageKey);
+  }
+
+  /// Security Pass 254: Cleanup orphaned temporary or encrypted files
+  static Future<void> cleanupOrphanedFiles() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final appDir = await getApplicationDocumentsDirectory();
+      
+      // Cleanup temp dir
+      if (await tempDir.exists()) {
+        await for (var entity in tempDir.list()) {
+          if (entity is File && (entity.path.contains('dec_') || entity.path.contains('enc_'))) {
+            // If older than 2 hours, delete
+            final stat = await entity.stat();
+            if (DateTime.now().difference(stat.modified).inHours > 2) {
+              await entity.delete();
+            }
+          }
+        }
+      }
+
+      // Cleanup vault_storage for un-renamed 'enc_' files
+      final vaultDir = Directory(p.join(appDir.path, 'vault_storage'));
+      if (await vaultDir.exists()) {
+        await for (var entity in vaultDir.list()) {
+          if (entity is File && p.basename(entity.path).startsWith('enc_')) {
+             final stat = await entity.stat();
+             if (DateTime.now().difference(stat.modified).inHours > 2) {
+               await entity.delete();
+             }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('EncryptionService: Cleanup failed: $e');
+    }
   }
 }

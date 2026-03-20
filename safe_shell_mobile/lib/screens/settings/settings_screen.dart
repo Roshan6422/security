@@ -11,6 +11,7 @@ import '../profile/profile_screen.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import '../../services/encryption_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -672,6 +673,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const PrivacyPolicyScreen()));
+                }),
+                const SizedBox(height: 8),
+                _actionTile(Icons.description_rounded, 'Terms of Service',
+                    'Terms & Conditions', const Color(0xFF4DA3FF), () {
+                  HapticFeedback.selectionClick();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TermsOfServiceScreen()));
                 }),
                 const SizedBox(height: 8),
                 _actionTile(Icons.history_rounded, 'Restore Legacy Files',

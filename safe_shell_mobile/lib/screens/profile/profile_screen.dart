@@ -14,6 +14,48 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import '../../main.dart';
 
+class _ScaleTapProfile extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _ScaleTapProfile({required this.child, required this.onTap});
+
+  @override
+  State<_ScaleTapProfile> createState() => _ScaleTapProfileState();
+}
+
+class _ScaleTapProfileState extends State<_ScaleTapProfile> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
+    );
+  }
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -48,6 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -686,7 +730,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _actionTile(IconData icon, String title, String subtitle, Color color, VoidCallback onTap) {
-    return GestureDetector(
+    return _ScaleTapProfile(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -851,3 +895,4 @@ class _SubscriptionPlan extends StatelessWidget {
     );
   }
 }
+

@@ -29,7 +29,31 @@ class _VideosListScreenState extends State<VideosListScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchItems();
+    _loadCachedItems().then((_) => _fetchItems());
+  }
+
+  Future<void> _loadCachedItems() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      final cachedData = await storage.read(key: 'cached_videos_list');
+      if (cachedData != null && mounted) {
+        setState(() {
+          _items = jsonDecode(cachedData).cast<Map<String, dynamic>>();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Cache load error: $e');
+    }
+  }
+
+  Future<void> _saveItemsToCache() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      await storage.write(key: 'cached_videos_list', value: jsonEncode(_items));
+    } catch (e) {
+      debugPrint('Cache save error: $e');
+    }
   }
 
   Future<void> _fetchItems() async {
@@ -41,10 +65,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
-      final response = await NetworkService.client.get(
-        Uri.parse('${AppConstants.baseUrl}/vault?type=video'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await NetworkService.get('${AppConstants.baseUrl}/vault?type=video');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -56,6 +77,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+        _saveItemsToCache();
       } else {
         throw Exception('Failed to fetch from backend');
       }
@@ -246,23 +268,18 @@ class _VideosListScreenState extends State<VideosListScreen> {
       if (token == null) return;
 
       int failCount = 0;
-      for (final id in _selectedIds.toList()) {
-        try {
-          final response = await NetworkService.client.delete(
-            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
-            headers: {'Authorization': 'Bearer $token'},
-          );
-          if (response.statusCode != 200) {
-            failCount++;
-            debugPrint('Failed to delete $id: ${response.statusCode} ${response.body}');
-          } else {
-            final item = _items.firstWhere((i) => i['_id'] == id, orElse: () => null);
-            AuditLogger.logFileDelete(item?['name'] ?? 'video', 'video');
-          }
-        } catch (e) {
-          debugPrint('Delete $id failed: $e');
-          failCount++;
+      try {
+        final response = await NetworkService.post(
+          '${AppConstants.baseUrl}/vault/delete-batch',
+          {'ids': _selectedIds.toList()},
+        );
+
+        if (response.statusCode != 200) {
+          failCount = _selectedIds.length;
         }
+      } catch (e) {
+        debugPrint('Batch delete failed: $e');
+        failCount = _selectedIds.length;
       }
       SoundEffects.deleteAction();
       await _fetchItems();
@@ -301,10 +318,7 @@ class _VideosListScreenState extends State<VideosListScreen> {
       if (item != null && item['url'] != null) {
         try {
            final url = item['url'];
-           final response = await NetworkService.client.get(
-             Uri.parse(url),
-             headers: token != null ? {'Authorization': 'Bearer $token'} : {},
-           );
+           final response = await NetworkService.get(url);
            if (response.statusCode == 200) {
              final tempDir = await getTemporaryDirectory();
              final tempEncPath = '${tempDir.path}/temp_enc_$id.shell';

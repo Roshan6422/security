@@ -81,6 +81,7 @@ class FirebaseConfig {
   /// account key in the environment. Logs diagnostic information and
   /// falls back to in-memory mode on failure.
   static Future<void> initialize() async {
+    print('[FIREBASE] STARTING INITIALIZATION SEQUENCE...');
     final base64Key = Env.firebaseServiceAccountBase64;
 
     if (base64Key == null || base64Key.isEmpty) {
@@ -92,18 +93,31 @@ class FirebaseConfig {
     print('[FIREBASE] Found FIREBASE_SERVICE_ACCOUNT_BASE64 env variable');
 
     try {
-      // Robust cleaning: remove everything EXCEPT valid Base64 characters
-      final cleanBase64 = base64Key.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
-      print('[FIREBASE] Base64 length: ${base64Key.length} -> Cleaned length: ${cleanBase64.length}');
+      Map<String, dynamic>? serviceAccount;
 
-      final decodedBytes = base64Decode(cleanBase64);
-      final decodedJson = utf8.decode(decodedBytes);
-      print('[FIREBASE] Decoded JSON length: ${decodedJson.length}');
-      
-      // Validate JSON
-      final Map<String, dynamic> serviceAccount =
-          jsonDecode(decodedJson) as Map<String, dynamic>;
-      print('[FIREBASE] JSON parse successful');
+      // 1. Try parsing as raw JSON first
+      try {
+        print('[FIREBASE] Attempting to parse as raw JSON...');
+        final potentialJson = jsonDecode(base64Key);
+        if (potentialJson is Map<String, dynamic> && potentialJson.containsKey('project_id')) {
+          serviceAccount = potentialJson;
+          print('[FIREBASE] Valid raw JSON detected.');
+        }
+      } catch (_) {
+        print('[FIREBASE] Not a raw JSON string.');
+      }
+
+      // 2. If not raw JSON, try Base64
+      if (serviceAccount == null) {
+        print('[FIREBASE] Attempting Base64 decode...');
+        final cleanBase64 = base64Key.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
+        print('[FIREBASE] Cleaned length: ${cleanBase64.length}');
+        
+        final decodedBytes = base64Decode(cleanBase64);
+        final decodedJson = utf8.decode(decodedBytes);
+        serviceAccount = jsonDecode(decodedJson) as Map<String, dynamic>;
+        print('[FIREBASE] Valid Base64-encoded JSON detected.');
+      }
 
       final projectId = serviceAccount['project_id'] as String?;
       if (projectId == null) {
@@ -144,7 +158,8 @@ class FirebaseConfig {
       }
       
       // Write to a temporary file to satisfy Credential.fromServiceAccount(File)
-      final tempFile = File('service_account.json');
+      final tempPath = Platform.isWindows ? 'service_account.json' : '/tmp/service_account.json';
+      final tempFile = File(tempPath);
       await tempFile.writeAsString(jsonEncode(serviceAccount));
       
       print('[FIREBASE] Using Credential.fromServiceAccount with file: ${tempFile.path}');

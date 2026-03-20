@@ -7,6 +7,9 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.File
 
 object KeystoreHelper {
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
@@ -39,13 +42,13 @@ object KeystoreHelper {
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         val iv = cipher.iv                 // 12‑byte nonce
         val encrypted = cipher.doFinal(plain)
-        // store as:  iv || ciphertext
+        // store as:  iv + encrypted
         return iv + encrypted
     }
 
     fun decrypt(ciphertext: ByteArray): ByteArray {
         if (ciphertext.size < GCM_NONCE_LENGTH) {
-             throw IllegalArgumentException("Ciphertext too short")
+            throw IllegalArgumentException("Ciphertext too short")
         }
         val iv = ciphertext.copyOfRange(0, GCM_NONCE_LENGTH)
         val actualCipher = ciphertext.copyOfRange(GCM_NONCE_LENGTH, ciphertext.size)
@@ -54,5 +57,49 @@ object KeystoreHelper {
         val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
         return cipher.doFinal(actualCipher)
+    }
+
+    // Security Pass 255: Streaming Encryption for large files
+    fun encryptStream(inputPath: String, outputPath: String) {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        val secretKey = getOrCreateKey()
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+        
+        FileInputStream(inputPath).use { fis ->
+            java.io.FileOutputStream(outputPath).use { fos ->
+                fos.write(cipher.iv) // Write IV first
+                val buffer = ByteArray(64 * 1024)
+                var bytesRead: Int
+                while (fis.read(buffer).also { bytesRead = it } != -1) {
+                    val output = cipher.update(buffer, 0, bytesRead)
+                    if (output != null) fos.write(output)
+                }
+                val finalOutput = cipher.doFinal()
+                if (finalOutput != null) fos.write(finalOutput)
+            }
+        }
+    }
+
+    fun decryptStream(inputPath: String, outputPath: String) {
+        FileInputStream(inputPath).use { fis ->
+            val iv = ByteArray(GCM_NONCE_LENGTH)
+            if (fis.read(iv) != GCM_NONCE_LENGTH) throw Exception("Invalid IV branch")
+            
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val secretKey = getOrCreateKey()
+            val spec = GCMParameterSpec(GCM_TAG_LENGTH, iv)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+            
+            java.io.FileOutputStream(outputPath).use { fos ->
+                val buffer = ByteArray(64 * 1024)
+                var bytesRead: Int
+                while (fis.read(buffer).also { bytesRead = it } != -1) {
+                    val output = cipher.update(buffer, 0, bytesRead)
+                    if (output != null) fos.write(output)
+                }
+                val finalOutput = cipher.doFinal()
+                if (finalOutput != null) fos.write(finalOutput)
+            }
+        }
     }
 }

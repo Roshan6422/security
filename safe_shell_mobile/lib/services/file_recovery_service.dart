@@ -76,9 +76,13 @@ class FileRecoveryService {
               }
             }
 
-            // Copy to restored folder
-            await entity.copy(destinationPath);
-            await entity.delete();
+            // Atomic Move Pass 156: Try rename first, fallback to copy/delete
+            try {
+              await entity.rename(destinationPath);
+            } catch (_) {
+              await entity.copy(destinationPath);
+              await entity.delete();
+            }
             restoredCount++;
           } catch (e) {
             if (kDebugMode) debugPrint('FileRecoveryService: Error restoring ${entity.path}: $e');

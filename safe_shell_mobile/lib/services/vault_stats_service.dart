@@ -57,17 +57,20 @@ class VaultStats {
   };
 
   factory VaultStats.fromJson(Map<String, dynamic> json) {
+    // Security Pass 313: Support both legacy /stats and new /dashboard formats
+    final stats = json['stats'] ?? json;
+    final recent = json['recent'] as List<dynamic>? ?? [];
+
     return VaultStats(
-      totalCount: json['count'] ?? json['totalCount'] ?? 0,
-      photoCount: json['photoCount'] ?? 0,
-      videoCount: json['videoCount'] ?? 0,
-      docCount: json['docCount'] ?? 0,
-      noteCount: json['noteCount'] ?? 0,
-      audioCount: json['audioCount'] ?? 0,
-      zipCount: json['zipCount'] ?? 0,
-      totalSizeBytes: json['totalSize'] ?? json['totalSizeBytes'] ?? 0,
-      sizeFormatted: json['sizeFormatted'] ?? _formatSizeStatic(json['totalSize'] ?? 0),
-      recentItems: json['recentItems'] ?? [],
+      totalCount: stats['totalCount'] ?? 0,
+      photoCount: stats['photoCount'] ?? 0,
+      videoCount: stats['videoCount'] ?? 0,
+      docCount: stats['docCount'] ?? 0,
+      noteCount: stats['noteCount'] ?? 0,
+      audioCount: stats['audioCount'] ?? 0,
+      totalSizeBytes: stats['totalSize'] ?? stats['totalSizeBytes'] ?? 0,
+      sizeFormatted: stats['sizeFormatted'] ?? _formatSizeStatic(stats['totalSize'] ?? 0),
+      recentItems: recent,
     );
   }
 
@@ -111,13 +114,8 @@ class VaultStatsService {
 
   Future<VaultStats?> _fetchFresh() async {
     try {
-      final token = await _storage.read(key: AppConstants.keyToken);
-      if (token == null) return null;
-
-      final response = await NetworkService.client.get(
-        Uri.parse('${AppConstants.baseUrl}/vault/stats'),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(NetworkService.defaultTimeout);
+      // Security Pass 313: Use consolidated dashboard endpoint
+      final response = await NetworkService.get('${AppConstants.baseUrl}/vault/dashboard');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

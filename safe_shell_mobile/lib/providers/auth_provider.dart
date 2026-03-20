@@ -14,6 +14,7 @@ import '../services/network_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
+  bool _isProcessingAuth = false; // Security Pass 251: Concurrency Guard
   final _storage = const FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
@@ -25,6 +26,8 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   Future<void> checkAuth() async {
+    if (_isProcessingAuth) return;
+    _isProcessingAuth = true;
     try {
       final token = await _storage.read(key: AppConstants.keyToken);
       final currentUser = _firebaseAuth.currentUser;
@@ -36,7 +39,6 @@ class AuthProvider with ChangeNotifier {
           final data = jsonDecode(cachedProfile);
           data['token'] = token;
           _user = User.fromJson(data);
-          notifyListeners();
         }
 
         try {
@@ -75,8 +77,10 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('AuthProvider: Grand checkAuth error: $e');
+    } finally {
+      _isProcessingAuth = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> refreshUser() async {
@@ -146,7 +150,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String email, String password) async {
+    if (_isLoading || _isProcessingAuth) return;
     _isLoading = true;
+    _isProcessingAuth = true;
     notifyListeners();
     try {
       final cred = await _firebaseAuth.signInWithEmailAndPassword(
@@ -163,7 +169,10 @@ class AuthProvider with ChangeNotifier {
 
       final response = await NetworkService.client.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
         body: jsonEncode({'idToken': idToken}),
       ).timeout(NetworkService.defaultTimeout);
 
@@ -188,6 +197,7 @@ class AuthProvider with ChangeNotifier {
       rethrow;
     } finally {
       _isLoading = false;
+      _isProcessingAuth = false;
       notifyListeners();
     }
   }
@@ -195,7 +205,10 @@ class AuthProvider with ChangeNotifier {
   Future<void> _syncNewUserToBackend(auth.User user, String idToken) async {
      final response = await NetworkService.client.post(
         Uri.parse('${AppConstants.baseUrl}/auth/firebase-register'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
         body: jsonEncode({
           'idToken': idToken,
           'name': user.displayName ?? 'User',
@@ -210,7 +223,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> register(String name, String email, String password) async {
+    if (_isLoading || _isProcessingAuth) return;
     _isLoading = true;
+    _isProcessingAuth = true;
     notifyListeners();
     auth.UserCredential? cred;
     try {
@@ -230,7 +245,10 @@ class AuthProvider with ChangeNotifier {
 
       final response = await NetworkService.client.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
         body: jsonEncode({
           'idToken': idToken,
           'name': name,
@@ -250,17 +268,15 @@ class AuthProvider with ChangeNotifier {
     } on auth.FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Registration failed');
     } catch (e) {
-      // Rollback: if backend sync fails, delete the Firebase auth user so they aren't stuck
       if (cred != null && cred.user != null) {
         try {
           await cred.user!.delete();
-        } catch (_) {
-          // Ignore rollback errors
-        }
+        } catch (_) {}
       }
       rethrow;
     } finally {
       _isLoading = false;
+      _isProcessingAuth = false;
       notifyListeners();
     }
   }
@@ -268,7 +284,9 @@ class AuthProvider with ChangeNotifier {
 
 
   Future<void> signInWithGoogle() async {
+    if (_isLoading || _isProcessingAuth) return;
     _isLoading = true;
+    _isProcessingAuth = true;
     notifyListeners();
 
     try {
@@ -290,7 +308,10 @@ class AuthProvider with ChangeNotifier {
       // Sync with Koyeb Backend: firebase-login handles auto-registration (JIT provisioning)
       final response = await NetworkService.client.post(
         Uri.parse('${AppConstants.baseUrl}/auth/firebase-login'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
         body: jsonEncode({'idToken': idToken}),
       ).timeout(NetworkService.defaultTimeout);
 
@@ -311,6 +332,7 @@ class AuthProvider with ChangeNotifier {
       throw Exception('Google Sign-In failed: $e');
     } finally {
       _isLoading = false;
+      _isProcessingAuth = false;
       notifyListeners();
     }
   }
@@ -422,6 +444,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     _user = null;
     await _storage.delete(key: AppConstants.keyToken);
+    await _storage.delete(key: _profileCacheKey); // Security Pass 601: Clear cache on logout
     try {
       await _firebaseAuth.signOut();
       if (await _googleSignIn.isSignedIn()) {

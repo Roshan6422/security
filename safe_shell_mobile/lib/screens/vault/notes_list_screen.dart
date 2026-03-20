@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:safe_shell_mobile/core/theme.dart';
+import '../../utils/date_formatter.dart';
 import '../../widgets/glass_card.dart';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -24,7 +25,31 @@ class _NotesListScreenState extends State<NotesListScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchItems();
+    _loadCachedItems().then((_) => _fetchItems());
+  }
+
+  Future<void> _loadCachedItems() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      final cachedData = await storage.read(key: 'cached_notes_list');
+      if (cachedData != null && mounted) {
+        setState(() {
+          _items = jsonDecode(cachedData).cast<Map<String, dynamic>>();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Cache load error: $e');
+    }
+  }
+
+  Future<void> _saveItemsToCache() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      await storage.write(key: 'cached_notes_list', value: jsonEncode(_items));
+    } catch (e) {
+      debugPrint('Cache save error: $e');
+    }
   }
 
   Future<void> _fetchItems() async {
@@ -36,10 +61,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
-      final response = await NetworkService.client.get(
-        Uri.parse('${AppConstants.baseUrl}/vault?type=note'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await NetworkService.get('${AppConstants.baseUrl}/vault?type=note');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -51,6 +73,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+        _saveItemsToCache();
       } else {
         throw Exception('Failed to fetch from backend');
       }
@@ -112,22 +135,23 @@ class _NotesListScreenState extends State<NotesListScreen> {
     );
 
     if (confirmed == true) {
-       try {
+        try {
         const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
         final token = await storage.read(key: AppConstants.keyToken);
         if (token == null) return;
 
-        for (final id in _selectedIds) {
-          final response = await NetworkService.client.delete(
-            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
-            headers: {'Authorization': 'Bearer $token'},
-          );
-          if (response.statusCode == 200) {
-            final item = _items.firstWhere((i) => i['_id'].toString() == id, orElse: () => null);
-            AuditLogger.logNoteDelete(item?['name'] ?? 'note');
-          }
+        // Use high-speed Batch Delete endpoint
+        final response = await NetworkService.post(
+          '${AppConstants.baseUrl}/vault/delete-batch',
+          {'ids': _selectedIds.toList()},
+        );
+
+        if (response.statusCode == 200) {
+          AuditLogger.logNoteDelete('${_selectedIds.length} notes');
+          await _fetchItems();
+        } else {
+          throw Exception('Batch delete failed: ${response.statusCode}');
         }
-        await _fetchItems();
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
@@ -227,7 +251,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    item['updatedAt'] != null ? 'Edited just now' : 'Just now', 
+                                    DateFormatter.formatTimeAgo(item['updatedAt']), 
                                     style: AppTextStyles.caption.copyWith(fontSize: 10, color: captionColor),
                                   ),
                                 ],

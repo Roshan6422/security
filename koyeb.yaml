@@ -12,5 +12,5 @@ instance_types:
   - free
 build:
   docker:
-    dockerfile: Dockerfile
-    context: .
+    dockerfile: backend_go/Dockerfile
+    context: backend_go/

@@ -44,7 +44,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'If you have any questions, please contact support@safeshall.com',
+              'If you have any questions, please contact support@safeshell.io',
               style: AppTextStyles.body.copyWith(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 48),

@@ -21,36 +21,52 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/fcm_service.dart';
 
+import 'services/encryption_service.dart';
+
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final ValueNotifier<int> globalInteractionNotifier = ValueNotifier(0);
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Register FCM background handler BEFORE Firebase.initializeApp
-  // This is required for Firebase Messaging to work when app is terminated.
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // Catch Flutter Framework errors
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      if (kDebugMode) {
+        debugPrint('SafeShell: CRITICAL_UI_ERROR: ${details.exception}');
+      }
+      // In production, you would send this to Sentry/Crashlytics/Audit Log
+    };
 
-  // Turbo: run all initializations in parallel
-  await Future.wait([
-    _initFirebase(),
-    DevicePerformance.init(),
-    _restoreStealthMode(),
-  ]);
+    // Register FCM background handler
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // Lock orientation to portrait — avoids layout recalculation on rotate
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    // Turbo initializations
+    await Future.wait([
+      _initFirebase(),
+      DevicePerformance.init(),
+      _restoreStealthMode(),
+      EncryptionService.cleanupOrphanedFiles(),
+    ]);
 
-  // Set system UI overlay style immediately to prevent first-frame flash
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: Colors.black,
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(const MyApp());
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.black,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ));
+
+    runApp(const MyApp());
+  }, (error, stack) {
+    if (kDebugMode) {
+      debugPrint('SafeShell: UNHANDLED_ASYNC_ERROR: $error');
+      debugPrint(stack.toString());
+    }
+  });
 }
 
 Future<void> _initFirebase() async {

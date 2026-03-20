@@ -30,7 +30,31 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchItems();
+    _loadCachedItems().then((_) => _fetchItems());
+  }
+
+  Future<void> _loadCachedItems() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      final cachedData = await storage.read(key: 'cached_photos_list');
+      if (cachedData != null && mounted) {
+        setState(() {
+          _items = jsonDecode(cachedData).cast<Map<String, dynamic>>();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Cache load error: $e');
+    }
+  }
+
+  Future<void> _saveItemsToCache() async {
+    try {
+      const storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
+      await storage.write(key: 'cached_photos_list', value: jsonEncode(_items));
+    } catch (e) {
+      debugPrint('Cache save error: $e');
+    }
   }
 
   //  Data Fetching 
@@ -44,10 +68,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       final token = await storage.read(key: AppConstants.keyToken);
       if (token == null) return;
 
-      final response = await NetworkService.client.get(
-        Uri.parse('${AppConstants.baseUrl}/vault?type=photo'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await NetworkService.get('${AppConstants.baseUrl}/vault?type=photo');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -59,6 +80,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
           _selectedIds.clear();
           _isSelectionMode = false;
         });
+        _saveItemsToCache();
       } else {
         throw Exception('Failed to fetch from backend (${response.statusCode})');
       }
@@ -275,20 +297,18 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
       if (token == null) return;
 
       int failCount = 0;
-      for (final id in _selectedIds.toList()) {
-        try {
-          final response = await NetworkService.client.delete(
-            Uri.parse('${AppConstants.baseUrl}/vault/$id'),
-            headers: {'Authorization': 'Bearer $token'},
-          );
+      try {
+        final response = await NetworkService.post(
+          '${AppConstants.baseUrl}/vault/delete-batch',
+          {'ids': _selectedIds.toList()},
+        );
 
-          if (response.statusCode != 200) {
-            failCount++;
-          }
-        } catch (e) {
-          debugPrint('Delete $id failed: $e');
-          failCount++;
+        if (response.statusCode != 200) {
+          failCount = _selectedIds.length;
         }
+      } catch (e) {
+        debugPrint('Batch delete failed: $e');
+        failCount = _selectedIds.length;
       }
 
       _dismissLoadingDialog();
@@ -322,10 +342,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
 
       try {
         final url = item['url'];
-        final response = await NetworkService.client.get(
-          Uri.parse(url),
-          headers: token != null ? {'Authorization': 'Bearer $token'} : {},
-        );
+        final response = await NetworkService.get(url);
 
         if (response.statusCode == 200) {
           // Download is encrypted — must decrypt before saving to gallery
@@ -455,7 +472,7 @@ class _PhotosListScreenState extends State<PhotosListScreen> {
               icon: const Icon(Icons.close),
               onPressed: _exitSelectionMode,
             )
-          : const BackButton(),
+          : BackButton(color: Theme.of(context).brightness == Brightness.light ? AppColors.textPrimary : Colors.white),
       title: Text(
         _isSelectionMode
             ? '${_selectedIds.length} Selected'

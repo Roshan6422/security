@@ -65,7 +65,7 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> with WidgetsBinding
         'name': _titleController.text,
         'content': _contentController.text,
         'type': 'note',
-        'size': '${_contentController.text.length} B',
+        'size': _contentController.text.length,
       };
 
       http.Response response;

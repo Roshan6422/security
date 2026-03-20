@@ -660,7 +660,10 @@ class _VaultScreenState extends State<VaultScreen>
                 child: Text('Keep', style: TextStyle(color: isLight ? AppColors.textTertiary : Colors.white54)),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pop(ctx, true);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
@@ -882,20 +885,52 @@ class _VaultCategory {
   _VaultCategory(this.icon, this.label, this.type, this.color);
 }
 
-class _ScaleTapVault extends StatelessWidget {
+class _ScaleTapVault extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
 
   const _ScaleTapVault({required this.child, required this.onTap});
 
   @override
+  State<_ScaleTapVault> createState() => _ScaleTapVaultState();
+}
+
+class _ScaleTapVaultState extends State<_ScaleTapVault> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
       onTap: () {
         HapticFeedback.lightImpact();
-        onTap();
+        widget.onTap();
       },
-      child: child,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: widget.child,
+      ),
     );
   }
 }
