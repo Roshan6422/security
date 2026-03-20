@@ -123,6 +123,7 @@ func main() {
 		}
 	}()
 
+	log.Printf("SafeShell Go Backend Starting - Version: 1.0.1 (Auth Fix Integrated)")
 	log.Printf("Server starting on port %s", port)
 	
 	// Security Pass 103: Standard Server with Timeouts

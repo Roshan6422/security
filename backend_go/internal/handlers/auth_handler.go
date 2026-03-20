@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 )
 
 type AuthHandler struct {
@@ -51,6 +52,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email and password are required"})
 		return
 	}
+
+	log.Printf("Admin Login Request for email: %s", req.Email)
 
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s", h.FirebaseSvc.Config.FirebaseAPIKey)
 	payload, _ := json.Marshal(map[string]interface{}{
