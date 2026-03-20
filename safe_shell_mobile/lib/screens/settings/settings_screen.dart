@@ -635,7 +635,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content:
-                              Text('Cache cleared & Memory Optimized! ???'),
+                              Text('Cache cleared & Memory Optimized! 🧹'),
                           backgroundColor: Color(0xFF10B981)));
                     }
                   } catch (e) {

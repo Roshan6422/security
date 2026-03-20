@@ -547,11 +547,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildAnalyticsGrid() {
     return Row(
       children: [
-        _buildAnalyticCard('??', _totalPhotos, 'Photos', const Color(0xFF4DA3FF)),
+        _buildAnalyticCard('🖼️', _totalPhotos, 'Photos', const Color(0xFF4DA3FF)),
         const SizedBox(width: 10),
-        _buildAnalyticCard('??', _totalVideos, 'Videos', const Color(0xFF8B5CF6)),
+        _buildAnalyticCard('🎥', _totalVideos, 'Videos', const Color(0xFF8B5CF6)),
         const SizedBox(width: 10),
-        _buildAnalyticCard('??', _totalDocs, 'Docs', const Color(0xFF10B981)),
+        _buildAnalyticCard('📄', _totalDocs, 'Docs', const Color(0xFF10B981)),
       ],
     );
   }
@@ -818,7 +818,7 @@ class _SubscriptionSheet extends StatelessWidget {
               HapticFeedback.heavyImpact();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('?? Contacting payment gateway...'), backgroundColor: Color(0xFF4DA3FF)),
+                const SnackBar(content: Text('💳 Contacting payment gateway...'), backgroundColor: Color(0xFF4DA3FF)),
               );
             },
           ),

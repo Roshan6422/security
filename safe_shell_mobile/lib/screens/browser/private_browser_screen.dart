@@ -53,28 +53,30 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: isLight ? Colors.black.withOpacity(0.05) : Colors.white.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: TextField(
             controller: _urlController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white),
             decoration: InputDecoration(
               hintText: 'Search or type URL',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+              hintStyle: TextStyle(color: isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white.withOpacity(0.5)),
               border: InputBorder.none,
               prefixIcon: const Icon(Icons.lock, color: AppColors.primary, size: 16),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               suffixIcon: IconButton(
-                icon: const Icon(Icons.search, color: Colors.white70),
+                icon: Icon(Icons.search, color: isLight ? AppColors.textSecondary : Colors.white70),
                 onPressed: _loadUrl,
               ),
             ),
@@ -109,13 +111,13 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20, color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios, size: 20, color: isLight ? AppColors.textPrimary : Colors.white),
             onPressed: () async {
               if (await _controller.canGoBack()) await _controller.goBack();
             },
           ),
           IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, size: 20, color: Colors.white),
+            icon: Icon(Icons.arrow_forward_ios, size: 20, color: isLight ? AppColors.textPrimary : Colors.white),
             onPressed: () async {
               if (await _controller.canGoForward()) await _controller.goForward();
             },
@@ -127,13 +129,13 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
             child: const Icon(Icons.home, size: 20),
           ),
           IconButton(
-            icon: const Icon(Icons.tab, size: 20, color: Colors.white),
+            icon: Icon(Icons.tab, size: 20, color: isLight ? AppColors.textPrimary : Colors.white),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tabs coming soon')));
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white),
+            icon: Icon(Icons.delete_outline, size: 20, color: isLight ? AppColors.textPrimary : Colors.white),
             onPressed: () {
               _controller.clearCache();
               _controller.clearLocalStorage();

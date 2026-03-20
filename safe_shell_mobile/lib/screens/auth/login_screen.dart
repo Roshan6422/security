@@ -489,7 +489,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
             ),
             const SizedBox(height: 12),
-            const Text('Account Created! ??', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            const Text('Account Created! 🎉', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
           ],
         ),
         content: Column(
@@ -561,7 +561,7 @@ class _LoginScreenState extends State<LoginScreen> {
               HapticFeedback.selectionClick();
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
+                SnackBar(content: Text('✅ $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
               );
             },
             child: Icon(Icons.copy_rounded, color: Colors.white.withOpacity(0.3), size: 18),
@@ -676,10 +676,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 16),
         GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsOfServiceScreen())),
           child: Text(
-            'Privacy Policy  Terms of Service',
-            style: AppTextStyles.caption.copyWith(color: Colors.white24, fontSize: 11),
+            'Terms of Service',
+            style: AppTextStyles.caption.copyWith(color: Colors.white70, fontSize: 11),
           ),
         ),
       ],

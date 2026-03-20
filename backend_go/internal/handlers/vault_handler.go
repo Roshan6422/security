@@ -306,7 +306,16 @@ func (h *VaultHandler) GetRecent(c *gin.Context) {
 }
 
 func (h *VaultHandler) Upload(c *gin.Context) {
-	userId, _ := c.Get("userId")
+	userIdVal, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	userId, ok := userIdVal.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID type in context"})
+		return
+	}
 	ctx := c.Request.Context()
 
 	header, err := c.FormFile("file")
@@ -336,24 +345,26 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 
 	// Security Pass 381: Atomic Upload & Record Creation
 	// Mismatch Fix: Use the correct bucket name from firebase_options.dart
-	bucketName := "safeshell-app.firebasestorage.app"
+	bucketName := h.FirebaseSvc.Config.StorageBucket
 	bucket, err := h.FirebaseSvc.Storage.Bucket(bucketName)
 	if err != nil {
-		log.Printf("Storage Error: Bucket %s not found: %v", bucketName, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage configuration error"})
+		log.Printf("Storage Error: Bucket %s not found (Check FIREBASE_STORAGE_BUCKET env var): %v", bucketName, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage configuration error: " + err.Error()})
 		return
 	}
 
-	objectPath := "vault/" + userId.(string) + "/" + time.Now().Format("20060102150405") + "_" + fileName
+	objectPath := "vault/" + userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
 	sw := bucket.Object(objectPath).NewWriter(ctx)
 	sw.ContentType = header.Header.Get("Content-Type")
 	
 	if _, err := io.Copy(sw, file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to storage"})
+		log.Printf("Storage Upload Error: Failed to copy data for user %s: %v", userId, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to storage: " + err.Error()})
 		return
 	}
 	if err := sw.Close(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to finalize storage upload"})
+		log.Printf("Storage Finalize Error: Failed to close writer for user %s: %v", userId, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to finalize storage upload: " + err.Error()})
 		return
 	}
 
@@ -375,13 +386,14 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 
 	docRef, _, err := h.FirebaseSvc.Firestore.Collection("vault").Add(ctx, docData)
 	if err != nil {
+		log.Printf("Firestore Error: Failed to save vault record for user %s: %v", userId, err)
 		// Cleanup storage on DB failure
 		_ = bucket.Object(objectPath).Delete(ctx)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save record"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save record: " + err.Error()})
 		return
 	}
 
-	h.AuditSvc.LogEvent(ctx, userId.(string), "vault_upload", "Uploaded "+fileType+": "+fileName, map[string]interface{}{
+	h.AuditSvc.LogEvent(ctx, userId, "vault_upload", "Uploaded "+fileType+": "+fileName, map[string]interface{}{
 		"id":   docRef.ID,
 		"size": header.Size,
 		"type": fileType,

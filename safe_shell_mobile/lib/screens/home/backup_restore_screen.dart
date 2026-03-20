@@ -181,8 +181,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background
@@ -220,7 +222,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back, color: Colors.white),
+                        child: Icon(Icons.arrow_back, color: textColor),
                       ),
                       const SizedBox(width: 12),
                       ShaderMask(
@@ -230,7 +232,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                         child: const Text(
                           'Backup & Restore',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: textColor,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
@@ -265,13 +267,13 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'Export Encrypted Backup',
-                              style: AppTextStyles.subheading.copyWith(fontSize: 17),
+                              style: AppTextStyles.subheading.copyWith(fontSize: 17, color: textColor),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Creates an encrypted .ssb file containing all your vault files, metadata, and audit log.',
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 13),
+                              style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.6) : Colors.white38, fontSize: 13),
                             ),
                             const SizedBox(height: 20),
                             SizedBox(
@@ -321,13 +323,13 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                             const SizedBox(height: 16),
                             Text(
                               'Import Backup',
-                              style: AppTextStyles.subheading.copyWith(fontSize: 17),
+                              style: AppTextStyles.subheading.copyWith(fontSize: 17, color: textColor),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Restore your vault from an encrypted .ssb backup file.',
                               textAlign: TextAlign.center,
-                              style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 13),
+                              style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.6) : Colors.white38, fontSize: 13),
                             ),
                             const SizedBox(height: 20),
                             SizedBox(
@@ -366,7 +368,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                             Expanded(
                               child: Text(
                                 'Backups are encrypted with your vault key. Without the key, backup files cannot be restored.',
-                                style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 12),
+                                style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.6) : Colors.white38, fontSize: 12),
                               ),
                             ),
                           ],

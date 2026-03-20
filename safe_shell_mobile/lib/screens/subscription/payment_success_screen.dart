@@ -41,8 +41,10 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> with Single
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background Glows
@@ -105,13 +107,13 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> with Single
                         children: [
                           Text(
                             'Payment Successful!',
-                            style: AppTextStyles.heading.copyWith(fontSize: 28),
+                            style: AppTextStyles.heading.copyWith(fontSize: 28, color: textColor),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'You have successfully upgraded to SafeShell Pro. All premium features are now unlocked.',
-                            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary, height: 1.5),
+                            style: AppTextStyles.body.copyWith(color: isLight ? AppColors.textSecondary : Colors.white70, height: 1.5),
                             textAlign: TextAlign.center,
                           ),
                         ],

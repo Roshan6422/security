@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (strength <= 0.25) { label = 'Weak'; color = const Color(0xFFEF4444); }
     else if (strength <= 0.5) { label = 'Fair'; color = const Color(0xFFF59E0B); }
     else if (strength <= 0.75) { label = 'Good'; color = const Color(0xFF4DA3FF); }
-    else { label = 'Strong ??'; color = const Color(0xFF10B981); }
+    else { label = 'Strong 💪'; color = const Color(0xFF10B981); }
 
     setState(() {
       _passwordStrength = strength.clamp(0.0, 1.0);
@@ -103,7 +103,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Account Created! ??', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                  const Text('Account Created! 🎉', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
                 ],
               ),
               content: Column(
@@ -189,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               HapticFeedback.selectionClick();
               Clipboard.setData(ClipboardData(text: value));
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('?? $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
+                SnackBar(content: Text('✅ $label copied!'), duration: const Duration(seconds: 1), backgroundColor: const Color(0xFF4DA3FF)),
               );
             },
             child: Icon(Icons.copy_rounded, color: Colors.white.withOpacity(0.3), size: 18),
@@ -345,10 +345,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
-                        child: Text('Privacy Policy', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12, decoration: TextDecoration.underline)),
-                      ),
                     ],
                   ),
                 ],

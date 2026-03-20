@@ -150,7 +150,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final subColor = isLight ? AppColors.textSecondary : Colors.white.withOpacity(0.4);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       floatingActionButton: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
@@ -522,7 +521,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             PremiumSnackbar.show(
               context,
               message: 'Advanced encryption active!',
-              emoji: '???',
+              emoji: '✅',
               color: const Color(0xFF10B981),
             );
           }, textColor),
@@ -928,7 +927,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       PremiumSnackbar.show(
                         context,
                         message: 'Memory Optimized Successfully!',
-                        emoji: '??',
+                        emoji: '🚀',
                         color: const Color(0xFF10B981),
                       );
                     }
@@ -1066,7 +1065,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _uploadFile(String path) async {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(const SnackBar(content: Text('?? Encrypting and uploading...'), duration: Duration(seconds: 30)));
+    messenger.showSnackBar(const SnackBar(content: Text('📡 Encrypting and uploading...'), duration: Duration(seconds: 30)));
     
     try {
       final fileName = p.basename(path);

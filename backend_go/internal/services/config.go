@@ -10,6 +10,7 @@ type Config struct {
 	FirebaseServiceAccount string
 	StorageMode            string // "local" or "firebase"
 	FirebaseAPIKey         string
+	StorageBucket          string
 }
 
 func NewConfig() *Config {
@@ -26,6 +27,7 @@ func NewConfig() *Config {
 		FirebaseServiceAccount: getFirebaseAccount(),
 		StorageMode:            os.Getenv("STORAGE_MODE"),
 		FirebaseAPIKey:         getEnvOrDefault("FIREBASE_API_KEY", "AIzaSyDbC1yBxLYJHa1SqlkrY1xK6lo-M7VhsoQ"),
+		StorageBucket:          getEnvOrDefault("FIREBASE_STORAGE_BUCKET", "safeshell-app.firebasestorage.app"),
 	}
 }
 

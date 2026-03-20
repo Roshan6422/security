@@ -9,9 +9,9 @@ class SupportScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final textColor = isLight ? AppColors.textPrimary : Colors.white;
+    final subColor = isLight ? AppColors.textSecondary : Colors.white70;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text('Support', style: AppTextStyles.heading.copyWith(color: textColor)),
         backgroundColor: Colors.transparent,
@@ -23,7 +23,7 @@ class SupportScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('How can we help?', style: TextStyle(
-              color: Colors.white,
+              color: textColor,
               fontSize: 32,
               fontWeight: FontWeight.bold,
               letterSpacing: -0.5,
@@ -31,7 +31,7 @@ class SupportScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'If you have questions about your account, security, or subscription, our team is here to assist you.',
-              style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+              style: TextStyle(color: subColor, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 40),
             _buildSupportOption(

@@ -54,12 +54,14 @@ class _SupportDetailScreenState extends State<SupportDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(widget.ticket['subject'] ?? 'Ticket Details', style: AppTextStyles.heading.copyWith(fontSize: 18)),
+        title: Text(widget.ticket['subject'] ?? 'Ticket Details', style: AppTextStyles.heading.copyWith(fontSize: 18, color: textColor)),
         leading: const BackButton(),
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -132,7 +134,7 @@ class _SupportDetailScreenState extends State<SupportDetailScreen> {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text('ORIGINAL QUERY', style: TextStyle(color: AppColors.primary.withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
-            Text(message, style: const TextStyle(color: Colors.white, fontSize: 14)),
+            Text(message, style: TextStyle(color: isUser ? (isLight ? AppColors.textPrimary : Colors.white) : (isLight ? AppColors.textPrimary : Colors.white), fontSize: 14)),
             const SizedBox(height: 4),
             Text(
               DateFormat('HH:mm  •  MMM d').format(date),
@@ -148,8 +150,8 @@ class _SupportDetailScreenState extends State<SupportDetailScreen> {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: isLight ? Colors.white : const Color(0xFF161B22),
+        border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05)),
       ),
       child: Row(
         children: [
@@ -162,10 +164,10 @@ class _SupportDetailScreenState extends State<SupportDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 controller: _messageController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: isLight ? AppColors.textPrimary : Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Type a reply...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  hintStyle: TextStyle(color: isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white.withOpacity(0.3)),
                   border: InputBorder.none,
                 ),
               ),

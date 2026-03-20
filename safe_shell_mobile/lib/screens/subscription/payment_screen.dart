@@ -68,8 +68,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       selectedProduct = IAPService().products.first;
     }
 
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background Gradients
@@ -105,14 +107,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        icon: Icon(Icons.arrow_back, color: textColor),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      Text('Upgrade to Pro', style: AppTextStyles.heading.copyWith(fontSize: 20)),
+                      Text('Upgrade to Pro', style: AppTextStyles.heading.copyWith(fontSize: 20, color: textColor)),
                       const Spacer(),
                       TextButton(
                         onPressed: _loading ? null : _handleRestore,
-                        child: const Text('Restore', style: TextStyle(color: Colors.white70)),
+                        child: Text('Restore', style: TextStyle(color: isLight ? AppColors.textSecondary : Colors.white70)),
                       ),
                     ],
                   ),
@@ -146,7 +148,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('SafeShell Pro', style: AppTextStyles.heading.copyWith(fontSize: 16)),
+                                          Text('SafeShell Pro', style: AppTextStyles.heading.copyWith(fontSize: 16, color: textColor)),
                                           Text('Premium vault experience', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.6))),
                                         ],
                                       ),
@@ -157,9 +159,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.05),
                                       borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                      border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.1)),
                                     ),
-                                    child: Text('Most Popular', style: AppTextStyles.caption.copyWith(fontSize: 10, fontWeight: FontWeight.bold)),
+                                    child: Text('Most Popular', style: AppTextStyles.caption.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: isLight ? AppColors.primary : Colors.white)),
                                   ),
                                 ],
                               ),
@@ -178,7 +180,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.baseline,
                                       textBaseline: TextBaseline.alphabetic,
                                       children: [
-                                        Text(selectedProduct.price, style: AppTextStyles.heading.copyWith(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1)),
+                                        Text(selectedProduct.price, style: AppTextStyles.heading.copyWith(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1, color: textColor)),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
@@ -199,7 +201,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         const SizedBox(height: 32),
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: Text('Pro Features', style: AppTextStyles.heading.copyWith(fontSize: 18)),
+                          child: Text('Pro Features', style: AppTextStyles.heading.copyWith(fontSize: 18, color: textColor)),
                         ),
                         const SizedBox(height: 16),
 
@@ -231,7 +233,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text('Secure checkout via Google Play.', style: TextStyle(color: Colors.white30, fontSize: 12)),
+                        Text('Secure checkout via Google Play.', style: TextStyle(color: isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white30, fontSize: 12)),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -262,7 +264,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTextStyles.subheading.copyWith(fontSize: 14)),
+                  Text(title, style: AppTextStyles.subheading.copyWith(fontSize: 14, color: textColor)),
                   Text(subtitle, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.6), fontSize: 11)),
                 ],
               ),

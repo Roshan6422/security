@@ -166,7 +166,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A2332),
+      backgroundColor: isLight ? Colors.white : const Color(0xFF1A2332),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -178,7 +178,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
             Container(
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: isLight ? Colors.black.withOpacity(0.1) : Colors.white24,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -188,17 +188,17 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: isLight ? AppColors.primary.withOpacity(0.1) : Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: isLight ? AppColors.primary.withOpacity(0.2) : Colors.white.withOpacity(0.1)),
                   ),
-                  child: const Icon(Icons.phone_android, color: Colors.white70, size: 28),
+                  child: Icon(Icons.phone_android, color: isLight ? AppColors.primary : Colors.white70, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     device['deviceName'] ?? 'Unknown',
-                    style: AppTextStyles.subheading.copyWith(fontSize: 18),
+                    style: AppTextStyles.subheading.copyWith(fontSize: 18, color: textColor),
                   ),
                 ),
                 Icon(Icons.edit, color: Colors.white.withOpacity(0.3), size: 20),
@@ -250,10 +250,10 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: AppTextStyles.caption.copyWith(color: Colors.white38, fontSize: 13)),
+            child: Text(label, style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.6) : Colors.white38, fontSize: 13)),
           ),
           Expanded(
-            child: Text(value, style: AppTextStyles.body.copyWith(fontSize: 14)),
+            child: Text(value, style: AppTextStyles.body.copyWith(fontSize: 14, color: textColor)),
           ),
         ],
       ),
@@ -262,8 +262,10 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? AppColors.textPrimary : Colors.white;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background gradient
@@ -291,14 +293,14 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                           children: [
                             GestureDetector(
                               onTap: () => Navigator.pop(context),
-                              child: const Icon(Icons.arrow_back, color: Colors.white),
+                              child: Icon(Icons.arrow_back, color: textColor),
                             ),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Device Manager',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: textColor,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -336,7 +338,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                       ),
                                       Text(
                                         '$_trustedCount trusted  $_untrustedCount untrusted',
-                                        style: AppTextStyles.caption.copyWith(color: Colors.white38),
+                                        style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.6) : Colors.white38),
                                       ),
                                     ],
                                   ),
@@ -359,7 +361,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.phone_android, color: Colors.white54, size: 22),
+                                          Icon(Icons.phone_android, color: isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white54, size: 22),
                                           const SizedBox(width: 12),
                                           Expanded(
                                             child: Column(
@@ -370,7 +372,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                                     Flexible(
                                                       child: Text(
                                                         device['deviceName'] ?? 'Unknown',
-                                                        style: AppTextStyles.subheading.copyWith(fontSize: 15),
+                                                        style: AppTextStyles.subheading.copyWith(fontSize: 15, color: textColor),
                                                         overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ),
@@ -394,7 +396,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   '${device['model'] ?? ''}',
-                                                  style: AppTextStyles.caption.copyWith(color: Colors.white30, fontSize: 12),
+                                                  style: AppTextStyles.caption.copyWith(color: isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white30, fontSize: 12),
                                                 ),
                                               ],
                                             ),
@@ -414,7 +416,7 @@ class _DeviceManagerScreenState extends State<DeviceManagerScreen> {
                                           const SizedBox(width: 6),
                                           Text(
                                             isCurrentDevice ? 'Online  Active now' : 'Offline',
-                                            style: TextStyle(color: isCurrentDevice ? Colors.white54 : Colors.white30, fontSize: 12),
+                                            style: TextStyle(color: isCurrentDevice ? (isLight ? AppColors.success : Colors.white54) : (isLight ? AppColors.textSecondary.withOpacity(0.5) : Colors.white30), fontSize: 12),
                                           ),
                                           const Spacer(),
                                           Icon(
