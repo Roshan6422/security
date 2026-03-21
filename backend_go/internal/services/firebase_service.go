@@ -10,6 +10,7 @@ import (
 	"firebase.google.com/go/v4/storage"
 	"google.golang.org/api/option"
 	"encoding/base64"
+	"strings"
 )
 
 type FirebaseService struct {
@@ -27,8 +28,8 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 	log.Printf("Initializing Firebase...")
 	var opt option.ClientOption
 	if cfg.FirebaseServiceAccount != "" {
-		// Attempt to decode as base64 first
-		decoded, err := base64.StdEncoding.DecodeString(cfg.FirebaseServiceAccount)
+		// Attempt to decode as base64 first, trimming any accidental whitespace from Koyeb UI
+		decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(cfg.FirebaseServiceAccount))
 		if err == nil {
 			// If successful, use the decoded JSON
 			opt = option.WithCredentialsJSON(decoded)
