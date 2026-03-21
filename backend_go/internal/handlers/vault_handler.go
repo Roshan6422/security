@@ -399,7 +399,7 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Supabase API Error (%d): %s", resp.StatusCode, string(body))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Supabase storage error"})
