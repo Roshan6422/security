@@ -10,6 +10,7 @@ import (
 	"github.com/Roshan6422/security/backend_go/internal/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 )
 
 func main() {
@@ -47,6 +48,12 @@ func main() {
 
 		c.Next()
 	})
+
+	// Ensure uploads directory exists before serving it
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		os.Mkdir("./uploads", 0755)
+	}
+	r.Static("/uploads", "./uploads")
 
 	// Initialize handlers
 	healthHandler := handlers.NewHealthHandler(firebaseSvc)

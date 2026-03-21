@@ -12,6 +12,7 @@ type Config struct {
 	FirebaseAPIKey         string
 	StorageBucket          string
 	AdminSecret            string
+	BaseURL                string
 }
 
 func NewConfig() *Config {
@@ -30,6 +31,7 @@ func NewConfig() *Config {
 		FirebaseAPIKey:         getEnvOrDefault("FIREBASE_API_KEY", "AIzaSyAl-vsd8l_4gYffEpo5XDNZE2oR8doLoH8"),
 		StorageBucket:          getEnvOrDefault("FIREBASE_STORAGE_BUCKET", "sceruty-e5351.firebasestorage.app"),
 		AdminSecret:            getEnvOrDefault("ADMIN_SECRET", "admin-secret-123"),
+		BaseURL:                getEnvOrDefault("SERVER_URL", "https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app"),
 	}
 }
 

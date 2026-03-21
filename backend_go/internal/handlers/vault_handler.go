@@ -2,10 +2,9 @@ package handlers
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
-	"net/url"
+	"os"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -70,12 +69,11 @@ func (h *VaultHandler) DeleteVaultItem(c *gin.Context) {
 		// 2. Delete from Firestore
 		_, err = itemRef.Delete(ctx)
 
-		// 3. Delete from Storage if path exists
+		// 3. Delete from Local Storage if path exists
 		if err == nil && storagePath != "" {
-			bucketName := h.FirebaseSvc.Config.StorageBucket
-			bucket, err := h.FirebaseSvc.Storage.Bucket(bucketName)
-			if err == nil {
-				_ = bucket.Object(storagePath).Delete(ctx)
+			errRemove := os.Remove("./" + storagePath)
+			if errRemove != nil {
+				log.Printf("Failed to delete local file %s: %v", storagePath, errRemove)
 			}
 		}
 	}
@@ -365,32 +363,24 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	}
 
 	// Security Pass 381: Atomic Upload & Record Creation
-	// Mismatch Fix: Use the correct bucket name from firebase_options.dart
-	bucketName := h.FirebaseSvc.Config.StorageBucket
-	bucket, err := h.FirebaseSvc.Storage.Bucket(bucketName)
-	if err != nil {
-		log.Printf("Storage Error: Bucket %s not found (Check FIREBASE_STORAGE_BUCKET env var): %v", bucketName, err)
+	// Local File Integration: Use Persistent Volume on Koyeb
+	userUploadDir := "./uploads/" + userId
+	if err := os.MkdirAll(userUploadDir, 0755); err != nil {
+		log.Printf("Local Storage Error: Failed to create dir for user %s: %v", userId, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage configuration error: " + err.Error()})
 		return
 	}
 
-	objectPath := "vault/" + userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
-	sw := bucket.Object(objectPath).NewWriter(ctx)
-	sw.ContentType = header.Header.Get("Content-Type")
+	objectPath := "uploads/" + userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
 	
-	if _, err := io.Copy(sw, file); err != nil {
-		log.Printf("Storage Upload Error: Failed to copy data for user %s: %v", userId, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to storage: " + err.Error()})
-		return
-	}
-	if err := sw.Close(); err != nil {
-		log.Printf("Storage Finalize Error: Failed to close writer for user %s: %v", userId, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to finalize storage upload: " + err.Error()})
+	if err := c.SaveUploadedFile(header, "./"+objectPath); err != nil {
+		log.Printf("Local Upload Error: Failed to save file for user %s: %v", userId, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file locally: " + err.Error()})
 		return
 	}
 
-	publicURL := "https://firebasestorage.googleapis.com/v0/b/" + bucketName + "/o/" + 
-		url.QueryEscape(objectPath) + "?alt=media"
+	// Calculate correct public URL using the base URL from config
+	publicURL := h.FirebaseSvc.Config.BaseURL + "/" + objectPath
 
 	// 3. Save to Firestore using standardized schema
 	docData := map[string]interface{}{
@@ -408,8 +398,8 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	docRef, _, err := h.FirebaseSvc.Firestore.Collection("vault").Add(ctx, docData)
 	if err != nil {
 		log.Printf("Firestore Error: Failed to save vault record for user %s: %v", userId, err)
-		// Cleanup storage on DB failure
-		_ = bucket.Object(objectPath).Delete(ctx)
+		// Cleanup local storage on DB failure
+		_ = os.Remove("./" + objectPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save record: " + err.Error()})
 		return
 	}
