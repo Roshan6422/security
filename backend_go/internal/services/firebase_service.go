@@ -24,6 +24,10 @@ type FirebaseService struct {
 func NewFirebaseService(cfg *Config) *FirebaseService {
 	ctx := context.Background()
 
+	svc := &FirebaseService{
+		Config: cfg,
+	}
+
 	// Load credentials
 	log.Printf("Initializing Firebase...")
 	var opt option.ClientOption
@@ -33,12 +37,13 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 		cleanB64 := strings.ReplaceAll(strings.TrimSpace(cfg.FirebaseServiceAccount), "\n", "")
 		cleanB64 = strings.ReplaceAll(cleanB64, "\r", "")
 		cleanB64 = strings.ReplaceAll(cleanB64, " ", "")
+		cleanB64 = strings.ReplaceAll(cleanB64, "\t", "")
 		decoded, err := base64.StdEncoding.DecodeString(cleanB64)
 		if err == nil {
-			// If successful, use the decoded JSON
+			log.Printf("Successfully decoded Base64 Firebase credentials (%d bytes)", len(decoded))
 			opt = option.WithCredentialsJSON(decoded)
 		} else {
-			log.Printf("Using credentials from environment variable (FirebaseServiceAccount)")
+			log.Printf("Base64 decode failed (%v), trying raw JSON...", err)
 			opt = option.WithCredentialsJSON([]byte(cfg.FirebaseServiceAccount))
 		}
 	} else {
@@ -48,29 +53,32 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
-		log.Fatalf("error initializing firebase app: %v", err)
+		log.Printf("CRITICAL: error initializing firebase app: %v", err)
+		return svc
 	}
+	svc.App = app
 
 	authClient, err := app.Auth(ctx)
 	if err != nil {
-		log.Fatalf("error getting Auth client: %v", err)
+		log.Printf("CRITICAL: error getting Auth client: %v", err)
+		return svc
 	}
+	svc.Auth = authClient
 
 	firestoreClient, err := app.Firestore(ctx)
 	if err != nil {
-		log.Fatalf("error getting Firestore client: %v", err)
+		log.Printf("CRITICAL: error getting Firestore client: %v", err)
+		return svc
 	}
+	svc.Firestore = firestoreClient
 
 	storageClient, err := app.Storage(ctx)
 	if err != nil {
-		log.Fatalf("error getting Storage client: %v", err)
+		log.Printf("CRITICAL: error getting Storage client: %v", err)
+		return svc
 	}
+	svc.Storage = storageClient
 
-	return &FirebaseService{
-		App:       app,
-		Auth:      authClient,
-		Firestore: firestoreClient,
-		Storage:   storageClient,
-		Config:    cfg,
-	}
+	log.Printf("Firebase initialized successfully!")
+	return svc
 }

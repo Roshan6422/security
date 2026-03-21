@@ -115,18 +115,22 @@ func main() {
 	port := cfg.Port
 
 	// Background task for recycle bin cleanup (every 24 hours)
-	go func() {
-		log.Printf("Background cleanup task started")
-		for {
-			count, err := vaultHandler.CleanupOldDeletedItems(context.Background())
-			if err != nil {
-				log.Printf("Background Cleanup Error: %v", err)
-			} else if count > 0 {
-				log.Printf("Background Cleanup: Purged %d old recycle bin items", count)
+	if firebaseSvc.Firestore != nil {
+		go func() {
+			log.Printf("Background cleanup task started")
+			for {
+				count, err := vaultHandler.CleanupOldDeletedItems(context.Background())
+				if err != nil {
+					log.Printf("Background Cleanup Error: %v", err)
+				} else if count > 0 {
+					log.Printf("Background Cleanup: Purged %d old recycle bin items", count)
+				}
+				time.Sleep(24 * time.Hour)
 			}
-			time.Sleep(24 * time.Hour)
-		}
-	}()
+		}()
+	} else {
+		log.Printf("WARNING: Firestore not initialized, skipping background cleanup task")
+	}
 
 	log.Printf("SafeShell Go Backend Starting - Version: 1.0.1 (Auth Fix Integrated)")
 	log.Printf("Server starting on port %s", port)
