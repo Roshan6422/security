@@ -17,12 +17,12 @@ service cloud.firestore {
 
     // --- Users Collection ---
     match /users/{userId} {
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow read: if isAuthenticated(); // Allow all users to read basic profiles (useful for future social features)
       allow create: if isAuthenticated() && isOwner(userId);
       allow update: if isAuthenticated() && isOwner(userId) 
                     && !request.resource.data.diff(resource.data).affectedKeys()
                         .hasAny(['role', 'subscriptionStatus', 'subscriptionExpiry', 'isSuspended']);
-      allow delete: if isAdmin(); // Users cannot delete themselves, only Admin or Backend
+      allow delete: if isAdmin();
     }
 
     // --- Vault Collection ---

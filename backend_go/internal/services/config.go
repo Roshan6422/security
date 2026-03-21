@@ -27,8 +27,8 @@ func NewConfig() *Config {
 		Port:                   port,
 		FirebaseServiceAccount: getFirebaseAccount(),
 		StorageMode:            os.Getenv("STORAGE_MODE"),
-		FirebaseAPIKey:         getEnvOrDefault("FIREBASE_API_KEY", "AIzaSyDbC1yBxLYJHa1SqlkrY1xK6lo-M7VhsoQ"),
-		StorageBucket:          getEnvOrDefault("FIREBASE_STORAGE_BUCKET", "safeshell-app.firebasestorage.app"),
+		FirebaseAPIKey:         getEnvOrDefault("FIREBASE_API_KEY", "AIzaSyAl-vsd8l_4gYffEpo5XDNZE2oR8doLoH8"),
+		StorageBucket:          getEnvOrDefault("FIREBASE_STORAGE_BUCKET", "sceruty-e5351.firebasestorage.app"),
 		AdminSecret:            getEnvOrDefault("ADMIN_SECRET", "admin-secret-123"),
 	}
 }

@@ -284,7 +284,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 	// Check if user exists in Firebase Auth
 	_, err := h.FirebaseSvc.Auth.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No user found with this email address"})
+		c.JSON(http.StatusNotFound, gin.H{"message": "Invalid email address"})
 		return
 	}
 

@@ -65,8 +65,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _lockLabels[idx];
   }
 
-  bool get _isPremium {
-    final user = Provider.of<AuthProvider>(context, listen: false).user;
+  bool _isPremium(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
     return user?.subscriptionStatus == 'pro';
   }
 
@@ -564,7 +564,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SoundEffects.tap();
                           _toggleScreenshot(v);
                         },
-                        isPremiumLocked: !_isPremium),
+                        isPremiumLocked: !_isPremium(context)),
                         const SizedBox(height: 8),
                         _toggleTile(
                             Icons.calculate_rounded,
@@ -604,7 +604,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           settings.antiUninstallEnabled,
                           const Color(0xFFEF4444),
                           (v) => settings.toggleAntiUninstall(v),
-                          isPremiumLocked: !_isPremium,
+                          isPremiumLocked: !_isPremium(context),
                         ),
                       ],
                     );
@@ -673,15 +673,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => const PrivacyPolicyScreen()));
-                }),
-                const SizedBox(height: 8),
-                _actionTile(Icons.description_rounded, 'Terms of Service',
-                    'Terms & Conditions', const Color(0xFF4DA3FF), () {
-                  HapticFeedback.selectionClick();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const TermsOfServiceScreen()));
                 }),
                 const SizedBox(height: 8),
                 _actionTile(Icons.history_rounded, 'Restore Legacy Files',
