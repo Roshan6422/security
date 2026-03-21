@@ -13,6 +13,8 @@ type Config struct {
 	StorageBucket          string
 	AdminSecret            string
 	BaseURL                string
+	SupabaseURL            string
+	SupabaseKey            string
 }
 
 func NewConfig() *Config {
@@ -32,6 +34,8 @@ func NewConfig() *Config {
 		StorageBucket:          getEnvOrDefault("FIREBASE_STORAGE_BUCKET", "sceruty-e5351.firebasestorage.app"),
 		AdminSecret:            getEnvOrDefault("ADMIN_SECRET", "admin-secret-123"),
 		BaseURL:                getEnvOrDefault("SERVER_URL", "https://fair-madelin-safeshellmobile-5ea64b9b.koyeb.app"),
+		SupabaseURL:            getEnvOrDefault("SUPABASE_URL", "https://yvfzkemhwtywzbsiqdbs.supabase.co"),
+		SupabaseKey:            getEnvOrDefault("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Inl2ZnpreW1od3R5d3picyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzc0MDkyNjAyLCJleHAiOjIwODk2Njg2MDJ9.V6e04rL-n_vsd8l_4gYffEpo5XDNZE2oR8doLoH8"),
 	}
 }
 

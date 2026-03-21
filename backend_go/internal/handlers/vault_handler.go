@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -69,11 +71,19 @@ func (h *VaultHandler) DeleteVaultItem(c *gin.Context) {
 		// 2. Delete from Firestore
 		_, err = itemRef.Delete(ctx)
 
-		// 3. Delete from Local Storage if path exists
+		// 3. Delete from Supabase Storage if path exists
 		if err == nil && storagePath != "" {
-			errRemove := os.Remove("./" + storagePath)
-			if errRemove != nil {
-				log.Printf("Failed to delete local file %s: %v", storagePath, errRemove)
+			reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", h.FirebaseSvc.Config.SupabaseURL, storagePath)
+			req, _ := http.NewRequestWithContext(ctx, "DELETE", reqUrl, nil)
+			req.Header.Set("apikey", h.FirebaseSvc.Config.SupabaseKey)
+			req.Header.Set("Authorization", "Bearer "+h.FirebaseSvc.Config.SupabaseKey)
+
+			client := &http.Client{}
+			resp, errDel := client.Do(req)
+			if errDel != nil {
+				log.Printf("Failed to delete from Supabase: %v", errDel)
+			} else {
+				resp.Body.Close()
 			}
 		}
 	}
@@ -363,24 +373,41 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	}
 
 	// Security Pass 381: Atomic Upload & Record Creation
-	// Local File Integration: Use Persistent Volume on Koyeb
-	userUploadDir := "./uploads/" + userId
-	if err := os.MkdirAll(userUploadDir, 0755); err != nil {
-		log.Printf("Local Storage Error: Failed to create dir for user %s: %v", userId, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Storage configuration error: " + err.Error()})
-		return
-	}
-
-	objectPath := "uploads/" + userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
+	// Supabase Storage Integration
+	objectPath := userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
 	
-	if err := c.SaveUploadedFile(header, "./"+objectPath); err != nil {
-		log.Printf("Local Upload Error: Failed to save file for user %s: %v", userId, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file locally: " + err.Error()})
+	// Read file into buffer
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read upload"})
 		return
 	}
 
-	// Calculate correct public URL using the base URL from config
-	publicURL := h.FirebaseSvc.Config.BaseURL + "/" + objectPath
+	// Upload to Supabase
+	reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", h.FirebaseSvc.Config.SupabaseURL, objectPath)
+	req, _ := http.NewRequestWithContext(ctx, "POST", reqUrl, buf)
+	req.Header.Set("apikey", h.FirebaseSvc.Config.SupabaseKey)
+	req.Header.Set("Authorization", "Bearer "+h.FirebaseSvc.Config.SupabaseKey)
+	req.Header.Set("Content-Type", header.Header.Get("Content-Type"))
+
+	client := &http.Client{}
+	resp, errUp := client.Do(req)
+	if errUp != nil {
+		log.Printf("Supabase Upload Error: %v", errUp)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to Supabase"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("Supabase API Error (%d): %s", resp.StatusCode, string(body))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Supabase storage error"})
+		return
+	}
+
+	// Calculate public URL
+	publicURL := fmt.Sprintf("%s/storage/v1/object/public/vault/%s", h.FirebaseSvc.Config.SupabaseURL, objectPath)
 
 	// 3. Save to Firestore using standardized schema
 	docData := map[string]interface{}{
@@ -398,8 +425,15 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	docRef, _, err := h.FirebaseSvc.Firestore.Collection("vault").Add(ctx, docData)
 	if err != nil {
 		log.Printf("Firestore Error: Failed to save vault record for user %s: %v", userId, err)
-		// Cleanup local storage on DB failure
-		_ = os.Remove("./" + objectPath)
+		// Cleanup Supabase on DB failure
+		reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", h.FirebaseSvc.Config.SupabaseURL, objectPath)
+		req, _ := http.NewRequestWithContext(ctx, "DELETE", reqUrl, nil)
+		req.Header.Set("apikey", h.FirebaseSvc.Config.SupabaseKey)
+		req.Header.Set("Authorization", "Bearer "+h.FirebaseSvc.Config.SupabaseKey)
+		client := &http.Client{}
+		if rs, err := client.Do(req); err == nil {
+			rs.Body.Close()
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save record: " + err.Error()})
 		return
 	}
