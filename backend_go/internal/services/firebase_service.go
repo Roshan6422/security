@@ -28,8 +28,12 @@ func NewFirebaseService(cfg *Config) *FirebaseService {
 	log.Printf("Initializing Firebase...")
 	var opt option.ClientOption
 	if cfg.FirebaseServiceAccount != "" {
-		// Attempt to decode as base64 first, trimming any accidental whitespace from Koyeb UI
-		decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(cfg.FirebaseServiceAccount))
+		// Attempt to decode as base64 first.
+		// Koyeb UI may inject newlines or spaces into the env var value, so we strip ALL whitespace.
+		cleanB64 := strings.ReplaceAll(strings.TrimSpace(cfg.FirebaseServiceAccount), "\n", "")
+		cleanB64 = strings.ReplaceAll(cleanB64, "\r", "")
+		cleanB64 = strings.ReplaceAll(cleanB64, " ", "")
+		decoded, err := base64.StdEncoding.DecodeString(cleanB64)
 		if err == nil {
 			// If successful, use the decoded JSON
 			opt = option.WithCredentialsJSON(decoded)
