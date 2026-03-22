@@ -252,7 +252,7 @@ func (h *VaultHandler) GetDashboard(c *gin.Context) {
 
 	totalSize := int64(0)
 	counts := map[string]int{"photo": 0, "video": 0, "audio": 0, "document": 0, "note": 0}
-	var allItems []map[string]interface{}
+	allItems := []map[string]interface{}{} // Initialize as empty slice, not nil
 
 	for {
 		doc, err := iter.Next()
@@ -262,19 +262,37 @@ func (h *VaultHandler) GetDashboard(c *gin.Context) {
 		data["id"] = doc.Ref.ID
 		data["_id"] = doc.Ref.ID
 
-		if isDel, _ := data["isDeleted"].(bool); isDel {
+		// Robust boolean check for isDeleted
+		isDel := false
+		if val, exists := data["isDeleted"]; exists {
+			if b, ok := val.(bool); ok {
+				isDel = b
+			}
+		}
+
+		if isDel {
 			continue // Dashboard only shows non-deleted items
 		}
 
-		fileType, _ := data["type"].(string)
+		// Robust type string check
+		fileType := ""
+		if t, ok := data["type"].(string); ok {
+			fileType = t
+		}
+		
 		var size int64
-		switch v := data["size"].(type) {
-		case int64: size = v
-		case int: size = int64(v)
-		case float64: size = int64(v)
+		if sVal, exists := data["size"]; exists {
+			switch v := sVal.(type) {
+			case int64: size = v
+			case int: size = int64(v)
+			case float64: size = int64(v)
+			case float32: size = int64(v)
+			}
 		}
 		totalSize += size
-		counts[fileType]++
+		if fileType != "" {
+			counts[fileType]++
+		}
 		allItems = append(allItems, data)
 	}
 
@@ -313,7 +331,7 @@ func (h *VaultHandler) GetRecent(c *gin.Context) {
 		Where("userId", "==", userId).
 		Documents(ctx)
 
-	var items []map[string]interface{}
+	items := []map[string]interface{}{} // Initialize empty slice
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -328,8 +346,15 @@ func (h *VaultHandler) GetRecent(c *gin.Context) {
 		data["id"] = doc.Ref.ID
 		data["_id"] = doc.Ref.ID
 
-		// Filter deleted items
-		if isDel, _ := data["isDeleted"].(bool); isDel {
+		// Filter deleted items (Robustly)
+		isDel := false
+		if val, exists := data["isDeleted"]; exists {
+			if b, ok := val.(bool); ok {
+				isDel = b
+			}
+		}
+
+		if isDel {
 			continue
 		}
 
@@ -678,7 +703,7 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 		Where("userId", "==", userId).
 		Documents(ctx)
 
-	var items []map[string]interface{}
+	items := []map[string]interface{}{} // Initialize as empty slice to avoid 'null' JSON
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -694,14 +719,35 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 		data["_id"] = doc.Ref.ID
 		data["id"] = doc.Ref.ID
 
-		// Filter by isDeleted in memory
-		isDel, _ := data["isDeleted"].(bool)
+		// Filter by isDeleted in memory (Robustly)
+		isDel := false
+		if val, exists := data["isDeleted"]; exists {
+			if b, ok := val.(bool); ok {
+				isDel = b
+			}
+		}
+
 		if isDel != isDeletedQuery {
 			continue
 		}
 
-		// Filter by type in memory
-		if itemType != "" && data["type"] != itemType {
+		// Filter by type in memory (Robustly)
+		typeMatch := true
+		if itemType != "" {
+			if val, exists := data["type"]; exists {
+				if t, ok := val.(string); ok {
+					if t != itemType {
+						typeMatch = false
+					}
+				} else {
+					typeMatch = false
+				}
+			} else {
+				typeMatch = false
+			}
+		}
+
+		if !typeMatch {
 			continue
 		}
 
