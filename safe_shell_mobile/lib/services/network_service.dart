@@ -5,7 +5,7 @@ import '../core/constants.dart';
 
 class NetworkService {
   static final http.Client _client = http.Client();
-  static const Duration defaultTimeout = Duration(seconds: 30);
+  static const Duration defaultTimeout = Duration(seconds: 60);
   static const Duration uploadTimeout = Duration(minutes: 15);
   static const _storage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 

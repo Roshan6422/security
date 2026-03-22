@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -417,19 +418,26 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	// Supabase Storage Integration
 	objectPath := userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
 	
-	// Stream to Supabase directly to prevent OOM on large videos
-	reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", h.FirebaseSvc.Config.SupabaseURL, objectPath)
-	req, _ := http.NewRequestWithContext(ctx, "POST", reqUrl, file)
-	req.ContentLength = header.Size
+	// atomic/robust Supabase Storage streaming upload
+	cleanBaseURL := strings.TrimRight(h.FirebaseSvc.Config.SupabaseURL, "/")
+	reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", cleanBaseURL, objectPath)
+	
+	req, errReq := http.NewRequestWithContext(ctx, "POST", reqUrl, file)
+	if errReq != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to prepare storage request: " + errReq.Error()})
+		return
+	}
+	
 	req.Header.Set("apikey", h.FirebaseSvc.Config.SupabaseKey)
 	req.Header.Set("Authorization", "Bearer "+h.FirebaseSvc.Config.SupabaseKey)
 	req.Header.Set("Content-Type", header.Header.Get("Content-Type"))
+	req.ContentLength = header.Size // CRITICAL for streaming large files reliably
 
 	client := &http.Client{}
 	resp, errUp := client.Do(req)
 	if errUp != nil {
-		log.Printf("Supabase Upload Connection Error: %v", errUp)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to Storage API"})
+		log.Printf("Supabase Upload Connection Failure (OOM or Timeout?): %v", errUp)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "High-bandwidth connection reset. The server may be restarting or Supabase is rejecting the large stream: " + errUp.Error()})
 		return
 	}
 	defer resp.Body.Close()
