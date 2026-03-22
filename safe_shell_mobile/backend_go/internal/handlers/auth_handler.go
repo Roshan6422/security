@@ -128,8 +128,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	u, err := h.FirebaseSvc.Auth.CreateUser(ctx, params)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user in Firebase: " + err.Error()})
-		return
+		// If user already exists, try to get them instead of failing
+		uExisting, authErr := h.FirebaseSvc.Auth.GetUserByEmail(ctx, req.Email)
+		if authErr == nil {
+			u = uExisting
+			log.Printf("User %s already exists in Firebase Auth, checking Firestore profile", req.Email)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user in Firebase: " + err.Error()})
+			return
+		}
 	}
 
 	// Create Firestore profile (Default to admin for web registration in this context)
