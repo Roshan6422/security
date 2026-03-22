@@ -445,8 +445,15 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Supabase API Error (%d): %s", resp.StatusCode, string(body))
-		// Send the exact error string back to the client so debugging is easier
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Storage server error (%d): %s", resp.StatusCode, string(body))})
+		
+		errMsg := fmt.Sprintf("Storage server error (%d): %s", resp.StatusCode, string(body))
+		if resp.StatusCode == 404 {
+			errMsg = "Supabase Bucket 'vault' not found! Please create a public bucket named 'vault' in your Supabase project."
+		} else if resp.StatusCode == 401 || resp.StatusCode == 403 {
+			errMsg = "Supabase Permission Denied! Check your SUPABASE_KEY (use 'service_role' key for full access)."
+		}
+		
+		c.JSON(resp.StatusCode, gin.H{"error": errMsg})
 		return
 	}
 
