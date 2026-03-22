@@ -65,6 +65,8 @@ func main() {
 		authPublic.POST("/forgot-password", authHandler.ForgotPassword)
 		authPublic.POST("/verify-otp", authHandler.VerifyOTP)
 		authPublic.POST("/reset-password", authHandler.ResetPassword)
+		authPublic.POST("/reset-password-via-key", authHandler.ResetPasswordViaKey)
+		authPublic.POST("/verify-recovery-key", authHandler.VerifyRecoveryKey)
 		authPublic.POST("/login", authHandler.Login)
 		authPublic.POST("/register", authHandler.Register)
 		authPublic.POST("/make-admin", authHandler.MakeAdmin)
@@ -75,6 +77,8 @@ func main() {
 	api.Use(middleware.AuthMiddleware(firebaseSvc))
 	{
 		// Auth Sync & Compatible Endpoints
+		api.GET("/auth/me", authHandler.GetMe)
+		api.PUT("/auth/profile", authHandler.UpdateProfile)
 		api.POST("/auth/sync", authHandler.FirebaseSync)
 		api.POST("/auth/firebase-login", authHandler.FirebaseSync)
 		api.POST("/auth/firebase-register", authHandler.FirebaseSync)
@@ -108,6 +112,14 @@ func main() {
 			admin.PATCH("/users/:id/subscription", adminHandler.UpdateUserSubscription)
 			admin.PATCH("/users/:id/role", adminHandler.UpdateUserRole)
 			admin.DELETE("/users/:id", adminHandler.DeleteUser)
+
+			// Admin Support and Settings Routes
+			admin.GET("/tickets", adminHandler.GetTickets)
+			admin.POST("/tickets/:id/reply", adminHandler.ReplyToTicket)
+			admin.PATCH("/tickets/:id/status", adminHandler.UpdateTicketStatus)
+			admin.GET("/payments", adminHandler.GetPayments)
+			admin.GET("/bank-settings", adminHandler.GetBankSettings)
+			admin.POST("/bank-settings", adminHandler.UpdateBankSettings)
 		}
 	}
 
@@ -135,13 +147,13 @@ func main() {
 	log.Printf("SafeShell Go Backend Starting - Version: 1.0.1 (Auth Fix Integrated)")
 	log.Printf("Server starting on port %s", port)
 	
-	// Security Pass 103: Standard Server with Timeouts
+	// Security Pass 103: Standard Server with expanded Timeouts for large vault files
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      r,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  10 * time.Minute, // Allow long uploads
+		WriteTimeout: 10 * time.Minute, // Allow long downloads
+		IdleTimeout:  120 * time.Second,
 	}
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

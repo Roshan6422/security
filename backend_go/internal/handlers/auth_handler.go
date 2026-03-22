@@ -441,3 +441,122 @@ func (h *AuthHandler) MakeAdmin(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User successfully promoted to admin"})
 }
+
+func (h *AuthHandler) GetMe(c *gin.Context) {
+	userIdVal, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+	ctx := c.Request.Context()
+	doc, err := h.FirebaseSvc.Firestore.Collection("users").Doc(userIdVal.(string)).Get(ctx)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	data := doc.Data()
+	data["_id"] = doc.Ref.ID
+	delete(data, "recoveryKey")
+	delete(data, "userKey")
+	delete(data, "password")
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userIdVal, _ := c.Get("userId")
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	updates := []firestore.Update{
+		{Path: "updatedAt", Value: time.Now()},
+	}
+
+	if name, ok := req["name"].(string); ok {
+		updates = append(updates, firestore.Update{Path: "name", Value: name})
+	}
+	if photoUrl, ok := req["photoUrl"].(string); ok {
+		updates = append(updates, firestore.Update{Path: "photoUrl", Value: photoUrl})
+	}
+
+	_, err := h.FirebaseSvc.Firestore.Collection("users").Doc(userIdVal.(string)).Update(ctx, updates)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Profile updated successfully"})
+}
+
+func (h *AuthHandler) VerifyRecoveryKey(c *gin.Context) {
+	var req struct {
+		Email       string `json:"email"`
+		RecoveryKey string `json:"recoveryKey"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email and recovery key are required"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	iter := h.FirebaseSvc.Firestore.Collection("users").Where("email", "==", req.Email).Limit(1).Documents(ctx)
+	doc, err := iter.Next()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	userData := doc.Data()
+	if storedKey, ok := userData["recoveryKey"].(string); ok && storedKey == req.RecoveryKey {
+		c.JSON(http.StatusOK, gin.H{"message": "Recovery key verified"})
+		return
+	}
+
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid recovery key"})
+}
+
+func (h *AuthHandler) ResetPasswordViaKey(c *gin.Context) {
+	var req struct {
+		Email       string `json:"email"`
+		RecoveryKey string `json:"recoveryKey"`
+		Password    string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	iter := h.FirebaseSvc.Firestore.Collection("users").Where("email", "==", req.Email).Limit(1).Documents(ctx)
+	doc, err := iter.Next()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	userData := doc.Data()
+	if storedKey, ok := userData["recoveryKey"].(string); !ok || storedKey != req.RecoveryKey {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid recovery key"})
+		return
+	}
+
+	user, err := h.FirebaseSvc.Auth.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Auth user not found"})
+		return
+	}
+
+	params := (&auth.UserToUpdate{}).Password(req.Password)
+	_, err = h.FirebaseSvc.Auth.UpdateUser(ctx, user.UID, params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset password"})
+		return
+	}
+
+	h.AuditSvc.LogEvent(ctx, user.UID, "auth_password_reset_key", "Password reset successful via recovery key", nil)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}

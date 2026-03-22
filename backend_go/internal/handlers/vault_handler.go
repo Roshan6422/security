@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -245,21 +245,26 @@ func (h *VaultHandler) GetDashboard(c *gin.Context) {
 	userId := userIdVal.(string)
 	ctx := c.Request.Context()
 
-	// 1. Fetch Stats & Aggregates
+	// 1. Fetch ALL user items and filter in memory to avoid ANY index requirements
 	iter := h.FirebaseSvc.Firestore.Collection("vault").
 		Where("userId", "==", userId).
-		Select("size", "type", "isDeleted").
 		Documents(ctx)
 
 	totalSize := int64(0)
 	counts := map[string]int{"photo": 0, "video": 0, "audio": 0, "document": 0, "note": 0}
+	var allItems []map[string]interface{}
 
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done { break }
 		if err != nil { break }
 		data := doc.Data()
-		if isDel, _ := data["isDeleted"].(bool); isDel { continue }
+		data["id"] = doc.Ref.ID
+		data["_id"] = doc.Ref.ID
+
+		if isDel, _ := data["isDeleted"].(bool); isDel {
+			continue // Dashboard only shows non-deleted items
+		}
 
 		fileType, _ := data["type"].(string)
 		var size int64
@@ -270,24 +275,19 @@ func (h *VaultHandler) GetDashboard(c *gin.Context) {
 		}
 		totalSize += size
 		counts[fileType]++
+		allItems = append(allItems, data)
 	}
 
-	// 2. Fetch Recent 5 Items
-	recentIter := h.FirebaseSvc.Firestore.Collection("vault").
-		Where("userId", "==", userId).
-		Where("isDeleted", "==", false).
-		OrderBy("createdAt", firestore.Desc).
-		Limit(5).
-		Documents(ctx)
+	// 2. Derive Recent 5 from same list
+	sort.Slice(allItems, func(i, j int) bool {
+		t1, _ := allItems[i]["createdAt"].(time.Time)
+		t2, _ := allItems[j]["createdAt"].(time.Time)
+		return t1.After(t2)
+	})
 
-	var recent []map[string]interface{}
-	for {
-		doc, err := recentIter.Next()
-		if err == iterator.Done { break }
-		if err != nil { break }
-		data := doc.Data()
-		data["id"] = doc.Ref.ID
-		recent = append(recent, data)
+	recent := allItems
+	if len(recent) > 5 {
+		recent = recent[:5]
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -308,12 +308,9 @@ func (h *VaultHandler) GetRecent(c *gin.Context) {
 	userId := userIdVal.(string)
 	ctx := c.Request.Context()
 
-	// Query recent 10 items
+	// Query all items and filter/sort in memory to bypass all index requirements
 	iter := h.FirebaseSvc.Firestore.Collection("vault").
 		Where("userId", "==", userId).
-		Where("isDeleted", "==", false).
-		OrderBy("createdAt", firestore.Desc).
-		Limit(10).
 		Documents(ctx)
 
 	var items []map[string]interface{}
@@ -323,15 +320,34 @@ func (h *VaultHandler) GetRecent(c *gin.Context) {
 			break
 		}
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch recent items"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error: " + err.Error()})
 			return
 		}
+
 		data := doc.Data()
 		data["id"] = doc.Ref.ID
+		data["_id"] = doc.Ref.ID
+
+		// Filter deleted items
+		if isDel, _ := data["isDeleted"].(bool); isDel {
+			continue
+		}
+
 		items = append(items, data)
 	}
 
-	c.JSON(http.StatusOK, items)
+	sort.Slice(items, func(i, j int) bool {
+		t1, _ := items[i]["createdAt"].(time.Time)
+		t2, _ := items[j]["createdAt"].(time.Time)
+		return t1.After(t2)
+	})
+
+	limit := 10
+	if len(items) < 10 {
+		limit = len(items)
+	}
+
+	c.JSON(http.StatusOK, items[:limit])
 }
 
 func (h *VaultHandler) Upload(c *gin.Context) {
@@ -376,16 +392,10 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	// Supabase Storage Integration
 	objectPath := userId + "/" + time.Now().Format("20060102150405") + "_" + fileName
 	
-	// Read file into buffer
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read upload"})
-		return
-	}
-
-	// Upload to Supabase
+	// Stream to Supabase directly to prevent OOM on large videos
 	reqUrl := fmt.Sprintf("%s/storage/v1/object/vault/%s", h.FirebaseSvc.Config.SupabaseURL, objectPath)
-	req, _ := http.NewRequestWithContext(ctx, "POST", reqUrl, buf)
+	req, _ := http.NewRequestWithContext(ctx, "POST", reqUrl, file)
+	req.ContentLength = header.Size
 	req.Header.Set("apikey", h.FirebaseSvc.Config.SupabaseKey)
 	req.Header.Set("Authorization", "Bearer "+h.FirebaseSvc.Config.SupabaseKey)
 	req.Header.Set("Content-Type", header.Header.Get("Content-Type"))
@@ -393,8 +403,8 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	client := &http.Client{}
 	resp, errUp := client.Do(req)
 	if errUp != nil {
-		log.Printf("Supabase Upload Error: %v", errUp)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload to Supabase"})
+		log.Printf("Supabase Upload Connection Error: %v", errUp)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to Storage API"})
 		return
 	}
 	defer resp.Body.Close()
@@ -402,7 +412,8 @@ func (h *VaultHandler) Upload(c *gin.Context) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Printf("Supabase API Error (%d): %s", resp.StatusCode, string(body))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Supabase storage error"})
+		// Send the exact error string back to the client so debugging is easier
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Storage server error (%d): %s", resp.StatusCode, string(body))})
 		return
 	}
 
@@ -661,15 +672,11 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 	isDeletedQuery := c.DefaultQuery("isDeleted", "false") == "true"
 	ctx := c.Request.Context()
 
-	query := h.FirebaseSvc.Firestore.Collection("vault").
+	// Multi-field Where queries often crash without Composite Indexes.
+	// We use a single-field query (userId) which is always indexed, then filter in memory.
+	iter := h.FirebaseSvc.Firestore.Collection("vault").
 		Where("userId", "==", userId).
-		Where("isDeleted", "==", isDeletedQuery)
-
-	if itemType != "" {
-		query = query.Where("type", "==", itemType)
-	}
-
-	iter := query.OrderBy("createdAt", firestore.Desc).Documents(ctx)
+		Documents(ctx)
 
 	var items []map[string]interface{}
 	for {
@@ -679,13 +686,34 @@ func (h *VaultHandler) ListVaultItems(c *gin.Context) {
 		}
 		if err != nil {
 			log.Printf("Firestore Query Error (ListVaultItems): %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch items: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error: " + err.Error()})
 			return
 		}
+
 		data := doc.Data()
 		data["_id"] = doc.Ref.ID
+		data["id"] = doc.Ref.ID
+
+		// Filter by isDeleted in memory
+		isDel, _ := data["isDeleted"].(bool)
+		if isDel != isDeletedQuery {
+			continue
+		}
+
+		// Filter by type in memory
+		if itemType != "" && data["type"] != itemType {
+			continue
+		}
+
 		items = append(items, data)
 	}
+
+	// In-memory sort by createdAt DESC
+	sort.Slice(items, func(i, j int) bool {
+		t1, _ := items[i]["createdAt"].(time.Time)
+		t2, _ := items[j]["createdAt"].(time.Time)
+		return t1.After(t2)
+	})
 
 	c.JSON(http.StatusOK, items)
 }

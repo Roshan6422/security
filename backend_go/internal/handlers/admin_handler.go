@@ -2,13 +2,14 @@ package handlers
 
 import (
 	"net/http"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/firestore/apiv1/firestorepb"
 	"github.com/Roshan6422/security/backend_go/internal/services"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
+	firestorepb "google.golang.org/genproto/googleapis/firestore/v1"
 )
 
 type AdminHandler struct {
@@ -235,4 +236,149 @@ func (h *AdminHandler) DeleteUser(c *gin.Context) {
 	h.AuditSvc.LogEvent(ctx, adminId.(string), "admin_user_delete", "Permanently deleted user: "+userId, nil)
 
 	c.JSON(http.StatusOK, gin.H{"message": "User permanently deleted"})
+}
+
+func (h *AdminHandler) GetTickets(c *gin.Context) {
+	ctx := c.Request.Context()
+	iter := h.FirebaseSvc.Firestore.Collection("support_tickets").Documents(ctx)
+
+	var tickets []map[string]interface{}
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tickets"})
+			return
+		}
+		data := doc.Data()
+		data["id"] = doc.Ref.ID
+		tickets = append(tickets, data)
+	}
+
+	// Sort in memory by createdAt DESC
+	sort.Slice(tickets, func(i, j int) bool {
+		t1, _ := tickets[i]["createdAt"].(time.Time)
+		t2, _ := tickets[j]["createdAt"].(time.Time)
+		return t1.After(t2)
+	})
+
+	if tickets == nil {
+		tickets = []map[string]interface{}{}
+	}
+	c.JSON(http.StatusOK, tickets)
+}
+
+func (h *AdminHandler) ReplyToTicket(c *gin.Context) {
+	ticketId := c.Param("id")
+	var req struct {
+		Message string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	reply := map[string]interface{}{
+		"sender": "admin",
+		"message": req.Message,
+		"date": time.Now().Format(time.RFC3339),
+	}
+
+	_, err := h.FirebaseSvc.Firestore.Collection("support_tickets").Doc(ticketId).Update(ctx, []firestore.Update{
+		{Path: "replies", Value: firestore.ArrayUnion(reply)},
+		{Path: "updatedAt", Value: time.Now()},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add reply"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Reply added successfully"})
+}
+
+func (h *AdminHandler) UpdateTicketStatus(c *gin.Context) {
+	ticketId := c.Param("id")
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	ctx := c.Request.Context()
+	_, err := h.FirebaseSvc.Firestore.Collection("support_tickets").Doc(ticketId).Update(ctx, []firestore.Update{
+		{Path: "status", Value: req.Status},
+		{Path: "updatedAt", Value: time.Now()},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Status updated successfully"})
+}
+
+func (h *AdminHandler) GetPayments(c *gin.Context) {
+	ctx := c.Request.Context()
+	iter := h.FirebaseSvc.Firestore.Collection("payments").Documents(ctx)
+
+	var payments []map[string]interface{}
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch payments"})
+			return
+		}
+		data := doc.Data()
+		data["id"] = doc.Ref.ID
+		payments = append(payments, data)
+	}
+
+	// Sort in memory by date DESC
+	sort.Slice(payments, func(i, j int) bool {
+		t1, _ := payments[i]["date"].(time.Time)
+		t2, _ := payments[j]["date"].(time.Time)
+		return t1.After(t2)
+	})
+
+	if payments == nil {
+		payments = []map[string]interface{}{}
+	}
+	c.JSON(http.StatusOK, payments)
+}
+
+func (h *AdminHandler) GetBankSettings(c *gin.Context) {
+	ctx := c.Request.Context()
+	doc, err := h.FirebaseSvc.Firestore.Collection("settings").Doc("bank_account").Get(ctx)
+	if err != nil {
+		c.JSON(http.StatusOK, map[string]string{
+			"bankName": "", "accountHolder": "", "accountNumber": "", "branch": "", "swiftCode": "",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, doc.Data())
+}
+
+func (h *AdminHandler) UpdateBankSettings(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	req["updatedAt"] = time.Now()
+
+	ctx := c.Request.Context()
+	_, err := h.FirebaseSvc.Firestore.Collection("settings").Doc("bank_account").Set(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save bank settings"})
+		return
+	}
+	c.JSON(http.StatusOK, req)
 }
