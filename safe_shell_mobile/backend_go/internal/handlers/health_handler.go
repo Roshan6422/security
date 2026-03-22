@@ -35,6 +35,6 @@ func (h *HealthHandler) Check(c *gin.Context) {
 		"status":   firebaseStatus,
 		"database": dbStatus,
 		"message":  "SafeShell Go Backend is running",
-		"version":  "1.0.2-final",
+		"version":  "1.0.3-admin",
 	})
 }
